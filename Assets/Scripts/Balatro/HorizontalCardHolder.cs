@@ -9,15 +9,15 @@ using System.Linq;
 public class HorizontalCardHolder : MonoBehaviour
 {
 
-    [SerializeField] private Card selectedCard;
-    [SerializeReference] private Card hoveredCard;
+    [SerializeField] private BalatroCard selectedCard;
+    [SerializeReference] private BalatroCard hoveredCard;
 
     [SerializeField] private GameObject slotPrefab;
     private RectTransform rect;
 
     [Header("Spawn Settings")]
     [SerializeField] private int cardsToSpawn = 7;
-    public List<Card> cards;
+    public List<BalatroCard> cards;
 
     bool isCrossing = false;
     [SerializeField] private bool tweenCardReturn = true;
@@ -30,11 +30,11 @@ public class HorizontalCardHolder : MonoBehaviour
         }
 
         rect = GetComponent<RectTransform>();
-        cards = GetComponentsInChildren<Card>().ToList();
+        cards = GetComponentsInChildren<BalatroCard>().ToList();
 
         int cardCount = 0;
 
-        foreach (Card card in cards)
+        foreach (BalatroCard card in cards)
         {
             card.PointerEnterEvent.AddListener(CardPointerEnter);
             card.PointerExitEvent.AddListener(CardPointerExit);
@@ -57,13 +57,13 @@ public class HorizontalCardHolder : MonoBehaviour
         }
     }
 
-    private void BeginDrag(Card card)
+    private void BeginDrag(BalatroCard card)
     {
         selectedCard = card;
     }
 
 
-    void EndDrag(Card card)
+    void EndDrag(BalatroCard card)
     {
         if (selectedCard == null)
             return;
@@ -77,12 +77,12 @@ public class HorizontalCardHolder : MonoBehaviour
 
     }
 
-    void CardPointerEnter(Card card)
+    void CardPointerEnter(BalatroCard card)
     {
         hoveredCard = card;
     }
 
-    void CardPointerExit(Card card)
+    void CardPointerExit(BalatroCard card)
     {
         hoveredCard = null;
     }
@@ -101,7 +101,7 @@ public class HorizontalCardHolder : MonoBehaviour
 
         if (Input.GetMouseButtonDown(1))
         {
-            foreach (Card card in cards)
+            foreach (BalatroCard card in cards)
             {
                 card.Deselect();
             }
@@ -156,7 +156,7 @@ public class HorizontalCardHolder : MonoBehaviour
         cards[index].cardVisual.Swap(swapIsRight ? -1 : 1);
 
         //Updated Visual Indexes
-        foreach (Card card in cards)
+        foreach (BalatroCard card in cards)
         {
             card.cardVisual.UpdateIndex(transform.childCount);
         }
