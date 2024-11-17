@@ -14,9 +14,6 @@ public class CardButtonController : MonoBehaviour
     [SerializeField] private Color player1Color = new Color(0.8f, 0.9f, 1f);
     [SerializeField] private Color player2Color = new Color(1f, 0.8f, 0.8f);
 
-    private const float CARD_WIDTH = 200f;
-    private const float CARD_HEIGHT = 300f;
-
     private Button button;
     private CardData cardData;
     private bool isPlayer1;
@@ -30,7 +27,6 @@ public class CardButtonController : MonoBehaviour
     private void SetSize()
     {
         RectTransform rect = GetComponent<RectTransform>();
-        rect.sizeDelta = new Vector2(CARD_WIDTH, CARD_HEIGHT);
     }
 
     public void Setup(CardData data, bool isPlayerOne)

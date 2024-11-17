@@ -19,4 +19,8 @@ public class GameContext {
         }
         currentIterationDepth--;
     }
+
+    public int GetPendingActionsCount() {
+        return actionQueue.Count;
+    }
 }

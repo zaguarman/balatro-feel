@@ -33,10 +33,10 @@ public class TestSetup : MonoBehaviour
 
         // 4. Creature with OnDamage effect - Thorned Creature
         var thornCreature = ScriptableObject.CreateInstance<CreatureData>();
-        thornCreature.cardName = "Thorned Creature";
+        thornCreature.cardName = "Thorned";
         thornCreature.description = "Deals 1 damage when hit";
         thornCreature.attack = 2;
-        thornCreature.health = 2;
+        thornCreature.health = 6;
         
         var thornEffect = new CardEffect
         {
@@ -57,7 +57,7 @@ public class TestSetup : MonoBehaviour
 
         // 5. Creature with OnPlay effect - Fire Dragon
         var dragon = ScriptableObject.CreateInstance<CreatureData>();
-        dragon.cardName = "Fire Dragon";
+        dragon.cardName = "Dragon";
         dragon.description = "Deals 2 damage when played";
         dragon.attack = 4;
         dragon.health = 4;
