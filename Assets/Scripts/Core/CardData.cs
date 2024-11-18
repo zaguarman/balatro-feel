@@ -18,7 +18,7 @@ public class CreatureData : CardData {
     public int attack;
     public int health;
 
-    private void OnEnable() {
+    public void OnEnable() {
         cardType = CardType.Creature;
     }
 }

@@ -1,12 +1,10 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-public class TestSetup : MonoBehaviour
-{
-    public List<CardData> CreateTestCards()
-    {
+public class TestSetup : MonoBehaviour {
+    public List<CardData> CreateTestCards() {
         var cards = new List<CardData>();
-        
+
         // 1. Basic Creature - Goblin
         var goblin = ScriptableObject.CreateInstance<CreatureData>();
         goblin.cardName = "Goblin";
@@ -37,9 +35,8 @@ public class TestSetup : MonoBehaviour
         thornCreature.description = "Deals 1 damage when hit";
         thornCreature.attack = 2;
         thornCreature.health = 6;
-        
-        var thornEffect = new CardEffect
-        {
+
+        var thornEffect = new CardEffect {
             effectType = EffectType.Triggered,
             trigger = EffectTrigger.OnDamage,
             actions = new List<EffectAction>
@@ -61,9 +58,8 @@ public class TestSetup : MonoBehaviour
         dragon.description = "Deals 2 damage when played";
         dragon.attack = 4;
         dragon.health = 4;
-        
-        var dragonEffect = new CardEffect
-        {
+
+        var dragonEffect = new CardEffect {
             effectType = EffectType.Triggered,
             trigger = EffectTrigger.OnPlay,
             actions = new List<EffectAction>

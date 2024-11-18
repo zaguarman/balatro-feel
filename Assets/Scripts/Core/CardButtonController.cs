@@ -18,7 +18,7 @@ public class CardButtonController : MonoBehaviour
     private CardData cardData;
     private bool isPlayer1;
 
-    private void Awake()
+    public void Awake()
     {
         button = GetComponent<Button>();
         SetSize();

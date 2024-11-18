@@ -6,8 +6,7 @@ using System.Collections.Generic;
 using System.Collections;
 using UnityEngine.UI;
 
-public class BalatroCard : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler, IPointerEnterHandler, IPointerExitHandler, IPointerUpHandler, IPointerDownHandler
-{
+public class BalatroCard : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler, IPointerEnterHandler, IPointerExitHandler, IPointerUpHandler, IPointerDownHandler {
     private Canvas canvas;
     private Image imageComponent;
     [SerializeField] private bool instantiateVisual = true;
@@ -41,8 +40,7 @@ public class BalatroCard : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndD
     [HideInInspector] public UnityEvent<BalatroCard> EndDragEvent;
     [HideInInspector] public UnityEvent<BalatroCard, bool> SelectEvent;
 
-    void Start()
-    {
+    public void Start() {
         canvas = GetComponentInParent<Canvas>();
         imageComponent = GetComponent<Image>();
 
@@ -54,12 +52,10 @@ public class BalatroCard : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndD
         cardVisual.Initialize(this);
     }
 
-    void Update()
-    {
+    public void Update() {
         ClampPosition();
 
-        if (isDragging)
-        {
+        if (isDragging) {
             Vector2 targetPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition) - offset;
             Vector2 direction = (targetPosition - (Vector2)transform.position).normalized;
             Vector2 velocity = direction * Mathf.Min(moveSpeedLimit, Vector2.Distance(transform.position, targetPosition) / Time.deltaTime);
@@ -67,8 +63,7 @@ public class BalatroCard : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndD
         }
     }
 
-    void ClampPosition()
-    {
+    void ClampPosition() {
         Vector2 screenBounds = Camera.main.ScreenToWorldPoint(new Vector3(Screen.width, Screen.height, Camera.main.transform.position.z));
         Vector3 clampedPosition = transform.position;
         clampedPosition.x = Mathf.Clamp(clampedPosition.x, -screenBounds.x, screenBounds.x);
@@ -76,8 +71,7 @@ public class BalatroCard : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndD
         transform.position = new Vector3(clampedPosition.x, clampedPosition.y, 0);
     }
 
-    public void OnBeginDrag(PointerEventData eventData)
-    {
+    public void OnBeginDrag(PointerEventData eventData) {
         BeginDragEvent.Invoke(this);
         Vector2 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         offset = mousePosition - (Vector2)transform.position;
@@ -88,12 +82,10 @@ public class BalatroCard : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndD
         wasDragged = true;
     }
 
-    public void OnDrag(PointerEventData eventData)
-    {
+    public void OnDrag(PointerEventData eventData) {
     }
 
-    public void OnEndDrag(PointerEventData eventData)
-    {
+    public void OnEndDrag(PointerEventData eventData) {
         EndDragEvent.Invoke(this);
         isDragging = false;
         canvas.GetComponent<GraphicRaycaster>().enabled = true;
@@ -101,28 +93,24 @@ public class BalatroCard : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndD
 
         StartCoroutine(FrameWait());
 
-        IEnumerator FrameWait()
-        {
+        IEnumerator FrameWait() {
             yield return new WaitForEndOfFrame();
             wasDragged = false;
         }
     }
 
-    public void OnPointerEnter(PointerEventData eventData)
-    {
+    public void OnPointerEnter(PointerEventData eventData) {
         PointerEnterEvent.Invoke(this);
         isHovering = true;
     }
 
-    public void OnPointerExit(PointerEventData eventData)
-    {
+    public void OnPointerExit(PointerEventData eventData) {
         PointerExitEvent.Invoke(this);
         isHovering = false;
     }
 
 
-    public void OnPointerDown(PointerEventData eventData)
-    {
+    public void OnPointerDown(PointerEventData eventData) {
         if (eventData.button != PointerEventData.InputButton.Left)
             return;
 
@@ -130,8 +118,7 @@ public class BalatroCard : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndD
         pointerDownTime = Time.time;
     }
 
-    public void OnPointerUp(PointerEventData eventData)
-    {
+    public void OnPointerUp(PointerEventData eventData) {
         if (eventData.button != PointerEventData.InputButton.Left)
             return;
 
@@ -154,10 +141,8 @@ public class BalatroCard : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndD
             transform.localPosition = Vector3.zero;
     }
 
-    public void Deselect()
-    {
-        if (selected)
-        {
+    public void Deselect() {
+        if (selected) {
             selected = false;
             if (selected)
                 transform.localPosition += (cardVisual.transform.up * 50);
@@ -167,24 +152,20 @@ public class BalatroCard : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndD
     }
 
 
-    public int SiblingAmount()
-    {
+    public int SiblingAmount() {
         return transform.parent.CompareTag("Slot") ? transform.parent.parent.childCount - 1 : 0;
     }
 
-    public int ParentIndex()
-    {
+    public int ParentIndex() {
         return transform.parent.CompareTag("Slot") ? transform.parent.GetSiblingIndex() : 0;
     }
 
-    public float NormalizedPosition()
-    {
+    public float NormalizedPosition() {
         return transform.parent.CompareTag("Slot") ? ExtensionMethods.Remap((float)ParentIndex(), 0, (float)(transform.parent.parent.childCount - 1), 0, 1) : 0;
     }
 
-    private void OnDestroy()
-    {
-        if(cardVisual != null)
-        Destroy(cardVisual.gameObject);
+    public void OnDestroy() {
+        if (cardVisual != null)
+            Destroy(cardVisual.gameObject);
     }
 }

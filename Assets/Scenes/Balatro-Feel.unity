@@ -1324,6 +1324,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d8436a7e3d3df42d7a7058aec5e41a69, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  selectedCard: {fileID: 0}
+  hoveredCard: {fileID: 0}
+  slotPrefab: {fileID: 0}
+  cardsToSpawn: 7
+  cards: []
+  tweenCardReturn: 1
 --- !u!114 &667881469
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1742,7 +1748,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameUI: {fileID: 946047125}
-  damageResolutionController: {fileID: 946047127}
+  damageResolver: {fileID: 946047127}
 --- !u!4 &946047124
 Transform:
   m_ObjectHideFlags: 0
@@ -3214,8 +3220,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -345.17, y: 345.16}
-  m_SizeDelta: {x: 2614.79, y: 511.97}
+  m_AnchoredPosition: {x: -70.03003, y: 345.16}
+  m_SizeDelta: {x: 2064.5, y: 511.97}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1852528802
 MonoBehaviour:
@@ -3625,8 +3631,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -345.16, y: -301.93}
-  m_SizeDelta: {x: 2614.8, y: 425.5}
+  m_AnchoredPosition: {x: -70.01, y: -301.93}
+  m_SizeDelta: {x: 2064.55, y: 425.5}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2096289233
 MonoBehaviour:

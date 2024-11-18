@@ -16,7 +16,7 @@ public class DamageResolver : MonoBehaviour {
     private GameManager gameManager;
     private bool isResolving = false;
 
-    private void Awake() {
+    public void Awake() {
         gameManager = GameManager.Instance;
         if (gameManager != null) {
             gameContext = gameManager.GameContext;
@@ -38,8 +38,7 @@ public class DamageResolver : MonoBehaviour {
         pendingDamageText.text = $"Pending Actions: {pendingActions}";
 
         if (resolveButton != null) {
-            resolveButton.interactable = pendingActions > 0 && !isResolving &&
-                                       !gameManager.CheckGameEnd(); // Disable when game is over
+            resolveButton.interactable = pendingActions > 0 && !isResolving && !gameManager.CheckGameEnd(); // Disable when game is over
         }
 
         if (autoResolveWhenEmpty && pendingActions == 0) {
@@ -69,7 +68,7 @@ public class DamageResolver : MonoBehaviour {
         UpdateResolutionState();
     }
 
-    private void OnEnable() {
+    public void OnEnable() {
         UpdateResolutionState();
     }
 }

@@ -10,7 +10,7 @@ public class GameManager : MonoBehaviour {
 
     [Header("UI References")]
     [SerializeField] private GameUI gameUI;
-    [SerializeField] private DamageResolver damageResolutionController;
+    [SerializeField] private DamageResolver damageResolver;
 
     // Events
     public event Action OnGameStateChanged;
@@ -20,7 +20,7 @@ public class GameManager : MonoBehaviour {
 
     private bool isGameActive = false;
 
-    private void Awake() {
+    public void Awake() {
         if (Instance == null) {
             Instance = this;
             InitializeGame();
@@ -29,18 +29,18 @@ public class GameManager : MonoBehaviour {
         }
     }
 
-    private void Start() {
+    public void Start() {
         if (!gameUI) {
             gameUI = FindObjectOfType<GameUI>();
         }
-        if (!damageResolutionController) {
-            damageResolutionController = FindObjectOfType<DamageResolver>();
+        if (!damageResolver) {
+            damageResolver = FindObjectOfType<DamageResolver>();
         }
 
         if (gameUI == null) {
             Debug.LogError("GameUI component not found!");
         }
-        if (damageResolutionController == null) {
+        if (damageResolver == null) {
             Debug.LogError("DamageResolver not found!");
         }
 
@@ -110,8 +110,8 @@ public class GameManager : MonoBehaviour {
             gameUI.UpdateUI();
         }
 
-        if (damageResolutionController != null) {
-            damageResolutionController.UpdateResolutionState();
+        if (damageResolver != null) {
+            damageResolver.UpdateResolutionState();
         }
     }
 
@@ -149,7 +149,7 @@ public class GameManager : MonoBehaviour {
         return false;
     }
 
-    private void OnDestroy() {
+    public void OnDestroy() {
         // Clean up event listeners
         OnGameStateChanged -= UpdateGameState;
         OnPlayerDamaged -= HandlePlayerDamaged;

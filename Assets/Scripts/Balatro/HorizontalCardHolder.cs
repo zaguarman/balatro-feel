@@ -6,8 +6,7 @@ using UnityEngine;
 using DG.Tweening;
 using System.Linq;
 
-public class HorizontalCardHolder : MonoBehaviour
-{
+public class HorizontalCardHolder : MonoBehaviour {
 
     [SerializeField] private BalatroCard selectedCard;
     [SerializeReference] private BalatroCard hoveredCard;
@@ -22,10 +21,8 @@ public class HorizontalCardHolder : MonoBehaviour
     bool isCrossing = false;
     [SerializeField] private bool tweenCardReturn = true;
 
-    void Start()
-    {
-        for (int i = 0; i < cardsToSpawn; i++)
-        {
+    public void Start() {
+        for (int i = 0; i < cardsToSpawn; i++) {
             Instantiate(slotPrefab, transform);
         }
 
@@ -34,8 +31,7 @@ public class HorizontalCardHolder : MonoBehaviour
 
         int cardCount = 0;
 
-        foreach (BalatroCard card in cards)
-        {
+        foreach (BalatroCard card in cards) {
             card.PointerEnterEvent.AddListener(CardPointerEnter);
             card.PointerExitEvent.AddListener(CardPointerExit);
             card.BeginDragEvent.AddListener(BeginDrag);
@@ -46,29 +42,25 @@ public class HorizontalCardHolder : MonoBehaviour
 
         StartCoroutine(Frame());
 
-        IEnumerator Frame()
-        {
+        IEnumerator Frame() {
             yield return new WaitForSecondsRealtime(.1f);
-            for (int i = 0; i < cards.Count; i++)
-            {
+            for (int i = 0; i < cards.Count; i++) {
                 if (cards[i].cardVisual != null)
                     cards[i].cardVisual.UpdateIndex(transform.childCount);
             }
         }
     }
 
-    private void BeginDrag(BalatroCard card)
-    {
+    private void BeginDrag(BalatroCard card) {
         selectedCard = card;
     }
 
 
-    void EndDrag(BalatroCard card)
-    {
+    void EndDrag(BalatroCard card) {
         if (selectedCard == null)
             return;
 
-        selectedCard.transform.DOLocalMove(selectedCard.selected ? new Vector3(0,selectedCard.selectionOffset,0) : Vector3.zero, tweenCardReturn ? .15f : 0).SetEase(Ease.OutBack);
+        selectedCard.transform.DOLocalMove(selectedCard.selected ? new Vector3(0, selectedCard.selectionOffset, 0) : Vector3.zero, tweenCardReturn ? .15f : 0).SetEase(Ease.OutBack);
 
         rect.sizeDelta += Vector2.right;
         rect.sizeDelta -= Vector2.right;
@@ -77,32 +69,25 @@ public class HorizontalCardHolder : MonoBehaviour
 
     }
 
-    void CardPointerEnter(BalatroCard card)
-    {
+    void CardPointerEnter(BalatroCard card) {
         hoveredCard = card;
     }
 
-    void CardPointerExit(BalatroCard card)
-    {
+    void CardPointerExit(BalatroCard card) {
         hoveredCard = null;
     }
 
-    void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.Delete))
-        {
-            if (hoveredCard != null)
-            {
+    public void Update() {
+        if (Input.GetKeyDown(KeyCode.Delete)) {
+            if (hoveredCard != null) {
                 Destroy(hoveredCard.transform.parent.gameObject);
                 cards.Remove(hoveredCard);
 
             }
         }
 
-        if (Input.GetMouseButtonDown(1))
-        {
-            foreach (BalatroCard card in cards)
-            {
+        if (Input.GetMouseButtonDown(1)) {
+            foreach (BalatroCard card in cards) {
                 card.Deselect();
             }
         }
@@ -113,22 +98,17 @@ public class HorizontalCardHolder : MonoBehaviour
         if (isCrossing)
             return;
 
-        for (int i = 0; i < cards.Count; i++)
-        {
+        for (int i = 0; i < cards.Count; i++) {
 
-            if (selectedCard.transform.position.x > cards[i].transform.position.x)
-            {
-                if (selectedCard.ParentIndex() < cards[i].ParentIndex())
-                {
+            if (selectedCard.transform.position.x > cards[i].transform.position.x) {
+                if (selectedCard.ParentIndex() < cards[i].ParentIndex()) {
                     Swap(i);
                     break;
                 }
             }
 
-            if (selectedCard.transform.position.x < cards[i].transform.position.x)
-            {
-                if (selectedCard.ParentIndex() > cards[i].ParentIndex())
-                {
+            if (selectedCard.transform.position.x < cards[i].transform.position.x) {
+                if (selectedCard.ParentIndex() > cards[i].ParentIndex()) {
                     Swap(i);
                     break;
                 }
@@ -136,8 +116,7 @@ public class HorizontalCardHolder : MonoBehaviour
         }
     }
 
-    void Swap(int index)
-    {
+    void Swap(int index) {
         isCrossing = true;
 
         Transform focusedParent = selectedCard.transform.parent;
@@ -156,8 +135,7 @@ public class HorizontalCardHolder : MonoBehaviour
         cards[index].cardVisual.Swap(swapIsRight ? -1 : 1);
 
         //Updated Visual Indexes
-        foreach (BalatroCard card in cards)
-        {
+        foreach (BalatroCard card in cards) {
             card.cardVisual.UpdateIndex(transform.childCount);
         }
     }
