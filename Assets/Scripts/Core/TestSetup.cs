@@ -6,17 +6,17 @@ public class TestSetup : MonoBehaviour {
         var cards = new List<CardData>();
 
         var ogre = ScriptableObject.CreateInstance<CreatureData>();
-        ogre.cardName = "Ogre";
-        ogre.description = "High attack power";
-        ogre.attack = 5;
-        ogre.health = 3;
+        ogre.Name = "Ogre";
+        ogre.Description = "High attack power";
+        ogre.BaseAttack = 5;
+        ogre.BaseHealth = 3;
         cards.Add(ogre);
 
         var thornCreature = ScriptableObject.CreateInstance<CreatureData>();
-        thornCreature.cardName = "Thorned";
-        thornCreature.description = "Deals 1 damage when hit";
-        thornCreature.attack = 2;
-        thornCreature.health = 6;
+        thornCreature.Name = "Thorned";
+        thornCreature.Description = "Deals 1 damage when hit";
+        thornCreature.BaseAttack = 2;
+        thornCreature.BaseHealth = 6;
 
         var thornEffect = new CardEffect {
             effectType = EffectType.Triggered,
@@ -34,12 +34,11 @@ public class TestSetup : MonoBehaviour {
         thornCreature.effects.Add(thornEffect);
         cards.Add(thornCreature);
 
-        // 5. Creature with OnPlay effect - Fire Dragon
         var dragon = ScriptableObject.CreateInstance<CreatureData>();
-        dragon.cardName = "Dragon";
-        dragon.description = "Deals 2 damage when played";
-        dragon.attack = 4;
-        dragon.health = 4;
+        dragon.Name = "Dragon";
+        dragon.Description = "Deals 2 damage when played";
+        dragon.BaseAttack = 4;
+        dragon.BaseHealth = 4;
 
         var dragonEffect = new CardEffect {
             effectType = EffectType.Triggered,
@@ -56,6 +55,28 @@ public class TestSetup : MonoBehaviour {
         };
         dragon.effects.Add(dragonEffect);
         cards.Add(dragon);
+
+        var warchief = ScriptableObject.CreateInstance<CreatureData>();
+        warchief.Name = "Warchief";
+        warchief.Description = "All other friendly creatures get +2 attack";
+        warchief.BaseAttack = 3;
+        warchief.BaseHealth = 3;
+
+        var warchiefEffect = new CardEffect {
+            effectType = EffectType.Continuous,
+            trigger = EffectTrigger.None,
+            actions = new List<EffectAction> {
+                new EffectAction {
+                    actionType = ActionType.AttackBuff,
+                    value = 2,
+                    targetType = TargetType.FriendlyCreatures
+                }
+            }
+        };
+
+        warchief.effects.Add(warchiefEffect);
+        cards.Add(warchief);
+
 
         return cards;
     }

@@ -14,9 +14,9 @@ public class GameManager : MonoBehaviour {
 
     // Events
     public event Action OnGameStateChanged;
-    public event Action<Player> OnPlayerDamaged;
-    public event Action<Creature> OnCreatureDamaged;
-    public event Action<Player> OnGameOver;
+    public event Action<IPlayer> OnPlayerDamaged;
+    public event Action<ICreature> OnCreatureDamaged;
+    public event Action<IPlayer> OnGameOver;
 
     private bool isGameActive = false;
 
@@ -64,7 +64,7 @@ public class GameManager : MonoBehaviour {
         NotifyGameStateChanged();
     }
 
-    public void PlayCard(CardData cardData, Player player) {
+    public void PlayCard(CardData cardData, IPlayer player) {
         if (!isGameActive) return;
 
         Card card = CardFactory.CreateCard(cardData);
@@ -72,7 +72,7 @@ public class GameManager : MonoBehaviour {
         NotifyGameStateChanged();
     }
 
-    public void AttackWithCreature(Creature attacker, Player attackingPlayer, Creature target = null) {
+    public void AttackWithCreature(Creature attacker, IPlayer attackingPlayer, Creature target = null) {
         if (!isGameActive) return;
 
         if (target == null) {
@@ -94,7 +94,7 @@ public class GameManager : MonoBehaviour {
         NotifyGameStateChanged();
     }
 
-    private void CleanupDeadCreatures(Player player) {
+    private void CleanupDeadCreatures(IPlayer player) {
         player.Battlefield.RemoveAll(creature => creature.Health <= 0);
     }
 
@@ -115,19 +115,19 @@ public class GameManager : MonoBehaviour {
         }
     }
 
-    private void HandlePlayerDamaged(Player player) {
+    private void HandlePlayerDamaged(IPlayer player) {
         if (gameUI != null) {
             gameUI.UpdatePlayerHealth(player);
         }
     }
 
-    private void HandleCreatureDamaged(Creature creature) {
+    private void HandleCreatureDamaged(ICreature creature) {
         if (gameUI != null) {
             gameUI.UpdateCreatureState(creature);
         }
     }
 
-    private void HandleGameOver(Player winner) {
+    private void HandleGameOver(IPlayer winner) {
         if (gameUI != null) {
             gameUI.ShowGameOver(winner);
         }

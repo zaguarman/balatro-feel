@@ -1,41 +1,52 @@
-using UnityEngine;
 using System.Collections.Generic;
 
-public static class CardFactory {
-    public static Card CreateCard(CardData cardData) {
-        Card baseCard = CreateBaseCard(cardData);
-        return WrapWithEffects(baseCard, cardData.effects);
+public class CardFactory {
+    private readonly IActionStrategyFactory actionStrategyFactory;
+    private readonly IEffectStrategyFactory effectStrategyFactory;
+    private readonly ITriggerFactory triggerFactory;
+
+    public CardFactory(
+        IActionStrategyFactory actionStrategyFactory,
+        IEffectStrategyFactory effectStrategyFactory,
+        ITriggerFactory triggerFactory) {
+        this.actionStrategyFactory = actionStrategyFactory;
+        this.effectStrategyFactory = effectStrategyFactory;
+        this.triggerFactory = triggerFactory;
     }
 
-    private static Card CreateBaseCard(CardData cardData) {
-        switch (cardData) {
-            case CreatureData creatureData:
-                return new Creature(creatureData.cardName, creatureData.attack, creatureData.health);
-            default:
-                Debug.LogError($"Unsupported card type: {cardData.GetType()}");
-                return null;
-        }
-    }
+    public ICreature CreateCard(CardData data) {
+        var effects = new List<IEffect>();
 
-    private static Card WrapWithEffects(Card card, List<CardEffect> effects) {
-        Card wrappedCard = card;
+        foreach (var effectData in data.Effects) {
+            if (effectData is CardEffect cardEffect) {
+                foreach (var action in cardEffect.actions) {
+                    var actionStrategy = actionStrategyFactory.Create(action.ActionData);
+                    var trigger = triggerFactory.Create(cardEffect.Trigger);
+                    var effectStrategy = effectStrategyFactory.Create(cardEffect.effectType, trigger);
 
-        foreach (var effect in effects) {
-            switch (effect.effectType) {
-                case EffectType.Triggered:
-                    wrappedCard = new TriggeredEffectDecorator(wrappedCard, effect.trigger, effect.actions);
-                    break;
-
-                case EffectType.Continuous:
-                    wrappedCard = new ContinuousEffectDecorator(wrappedCard, effect.actions);
-                    break;
-
-                case EffectType.Immediate:
-                    // Immediate effects could be handled directly in the Play method
-                    break;
+                    var gameAction = actionStrategy.CreateAction(action.ActionData.Value);
+                    effects.Add(effectStrategy.CreateEffect(gameAction, data.Id));
+                }
             }
         }
 
-        return wrappedCard;
+        return new Creature(
+            data.Name,
+            (data as CreatureData)?.BaseAttack ?? 0,
+            (data as CreatureData)?.BaseHealth ?? 0,
+            effects.ToArray()
+        );
     }
+}
+
+public interface IActionStrategyFactory {
+    IActionStrategy Create(ActionData data);
+}
+
+public interface IEffectStrategyFactory {
+    IEffectStrategy Create(string effectType, ITrigger trigger);
+}
+
+public interface ITriggerFactory {
+    ITrigger Create(string triggerType);
 }

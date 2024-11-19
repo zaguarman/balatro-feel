@@ -1,30 +1,26 @@
 using UnityEngine;
 
-public interface IGameAction {
-    void Execute(GameContext context);
-}
-
 public class SummonCreatureAction : IGameAction {
-    private Creature creature;
-    private Player owner;
+    private readonly ICreature creature;
+    private readonly IPlayer owner;
 
-    public SummonCreatureAction(Creature creature, Player owner) {
+    public SummonCreatureAction(ICreature creature, IPlayer owner) {
         this.creature = creature;
         this.owner = owner;
-        Debug.Log($"SummonCreatureAction created - Creature: {creature}, Owner: {owner}");
     }
 
     public void Execute(GameContext context) {
         owner.AddToBattlefield(creature);
-        Debug.Log($"{creature} added to battlefield");
+        GameEventMediator.Instance.NotifyCreatureSummoned(creature as Creature, owner as Player);
+        Debug.Log($"{creature.Name} of {owner} summoned to battlefield");
     }
 }
 
 public class DamagePlayerAction : IGameAction {
-    private Player target;
+    private IPlayer target;
     private int damage;
 
-    public DamagePlayerAction(Player target, int damage) {
+    public DamagePlayerAction(IPlayer target, int damage) {
         this.target = target;
         this.damage = damage;
         Debug.Log($"DamagePlayerAction created - Target: {target}, Damage: {damage}");
