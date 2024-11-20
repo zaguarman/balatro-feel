@@ -1,29 +1,26 @@
-using System;
 using System.Collections.Generic;
 
-public interface IPlayer : ITarget {
-    int Health { get; set; }
-    IPlayer Opponent { get; set; }
-    List<ICreature> Battlefield { get; }
-    void TakeDamage(int amount);
-    void AddToBattlefield(ICreature creature);
-}
-
-public class Player : IPlayer {
+public class Player {
     public int Health { get; set; } = 20;
-    public IPlayer Opponent { get; set; }
-    public List<ICreature> Battlefield { get; } = new List<ICreature>();
-    public string Id { get; } = System.Guid.NewGuid().ToString();
+    public Player Opponent { get; set; }
+    public List<BalatroCard> Hand { get; private set; } = new List<BalatroCard>();
+    public List<Creature> Battlefield { get; private set; } = new List<Creature>();
+    public string Id { get; private set; }
+
+    public Player() {
+        Id = System.Guid.NewGuid().ToString();
+    }
 
     public void TakeDamage(int amount) {
-        Health = Math.Max(0, Health - amount);
+        Health -= amount;
+        if (Health < 0) Health = 0;
     }
 
-    public void AddToBattlefield(ICreature creature) {
+    public void AddToHand(BalatroCard card) {
+        Hand.Add(card);
+    }
+
+    public void AddToBattlefield(Creature creature) {
         Battlefield.Add(creature);
-    }
-
-    public void ReceiveAction(IAction action) {
-        // Handle action reception - e.g. trigger effects
     }
 }

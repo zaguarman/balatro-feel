@@ -132,7 +132,7 @@ public class GameUI : MonoBehaviour {
         UpdateResolutionUI();
     }
 
-    public void UpdatePlayerHealth(IPlayer player) {
+    public void UpdatePlayerHealth(Player player) {
         TextMeshProUGUI healthText = player == GameManager.Instance.Player1 ?
             player1HealthText : player2HealthText;
 
@@ -141,11 +141,11 @@ public class GameUI : MonoBehaviour {
         }
     }
 
-    public void UpdateCreatureState(ICreature creature) {
+    public void UpdateCreatureState(Creature creature) {
         // Update the visual state of the creature card
     }
 
-    public void ShowGameOver(IPlayer winner) {
+    public void ShowGameOver(Player winner) {
         if (gameOverPanel != null && gameOverText != null) {
             StopAllCoroutines();
             StartCoroutine(FadeGameOverUI(true));
