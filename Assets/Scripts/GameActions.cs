@@ -6,9 +6,9 @@ public interface IGameAction {
 
 public class SummonCreatureAction : IGameAction {
     private Creature creature;
-    private Player owner;
+    private IPlayer owner;
 
-    public SummonCreatureAction(Creature creature, Player owner) {
+    public SummonCreatureAction(Creature creature, IPlayer owner) {
         this.creature = creature;
         this.owner = owner;
         Debug.Log($"SummonCreatureAction created - Creature: {creature}, Owner: {owner}");
@@ -21,10 +21,10 @@ public class SummonCreatureAction : IGameAction {
 }
 
 public class DamagePlayerAction : IGameAction {
-    private Player target;
+    private IPlayer target;
     private int damage;
 
-    public DamagePlayerAction(Player target, int damage) {
+    public DamagePlayerAction(IPlayer target, int damage) {
         this.target = target;
         this.damage = damage;
         Debug.Log($"DamagePlayerAction created - Target: {target}, Damage: {damage}");

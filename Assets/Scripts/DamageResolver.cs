@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public class DamageResolver : MonoBehaviour {
     [Header("UI References")]
-    [SerializeField] private Button resolveButton;
+    [SerializeField] private Button resolveActionsButton;
     [SerializeField] private TextMeshProUGUI pendingDamageText;
 
     [Header("Resolution Settings")]
@@ -21,13 +21,11 @@ public class DamageResolver : MonoBehaviour {
         if (gameManager != null) {
             gameContext = gameManager.GameContext;
         }
-
         SetupButton();
     }
-
     private void SetupButton() {
-        if (resolveButton != null) {
-            resolveButton.onClick.AddListener(ResolveDamage);
+        if (resolveActionsButton != null) {
+            resolveActionsButton.onClick.AddListener(ResolveDamage);
         }
     }
 
@@ -36,25 +34,16 @@ public class DamageResolver : MonoBehaviour {
 
         int pendingActions = gameContext.GetPendingActionsCount();
         pendingDamageText.text = $"Pending Actions: {pendingActions}";
-
-        if (resolveButton != null) {
-            resolveButton.interactable = pendingActions > 0 && !isResolving && !gameManager.CheckGameEnd(); // Disable when game is over
-        }
-
-        if (autoResolveWhenEmpty && pendingActions == 0) {
-            resolveButton.interactable = false;
-        }
     }
 
     public void ResolveDamage() {
-        if (gameContext != null && !isResolving && !gameManager.CheckGameEnd()) {
+        if (gameContext != null && !isResolving) {
             StartCoroutine(ResolveDamageSequence());
         }
     }
 
     private IEnumerator ResolveDamageSequence() {
         isResolving = true;
-        resolveButton.interactable = false;
 
         gameContext.ResolveActions();
 
