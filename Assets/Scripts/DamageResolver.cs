@@ -10,7 +10,6 @@ public class DamageResolver : MonoBehaviour {
 
     [Header("Resolution Settings")]
     [SerializeField] private float resolutionDelay = 0.5f;
-    [SerializeField] private bool autoResolveWhenEmpty = true;
 
     private GameContext gameContext;
     private GameManager gameManager;

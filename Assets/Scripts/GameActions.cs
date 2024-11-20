@@ -35,3 +35,19 @@ public class DamagePlayerAction : IGameAction {
         Debug.Log($"{damage} damage dealt to {target}");
     }
 }
+
+public class DamageCreatureAction : IGameAction {
+    private ICreature target;
+    private int damage;
+
+    public DamageCreatureAction(ICreature target, int damage) {
+        this.target = target;
+        this.damage = damage;
+        Debug.Log($"Created DamageCreatureAction: {damage} damage to {target.Name}");
+    }
+
+    public void Execute(GameContext context) {
+        target.TakeDamage(damage, context);
+        Debug.Log($"Executed DamageCreatureAction: {damage} damage to {target.Name}");
+    }
+}

@@ -2,7 +2,7 @@ using System;
 
 public interface ICard {
     string Name { get; }
-    string Id { get; }
+    string CardId { get; }
     void Play(GameContext context, IPlayer owner);
 }
 

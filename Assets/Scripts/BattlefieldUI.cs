@@ -56,7 +56,7 @@ public class BattlefieldUI : MonoBehaviour {
 
             button.onClick.AddListener(() => HandleCreatureClick(creature, player));
 
-            creatureButtons[creature.Id] = button;
+            creatureButtons[creature.TargetId] = button;
         }
     }
 
@@ -78,7 +78,7 @@ public class BattlefieldUI : MonoBehaviour {
     private void HighlightValidTargets() {
         foreach (var button in creatureButtons) {
             CardButtonController controller = button.Value.GetComponent<CardButtonController>();
-            bool isValidTarget = GameManager.Instance.Player2.Battlefield.Exists(c => c.Id == button.Key);
+            bool isValidTarget = GameManager.Instance.Player2.Battlefield.Exists(c => c.TargetId == button.Key);
             controller.SetInteractable(isValidTarget);
         }
     }
