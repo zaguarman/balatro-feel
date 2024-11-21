@@ -63,9 +63,7 @@ public class CardButtonController : MonoBehaviour {
         UpdateVisuals();
 
         // Set parent based on player
-        Transform parent = isPlayer1 ?
-            gameRefs.GetPlayer1CardContainer() :
-            gameRefs.GetPlayer2CardContainer();
+        Transform parent = isPlayer1 ? gameRefs.GetPlayer1CardContainer() : gameRefs.GetPlayer2CardContainer();
 
         if (parent != null) {
             transform.SetParent(parent, false);

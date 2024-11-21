@@ -37,7 +37,6 @@ public class GameMediator : MonoBehaviour, IGameMediator {
             if (instance == null) {
                 var go = new GameObject("GameMediator");
                 instance = go.AddComponent<GameMediator>();
-                DontDestroyOnLoad(go);
             }
             return instance;
         }
