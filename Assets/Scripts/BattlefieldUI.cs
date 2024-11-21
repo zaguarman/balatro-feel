@@ -3,20 +3,26 @@ using UnityEngine.UI;
 using System.Collections.Generic;
 
 public class BattlefieldUI : MonoBehaviour {
-    [Header("Battlefield Layout")]
-    [SerializeField] private RectTransform player1Battlefield;
-    [SerializeField] private RectTransform player2Battlefield;
-    [SerializeField] private Button cardButtonPrefab;
-    [SerializeField] private float cardSpacing = 220f;
-    [SerializeField] private float cardOffset = 50f;
-
+    private RectTransform player1Battlefield;
+    private RectTransform player2Battlefield;
+    private Button cardButtonPrefab;
     private Dictionary<string, Button> creatureButtons = new Dictionary<string, Button>();
     private ICreature selectedCreature;
     private bool isAttackMode;
 
+    [SerializeField] private float cardSpacing = 220f;
+    [SerializeField] private float cardOffset = 50f;
+
     public void Start() {
+        InitializeReferences();
         GameManager.Instance.OnGameStateChanged += UpdateBattlefield;
         UpdateBattlefield();
+    }
+
+    private void InitializeReferences() {
+        player1Battlefield = GameReferences.Instance.GetPlayer1Battlefield();
+        player2Battlefield = GameReferences.Instance.GetPlayer2Battlefield();
+        cardButtonPrefab = GameReferences.Instance.GetCardButtonPrefab();
     }
 
     public void UpdateBattlefield() {
@@ -55,40 +61,7 @@ public class BattlefieldUI : MonoBehaviour {
             creatureData.health = creature.Health;
             controller.Setup(creatureData, isPlayer1);
 
-            button.onClick.AddListener(() => HandleCreatureClick(creature, player));
-
             creatureButtons[creature.TargetId] = button;
-        }
-    }
-
-    private void HandleCreatureClick(ICreature creature, IPlayer owner) {
-        if (selectedCreature == null) {
-            if (owner == GameManager.Instance.Player1) {
-                selectedCreature = creature;
-                isAttackMode = true;
-                HighlightValidTargets();
-            }
-        } else if (isAttackMode) {
-            if (owner == GameManager.Instance.Player2) {
-                GameManager.Instance.AttackWithCreature(selectedCreature, GameManager.Instance.Player1, creature);
-            }
-            ResetAttackMode();
-        }
-    }
-
-    private void HighlightValidTargets() {
-        foreach (var button in creatureButtons) {
-            CardButtonController controller = button.Value.GetComponent<CardButtonController>();
-            bool isValidTarget = GameManager.Instance.Player2.Battlefield.Exists(c => c.TargetId == button.Key);
-            controller.SetInteractable(isValidTarget);
-        }
-    }
-
-    private void ResetAttackMode() {
-        selectedCreature = null;
-        isAttackMode = false;
-        foreach (var button in creatureButtons) {
-            button.Value.GetComponent<CardButtonController>().SetInteractable(true);
         }
     }
 

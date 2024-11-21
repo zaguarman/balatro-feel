@@ -1,45 +1,72 @@
-using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
+using UnityEngine.UI;
+using UnityEngine;
 using System.Collections.Generic;
 
 public class GameUI : MonoBehaviour {
-    [Header("Player UI")]
     [SerializeField] private TextMeshProUGUI player1HealthText;
     [SerializeField] private TextMeshProUGUI player2HealthText;
     [SerializeField] private RectTransform player1CardContainer;
     [SerializeField] private RectTransform player2CardContainer;
-
-    [Header("Resolution UI")]
-    [SerializeField] private DamageResolver damageResolver;
-
-    [Header("Card Layout")]
     [SerializeField] private Button cardButtonPrefab;
     [SerializeField] private float cardSpacing = 220f;
     [SerializeField] private float cardOffset = 50f;
     [SerializeField] private List<CardData> testCards;
 
-    public void OnEnable() {
-        if (GameManager.Instance != null) {
-            GameManager.Instance.OnGameStateChanged += UpdateUI;
-        }
-        if (GameMediator.Instance != null) {
-            GameMediator.Instance.RegisterUI(this);
-        }
-    }
+    private GameMediator mediator;
+    private DamageResolver damageResolver;
 
-    public void OnDisable() {
-        if (GameManager.Instance != null) {
-            GameManager.Instance.OnGameStateChanged -= UpdateUI;
-        }
-        if (GameMediator.Instance != null) {
-            GameMediator.Instance.UnregisterUI(this);
-        }
+    public void Awake() {
+        InitializeReferences();
+        mediator = GameMediator.Instance;
+        damageResolver = new DamageResolver();
     }
 
     public void Start() {
         SetupUI();
-        UpdateUI();
+    }
+
+    public void OnEnable() {
+        mediator.RegisterUI(this);
+        mediator.onGameStateChanged += UpdateUI;
+        mediator.onPlayerDamaged += HandlePlayerDamaged;
+    }
+
+    public void OnDisable() {
+        mediator.UnregisterUI(this);
+        mediator.onGameStateChanged -= UpdateUI;
+        mediator.onPlayerDamaged -= HandlePlayerDamaged;
+        damageResolver?.Cleanup();
+    }
+
+    private void HandlePlayerDamaged(IPlayer player, int damage) {
+        UpdatePlayerHealth(player);
+    }
+
+    public void UpdateUI() {
+        var gameManager = GameManager.Instance;
+        UpdatePlayerHealth(gameManager.Player1);
+        UpdatePlayerHealth(gameManager.Player2);
+        UpdateResolutionUI();
+    }
+
+    public void UpdatePlayerHealth(IPlayer player) {
+        var gameManager = GameManager.Instance;
+        TextMeshProUGUI healthText = player == gameManager.Player1 ?
+            player1HealthText : player2HealthText;
+
+        if (healthText != null) {
+            healthText.text = $"Health: {player.Health}";
+        }
+    }
+
+    private void InitializeReferences() {
+        var references = GameReferences.Instance;
+        player1HealthText = references.GetPlayer1HealthText();
+        player2HealthText = references.GetPlayer2HealthText();
+        player1CardContainer = references.GetPlayer1CardContainer();
+        player2CardContainer = references.GetPlayer2CardContainer();
+        cardButtonPrefab = references.GetCardButtonPrefab();
     }
 
     private void SetupCardContainer(RectTransform container) {
@@ -50,6 +77,16 @@ public class GameUI : MonoBehaviour {
 
         float totalWidth = cardOffset + (cardSpacing * testCards.Count);
         container.sizeDelta = new Vector2(totalWidth, 320f);
+    }
+
+    public void CreateCardButtons() {
+        SetupCardContainer(player1CardContainer);
+        SetupCardContainer(player2CardContainer);
+
+        for (int i = 0; i < testCards.Count; i++) {
+            CreateCardButton(testCards[i], player1CardContainer, true, i);
+            CreateCardButton(testCards[i], player2CardContainer, false, i);
+        }
     }
 
     private void CreateCardButton(CardData cardData, RectTransform parent, bool isPlayer1, int index) {
@@ -73,23 +110,10 @@ public class GameUI : MonoBehaviour {
         });
     }
 
-    public void CreateCardButtons() {
-        SetupCardContainer(player1CardContainer);
-        SetupCardContainer(player2CardContainer);
-
-        for (int i = 0; i < testCards.Count; i++) {
-            CreateCardButton(testCards[i], player1CardContainer, true, i);
-            CreateCardButton(testCards[i], player2CardContainer, false, i);
-        }
-    }
-
     private void SetupUI() {
         LoadTestCards();
         CreateCardButtons();
-
-        if (damageResolver != null) {
-            damageResolver.gameObject.SetActive(true);
-        }
+        UpdateResolutionUI();
     }
 
     private void LoadTestCards() {
@@ -102,37 +126,19 @@ public class GameUI : MonoBehaviour {
         }
     }
 
-    public void UpdateUI() {
-        UpdatePlayerHealth(GameManager.Instance.Player1);
-        UpdatePlayerHealth(GameManager.Instance.Player2);
-        UpdateResolutionUI();
-    }
-
-    public void UpdatePlayerHealth(IPlayer player) {
-        TextMeshProUGUI healthText = player == GameManager.Instance.Player1 ?
-            player1HealthText : player2HealthText;
-
-        if (healthText != null) {
-            healthText.text = $"Health: {player.Health}";
-        }
-    }
-
     private void UpdateResolutionUI() {
-        if (damageResolver != null) {
-            damageResolver.UpdateResolutionState();
-        }
+        damageResolver?.UpdateResolutionState();
     }
 
     private void HandlePlayerDamaged(IPlayer player) {
         UpdatePlayerHealth(player);
     }
 
-
-
     public void OnDestroy() {
         if (GameManager.Instance != null) {
             GameManager.Instance.OnGameStateChanged -= UpdateUI;
             GameManager.Instance.OnPlayerDamaged -= HandlePlayerDamaged;
         }
+        damageResolver?.Cleanup();
     }
 }

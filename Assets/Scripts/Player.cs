@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 public interface IPlayer : ITarget {
     int Health { get; set; }
@@ -20,46 +19,36 @@ public class Player : IPlayer {
     public List<ICard> Hand { get; private set; } = new List<ICard>();
     public List<ICreature> Battlefield { get; private set; } = new List<ICreature>();
     public string TargetId { get; private set; }
-
-    // Events
     public event Action<int> OnDamaged;
+
+    private GameMediator mediator;
 
     public Player() {
         TargetId = System.Guid.NewGuid().ToString();
-        // Register with GameMediator in Start instead of constructor
-        if (GameMediator.Instance != null) {
-            GameMediator.Instance.RegisterPlayer(this);
-        }
+        mediator = GameMediator.Instance;
+        mediator.RegisterPlayer(this);
     }
 
     public void TakeDamage(int amount) {
         Health -= amount;
         if (Health < 0) Health = 0;
         OnDamaged?.Invoke(amount);
-        if (GameMediator.Instance != null) {
-            GameMediator.Instance.NotifyPlayerDamaged(this, amount);
-        }
+        mediator.NotifyPlayerDamaged(this, amount);
     }
 
     public void AddToBattlefield(ICreature creature) {
         Battlefield.Add(creature);
-        if (GameMediator.Instance != null) {
-            GameMediator.Instance.NotifyGameStateChanged();
-        }
+        mediator.NotifyGameStateChanged();
     }
 
     public void RemoveFromBattlefield(ICreature creature) {
         Battlefield.Remove(creature);
-        if (GameMediator.Instance != null) {
-            GameMediator.Instance.NotifyGameStateChanged();
-        }
+        mediator.NotifyGameStateChanged();
     }
 
     public void AddToHand(ICard card) {
         Hand.Add(card);
-        if (GameMediator.Instance != null) {
-            GameMediator.Instance.NotifyGameStateChanged();
-        }
+        mediator.NotifyGameStateChanged();
     }
 
     public bool IsValidTarget(IPlayer controller) => true;

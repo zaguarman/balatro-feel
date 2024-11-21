@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using static Enums;
 
 public interface ICardDecorator : ICard {
     ICard BaseCard { get; }

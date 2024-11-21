@@ -1,14 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-
+using static Enums;
 public interface ITarget {
     string TargetId { get; }
     bool IsValidTarget(IPlayer controller);
-}
-
-public class Target {
-    
 }
 
 public class TargetingSystem {

@@ -541,6 +541,6 @@ MonoBehaviour:
   nameText: {fileID: 490069831783095003}
   statsText: {fileID: 5846834777748443974}
   descriptionText: {fileID: 6573389053379178226}
-  backgroundImage: {fileID: 0}
+  backgroundImage: {fileID: 7117100706685536281}
   player1Color: {r: 0.8, g: 0.9, b: 1, a: 1}
   player2Color: {r: 1, g: 0.8, b: 0.8, a: 1}

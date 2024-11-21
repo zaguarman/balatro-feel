@@ -1,38 +1,34 @@
-using System.Collections;
 using TMPro;
-using UnityEngine;
 using UnityEngine.UI;
 
-public class DamageResolver : MonoBehaviour {
-    [Header("UI References")]
-    [SerializeField] private Button resolveActionsButton;
-    [SerializeField] private TextMeshProUGUI pendingDamageText;
+public class DamageResolver {
+    private static DamageResolver instance;
+    public static DamageResolver Instance => instance;
 
-    [Header("Resolution Settings")]
-    [SerializeField] private float resolutionDelay = 0.5f;
-
+    private readonly Button resolveActionsButton;
+    private readonly TextMeshProUGUI pendingDamageText;
     private GameContext gameContext;
     private GameManager gameManager;
     private bool isResolving = false;
 
-    public void Awake() {
+    public DamageResolver() {
+        if (instance != null) {
+            return;
+        }
+        instance = this;
+
+        var references = GameReferences.Instance;
+        resolveActionsButton = references.GetResolveActionsButton();
+        pendingDamageText = references.GetPendingDamageText();
+
         gameManager = GameManager.Instance;
         if (gameManager != null) {
             gameContext = gameManager.GameContext;
         }
-        SetupButton();
-    }
 
-    private void OnEnable() {
+        SetupButton();
         if (GameMediator.Instance != null) {
             GameMediator.Instance.RegisterDamageResolver(this);
-        }
-        UpdateResolutionState();
-    }
-
-    private void OnDisable() {
-        if (GameMediator.Instance != null) {
-            GameMediator.Instance.UnregisterDamageResolver(this);
         }
     }
 
@@ -44,29 +40,30 @@ public class DamageResolver : MonoBehaviour {
 
     public void UpdateResolutionState() {
         if (gameContext == null || pendingDamageText == null) return;
-
         int pendingActions = gameContext.GetPendingActionsCount();
         pendingDamageText.text = $"Pending Actions: {pendingActions}";
     }
 
     public void ResolveDamage() {
-        if (gameContext != null && !isResolving) {
-            StartCoroutine(ResolveDamageSequence());
-        }
-    }
-
-    private IEnumerator ResolveDamageSequence() {
+        if (gameContext == null || isResolving) return;
         isResolving = true;
-
         gameContext.ResolveActions();
-
-        yield return new WaitForSeconds(resolutionDelay);
-
         if (gameManager != null) {
             gameManager.NotifyGameStateChanged();
         }
-
         isResolving = false;
         UpdateResolutionState();
+    }
+
+    public void Cleanup() {
+        if (GameMediator.Instance != null) {
+            GameMediator.Instance.UnregisterDamageResolver(this);
+        }
+        if (resolveActionsButton != null) {
+            resolveActionsButton.onClick.RemoveListener(ResolveDamage);
+        }
+        if (instance == this) {
+            instance = null;
+        }
     }
 }

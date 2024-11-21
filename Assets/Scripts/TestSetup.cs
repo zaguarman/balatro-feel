@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using static Enums;
 
 public class TestSetup : MonoBehaviour {
     public List<CardData> CreateTestCards() {
@@ -34,7 +35,6 @@ public class TestSetup : MonoBehaviour {
         thornCreature.effects.Add(thornEffect);
         cards.Add(thornCreature);
 
-        // 5. Creature with OnPlay effect - Fire Dragon
         var dragon = ScriptableObject.CreateInstance<CreatureData>();
         dragon.cardName = "Dragon";
         dragon.description = "Deals 2 damage when played";

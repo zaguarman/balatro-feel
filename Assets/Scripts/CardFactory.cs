@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using static Enums;
 
 public static class CardFactory {
     public static ICard CreateCard(CardData cardData) {

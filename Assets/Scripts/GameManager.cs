@@ -10,6 +10,7 @@ public class GameManager : MonoBehaviour {
                 if (instance == null) {
                     var go = new GameObject("GameManager");
                     instance = go.AddComponent<GameManager>();
+                    InitializeRequiredComponents(go);
                     DontDestroyOnLoad(go);
                 }
             }
@@ -17,10 +18,18 @@ public class GameManager : MonoBehaviour {
         }
     }
 
+    // Game state properties
     public IPlayer Player1 { get; private set; }
     public IPlayer Player2 { get; private set; }
     public GameContext GameContext { get; private set; }
 
+    // Component references
+    public GameUI GameUI { get; private set; }
+    public DamageResolver DamageResolver => DamageResolver.Instance;
+    public TestSetup TestSetup { get; private set; }
+    public BattlefieldUI BattlefieldUI { get; private set; }
+
+    // Events
     public event Action OnGameStateChanged;
     public event Action<IPlayer> OnPlayerDamaged;
     public event Action<ICreature> OnCreatureDamaged;
@@ -28,14 +37,19 @@ public class GameManager : MonoBehaviour {
 
     private bool isInitialized = false;
 
-    public void Awake() {
-        if (instance != null && instance != this) {
-            Destroy(gameObject);
-            return;
-        }
+    private static void InitializeRequiredComponents(GameObject gameObject) {
+        var gameManager = gameObject.GetComponent<GameManager>();
+        if (gameManager == null) return;
 
-        instance = this;
-        DontDestroyOnLoad(gameObject);
+        gameManager.GameUI = gameManager.EnsureComponent<GameUI>();
+        gameManager.TestSetup = gameManager.EnsureComponent<TestSetup>();
+        gameManager.BattlefieldUI = gameManager.EnsureComponent<BattlefieldUI>();
+
+        Debug.Log("All required components initialized successfully");
+    }
+
+    public void Start() {
+        InitializeRequiredComponents(gameObject);
 
         if (!isInitialized) {
             InitializeGame();
@@ -53,6 +67,10 @@ public class GameManager : MonoBehaviour {
 
             GameMediator.Instance.RegisterPlayer(Player1);
             GameMediator.Instance.RegisterPlayer(Player2);
+
+            if (GameUI != null) {
+                GameMediator.Instance.RegisterUI(GameUI);
+            }
 
             NotifyGameStateChanged();
 
@@ -76,60 +94,40 @@ public class GameManager : MonoBehaviour {
         NotifyGameStateChanged();
     }
 
-    public void AttackWithCreature(ICreature attacker, IPlayer attackingPlayer, ICreature target = null) {
-        if (!isInitialized) {
-            Debug.LogError("GameManager not properly initialized!");
-            return;
-        }
-
-        if (target == null) {
-            Debug.Log($"{attacker.Name} attacking opponent directly");
-            GameContext.AddAction(new DamagePlayerAction(attackingPlayer.Opponent, attacker.Attack));
-        } else {
-            Debug.Log($"{attacker.Name} attacking {target.Name}");
-            GameContext.AddAction(new DamageCreatureAction(target, attacker.Attack));
-            GameContext.AddAction(new DamageCreatureAction(attacker, target.Attack));
-        }
-
-        GameContext.ResolveActions();
-        CleanupDeadCreatures(Player1);
-        CleanupDeadCreatures(Player2);
-        NotifyGameStateChanged();
-    }
-
-    private void CleanupDeadCreatures(IPlayer player) {
-        var deadCreatures = player.Battlefield.FindAll(creature => creature.Health <= 0);
-        foreach (var creature in deadCreatures) {
-            Debug.Log($"Removing dead creature: {creature.Name}");
-            player.RemoveFromBattlefield(creature);
-        }
-    }
-
     public void NotifyGameStateChanged() {
         OnGameStateChanged?.Invoke();
         GameMediator.Instance?.NotifyGameStateChanged();
     }
 
-    // Reset game state
     public void ResetGame() {
         isInitialized = false;
         InitializeGame();
     }
 
-    // Scene management helper
     public void OnSceneLoaded() {
         if (!isInitialized) {
             InitializeGame();
         }
     }
 
-    private void OnApplicationQuit() {
+    public void OnApplicationQuit() {
         isInitialized = false;
     }
 
     public void OnDestroy() {
         if (instance == this) {
+            DamageResolver?.Cleanup();
             instance = null;
         }
+    }
+
+    // Helper method to add a new component if it doesn't exist
+    public T EnsureComponent<T>() where T : Component {
+        var component = gameObject.GetComponent<T>();
+        if (component == null) {
+            component = gameObject.AddComponent<T>();
+            Debug.Log($"Added {typeof(T).Name} component");
+        }
+        return component;
     }
 }

@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
+using static Enums;
 
 public class CardDataCreator
 {
