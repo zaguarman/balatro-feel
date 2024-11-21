@@ -1,41 +1,59 @@
-using TMPro;
-using UnityEngine.UI;
-using UnityEngine;
 using System.Collections.Generic;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
 
 public class GameUI : MonoBehaviour {
+    [Header("UI References")]
     [SerializeField] private TextMeshProUGUI player1HealthText;
     [SerializeField] private TextMeshProUGUI player2HealthText;
     [SerializeField] private RectTransform player1CardContainer;
     [SerializeField] private RectTransform player2CardContainer;
     [SerializeField] private Button cardButtonPrefab;
+
+    [Header("Layout Settings")]
     [SerializeField] private float cardSpacing = 220f;
     [SerializeField] private float cardOffset = 50f;
     [SerializeField] private List<CardData> testCards;
 
-    private GameMediator mediator;
+    private IGameMediator gameMediator;
     private DamageResolver damageResolver;
+    private GameReferences gameReferences;
 
-    public void Awake() {
+    protected void Awake() {
+        gameReferences = GameReferences.Instance;
         InitializeReferences();
-        mediator = GameMediator.Instance;
-        damageResolver = new DamageResolver();
+        gameMediator = GameMediator.Instance;
+
+        var resolveButton = gameReferences.GetResolveActionsButton();
+        var pendingDamageText = gameReferences.GetPendingDamageText();
+        var gameManager = GameManager.Instance;
+
+        damageResolver = new DamageResolver(
+            resolveButton,
+            pendingDamageText,
+            gameManager
+        );
     }
 
-    public void Start() {
+    protected void Start() {
         SetupUI();
     }
 
-    public void OnEnable() {
-        mediator.RegisterUI(this);
-        mediator.onGameStateChanged += UpdateUI;
-        mediator.onPlayerDamaged += HandlePlayerDamaged;
+    protected void OnEnable() {
+        if (gameMediator != null) {
+            gameMediator.RegisterUI(this);
+            gameMediator.OnGameStateChanged.AddListener(UpdateUI);
+            gameMediator.OnPlayerDamaged.AddListener(HandlePlayerDamaged);
+        }
     }
 
-    public void OnDisable() {
-        mediator.UnregisterUI(this);
-        mediator.onGameStateChanged -= UpdateUI;
-        mediator.onPlayerDamaged -= HandlePlayerDamaged;
+    protected void OnDisable() {
+        if (gameMediator != null) {
+            gameMediator.UnregisterUI(this);
+            gameMediator.OnGameStateChanged.RemoveListener(UpdateUI);
+            gameMediator.OnPlayerDamaged.RemoveListener(HandlePlayerDamaged);
+        }
         damageResolver?.Cleanup();
     }
 
@@ -52,8 +70,9 @@ public class GameUI : MonoBehaviour {
 
     public void UpdatePlayerHealth(IPlayer player) {
         var gameManager = GameManager.Instance;
-        TextMeshProUGUI healthText = player == gameManager.Player1 ?
-            player1HealthText : player2HealthText;
+        TextMeshProUGUI healthText = player == gameManager.Player1
+            ? player1HealthText
+            : player2HealthText;
 
         if (healthText != null) {
             healthText.text = $"Health: {player.Health}";
@@ -61,12 +80,11 @@ public class GameUI : MonoBehaviour {
     }
 
     private void InitializeReferences() {
-        var references = GameReferences.Instance;
-        player1HealthText = references.GetPlayer1HealthText();
-        player2HealthText = references.GetPlayer2HealthText();
-        player1CardContainer = references.GetPlayer1CardContainer();
-        player2CardContainer = references.GetPlayer2CardContainer();
-        cardButtonPrefab = references.GetCardButtonPrefab();
+        player1HealthText = gameReferences.GetPlayer1HealthText();
+        player2HealthText = gameReferences.GetPlayer2HealthText();
+        player1CardContainer = gameReferences.GetPlayer1CardContainer();
+        player2CardContainer = gameReferences.GetPlayer2CardContainer();
+        cardButtonPrefab = gameReferences.GetCardButtonPrefab();
     }
 
     private void SetupCardContainer(RectTransform container) {
@@ -130,15 +148,12 @@ public class GameUI : MonoBehaviour {
         damageResolver?.UpdateResolutionState();
     }
 
-    private void HandlePlayerDamaged(IPlayer player) {
-        UpdatePlayerHealth(player);
-    }
-
-    public void OnDestroy() {
-        if (GameManager.Instance != null) {
-            GameManager.Instance.OnGameStateChanged -= UpdateUI;
-            GameManager.Instance.OnPlayerDamaged -= HandlePlayerDamaged;
+    protected void OnDestroy() {
+        if (gameMediator != null) {
+            gameMediator.OnGameStateChanged.RemoveListener(UpdateUI);
+            gameMediator.OnPlayerDamaged.RemoveListener(HandlePlayerDamaged);
         }
         damageResolver?.Cleanup();
+        gameReferences = null;
     }
 }

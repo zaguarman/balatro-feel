@@ -1,12 +1,27 @@
 using UnityEngine;
-using System;
+using UnityEngine.Events;
 using System.Collections.Generic;
+using System;
+
+[Serializable] public class PlayerDamagedEvent : UnityEvent<IPlayer, int> { }
+[Serializable] public class CreatureDamagedEvent : UnityEvent<ICreature, int> { }
+[Serializable] public class CreatureDiedEvent : UnityEvent<ICreature> { }
+[Serializable] public class GameOverEvent : UnityEvent<IPlayer> { }
 
 public interface IGameMediator {
+    UnityEvent OnGameStateChanged { get; }
+    PlayerDamagedEvent OnPlayerDamaged { get; }
+    CreatureDamagedEvent OnCreatureDamaged { get; }
+    CreatureDiedEvent OnCreatureDied { get; }
+    GameOverEvent OnGameOver { get; }
+
     void Initialize();
     void RegisterPlayer(IPlayer player);
+    void UnregisterPlayer(IPlayer player);
     void RegisterUI(GameUI ui);
+    void UnregisterUI(GameUI ui);
     void RegisterDamageResolver(DamageResolver resolver);
+    void UnregisterDamageResolver(DamageResolver resolver);
     void NotifyGameStateChanged();
     void NotifyPlayerDamaged(IPlayer player, int damage);
     void NotifyCreatureDamaged(ICreature creature, int damage);
@@ -28,19 +43,24 @@ public class GameMediator : MonoBehaviour, IGameMediator {
         }
     }
 
+    [SerializeField] private UnityEvent onGameStateChanged = new UnityEvent();
+    [SerializeField] private PlayerDamagedEvent onPlayerDamaged = new PlayerDamagedEvent();
+    [SerializeField] private CreatureDamagedEvent onCreatureDamaged = new CreatureDamagedEvent();
+    [SerializeField] private CreatureDiedEvent onCreatureDied = new CreatureDiedEvent();
+    [SerializeField] private GameOverEvent onGameOver = new GameOverEvent();
+
+    public UnityEvent OnGameStateChanged => onGameStateChanged;
+    public PlayerDamagedEvent OnPlayerDamaged => onPlayerDamaged;
+    public CreatureDamagedEvent OnCreatureDamaged => onCreatureDamaged;
+    public CreatureDiedEvent OnCreatureDied => onCreatureDied;
+    public GameOverEvent OnGameOver => onGameOver;
+
     private readonly List<IPlayer> players = new List<IPlayer>();
     private GameUI gameUI;
     private DamageResolver damageResolver;
-
-    public event Action onGameStateChanged;
-    public event Action<IPlayer, int> onPlayerDamaged;
-    public event Action<ICreature, int> onCreatureDamaged;
-    public event Action<ICreature> onCreatureDied;
-    public event Action<IPlayer> onGameOver;
-
     private bool isInitialized;
 
-    public void Awake() {
+    protected void Awake() {
         if (instance != null && instance != this) {
             Destroy(gameObject);
             return;
@@ -54,158 +74,118 @@ public class GameMediator : MonoBehaviour, IGameMediator {
             Debug.LogWarning("GameMediator already initialized");
             return;
         }
-
-        players.Clear();
-        gameUI = null;
-        damageResolver = null;
+        ClearRegistrations();
         isInitialized = true;
-        Debug.Log("GameMediator initialized");
+    }
+
+    private bool ValidateState(string operation) {
+        if (!isInitialized) {
+            Debug.LogError($"GameMediator not initialized during {operation}");
+            return false;
+        }
+        return true;
     }
 
     public void RegisterPlayer(IPlayer player) {
-        if (!isInitialized) {
-            Debug.LogError("GameMediator not initialized");
-            return;
-        }
+        if (!ValidateState("RegisterPlayer") || player == null) return;
 
         if (!players.Contains(player)) {
             players.Add(player);
-            player.OnDamaged += (damage) => NotifyPlayerDamaged(player, damage);
-            Debug.Log($"Registered player with ID: {player.TargetId}");
+            player.OnDamaged.AddListener((damage) => NotifyPlayerDamaged(player, damage));
         }
     }
 
     public void UnregisterPlayer(IPlayer player) {
-        if (!isInitialized) return;
-
-        if (players.Contains(player)) {
-            players.Remove(player);
-            Debug.Log($"Unregistered player with ID: {player.TargetId}");
-        }
+        if (!isInitialized || player == null) return;
+        players.Remove(player);
     }
 
     public void RegisterUI(GameUI ui) {
-        if (!isInitialized) {
-            Debug.LogError("GameMediator not initialized");
-            return;
-        }
+        if (!ValidateState("RegisterUI") || ui == null) return;
 
-        if (ui != null) {
-            gameUI = ui;
-            onGameStateChanged += ui.UpdateUI;
-            onPlayerDamaged += (player, damage) => ui.UpdatePlayerHealth(player);
-            Debug.Log("Registered GameUI");
-        }
+        gameUI = ui;
+        onGameStateChanged.AddListener(ui.UpdateUI);
+        onPlayerDamaged.AddListener((player, damage) => ui.UpdatePlayerHealth(player));
     }
 
     public void UnregisterUI(GameUI ui) {
-        if (!isInitialized) return;
+        if (!isInitialized || gameUI != ui) return;
 
-        if (gameUI == ui) {
-            onGameStateChanged -= ui.UpdateUI;
-            gameUI = null;
-            Debug.Log("Unregistered GameUI");
-        }
+        onGameStateChanged.RemoveListener(ui.UpdateUI);
+        onPlayerDamaged.RemoveAllListeners();
+        gameUI = null;
     }
 
     public void RegisterDamageResolver(DamageResolver resolver) {
-        if (!isInitialized) {
-            Debug.LogError("GameMediator not initialized");
-            return;
-        }
+        if (!ValidateState("RegisterDamageResolver") || resolver == null) return;
 
-        if (resolver != null) {
-            damageResolver = resolver;
-            onGameStateChanged += resolver.UpdateResolutionState;
-            Debug.Log("Registered DamageResolver");
-        }
+        damageResolver = resolver;
+        onGameStateChanged.AddListener(resolver.UpdateResolutionState);
     }
 
     public void UnregisterDamageResolver(DamageResolver resolver) {
-        if (!isInitialized) return;
+        if (!isInitialized || damageResolver != resolver) return;
 
-        if (damageResolver == resolver) {
-            onGameStateChanged -= resolver.UpdateResolutionState;
-            damageResolver = null;
-            Debug.Log("Unregistered DamageResolver");
-        }
+        onGameStateChanged.RemoveListener(resolver.UpdateResolutionState);
+        damageResolver = null;
     }
 
     public void NotifyGameStateChanged() {
         if (!isInitialized) return;
-
-        Debug.Log("Game state changed notification");
-        onGameStateChanged?.Invoke();
+        onGameStateChanged.Invoke();
     }
 
     public void NotifyPlayerDamaged(IPlayer player, int damage) {
-        if (!isInitialized) return;
+        if (!isInitialized || player == null) return;
 
-        Debug.Log($"Player {player.TargetId} damaged for {damage}");
-        onPlayerDamaged?.Invoke(player, damage);
-        CheckGameOver(player);
+        onPlayerDamaged.Invoke(player, damage);
+        if (player.Health <= 0) {
+            NotifyGameOver(player.Opponent);
+        }
     }
 
     public void NotifyCreatureDamaged(ICreature creature, int damage) {
-        if (!isInitialized) return;
+        if (!isInitialized || creature == null) return;
 
-        Debug.Log($"Creature {creature.Name} damaged for {damage}");
-        onCreatureDamaged?.Invoke(creature, damage);
+        onCreatureDamaged.Invoke(creature, damage);
         if (creature.Health <= 0) {
             NotifyCreatureDied(creature);
         }
     }
 
     public void NotifyCreatureDied(ICreature creature) {
-        if (!isInitialized) return;
-
-        Debug.Log($"Creature {creature.Name} died");
-        onCreatureDied?.Invoke(creature);
+        if (!isInitialized || creature == null) return;
+        onCreatureDied.Invoke(creature);
     }
 
     public void NotifyGameOver(IPlayer winner) {
-        if (!isInitialized) return;
-
-        Debug.Log($"Game over - Winner: {winner.TargetId}");
-        onGameOver?.Invoke(winner);
+        if (!isInitialized || winner == null) return;
+        onGameOver.Invoke(winner);
     }
 
-    private void CheckGameOver(IPlayer player) {
-        if (player.Health <= 0) {
-            NotifyGameOver(player.Opponent);
-        }
+    private void ClearRegistrations() {
+        players.Clear();
+        gameUI = null;
+        damageResolver = null;
+
+        onGameStateChanged.RemoveAllListeners();
+        onPlayerDamaged.RemoveAllListeners();
+        onCreatureDamaged.RemoveAllListeners();
+        onCreatureDied.RemoveAllListeners();
+        onGameOver.RemoveAllListeners();
     }
 
     public void Cleanup() {
         if (!isInitialized) return;
 
-        players.Clear();
-        if (gameUI != null) {
-            UnregisterUI(gameUI);
-        }
-        if (damageResolver != null) {
-            UnregisterDamageResolver(damageResolver);
-        }
-
-        onGameStateChanged = null;
-        onPlayerDamaged = null;
-        onCreatureDamaged = null;
-        onCreatureDied = null;
-        onGameOver = null;
-
+        ClearRegistrations();
         isInitialized = false;
-        Debug.Log("GameMediator cleaned up");
     }
 
-    public void OnDestroy() {
+    protected void OnDestroy() {
         if (instance == this) {
             Cleanup();
             instance = null;
         }
-    }
-
-    public void Reset() {
-        Cleanup();
-        Initialize();
     }
 }

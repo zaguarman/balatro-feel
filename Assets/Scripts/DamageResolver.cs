@@ -7,61 +7,50 @@ public class DamageResolver {
 
     private readonly Button resolveActionsButton;
     private readonly TextMeshProUGUI pendingDamageText;
-    private GameContext gameContext;
-    private GameManager gameManager;
-    private bool isResolving = false;
+    private readonly GameContext gameContext;
+    private readonly GameManager gameManager;
+    private bool isResolving;
 
-    public DamageResolver() {
-        if (instance != null) {
-            return;
-        }
+    public DamageResolver(Button resolveButton, TextMeshProUGUI damageText, GameManager manager) {
+        if (instance != null) return;
+
         instance = this;
+        resolveActionsButton = resolveButton;
+        pendingDamageText = damageText;
+        gameManager = manager;
+        gameContext = manager?.GameContext;
 
-        var references = GameReferences.Instance;
-        resolveActionsButton = references.GetResolveActionsButton();
-        pendingDamageText = references.GetPendingDamageText();
-
-        gameManager = GameManager.Instance;
-        if (gameManager != null) {
-            gameContext = gameManager.GameContext;
-        }
-
-        SetupButton();
-        if (GameMediator.Instance != null) {
-            GameMediator.Instance.RegisterDamageResolver(this);
-        }
-    }
-
-    private void SetupButton() {
         if (resolveActionsButton != null) {
             resolveActionsButton.onClick.AddListener(ResolveDamage);
         }
+
+        GameMediator.Instance?.RegisterDamageResolver(this);
     }
 
     public void UpdateResolutionState() {
         if (gameContext == null || pendingDamageText == null) return;
+
         int pendingActions = gameContext.GetPendingActionsCount();
         pendingDamageText.text = $"Pending Actions: {pendingActions}";
     }
 
     public void ResolveDamage() {
         if (gameContext == null || isResolving) return;
+
         isResolving = true;
         gameContext.ResolveActions();
-        if (gameManager != null) {
-            gameManager.NotifyGameStateChanged();
-        }
+        gameManager?.NotifyGameStateChanged();
         isResolving = false;
         UpdateResolutionState();
     }
 
     public void Cleanup() {
-        if (GameMediator.Instance != null) {
-            GameMediator.Instance.UnregisterDamageResolver(this);
-        }
+        GameMediator.Instance?.UnregisterDamageResolver(this);
+
         if (resolveActionsButton != null) {
             resolveActionsButton.onClick.RemoveListener(ResolveDamage);
         }
+
         if (instance == this) {
             instance = null;
         }
