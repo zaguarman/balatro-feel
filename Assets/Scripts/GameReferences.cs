@@ -9,7 +9,6 @@ public class GameReferences : MonoBehaviour {
             if (instance == null) {
                 var go = new GameObject("GameReferences");
                 instance = go.AddComponent<GameReferences>();
-                DontDestroyOnLoad(go);
             }
             return instance;
         }
@@ -44,12 +43,7 @@ public class GameReferences : MonoBehaviour {
         instance = this;
         DontDestroyOnLoad(gameObject);
         ValidateReferences();
-        InitializeGameMediator();
         ReferenceManager.Initialize(this);
-    }
-
-    private void InitializeGameMediator() {
-        GameMediator.Instance.Initialize();
     }
 
     // Original getters

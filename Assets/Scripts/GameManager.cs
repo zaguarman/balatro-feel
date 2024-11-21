@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using UnityEngine.Events;
 
 public class GameManager : MonoBehaviour {
     private static GameManager instance;
@@ -11,7 +12,6 @@ public class GameManager : MonoBehaviour {
                     var go = new GameObject("GameManager");
                     instance = go.AddComponent<GameManager>();
                     InitializeRequiredComponents(go);
-                    DontDestroyOnLoad(go);
                 }
             }
             return instance;
@@ -29,11 +29,15 @@ public class GameManager : MonoBehaviour {
     public TestSetup TestSetup { get; private set; }
     public BattlefieldUI BattlefieldUI { get; private set; }
 
-    // Events
-    public event Action OnGameStateChanged;
-    public event Action<IPlayer> OnPlayerDamaged;
-    public event Action<ICreature> OnCreatureDamaged;
-    public event Action<IPlayer> OnGameOver;
+    // GameMediator reference
+    private IGameMediator gameMediator;
+
+    // Event accessors that delegate to GameMediator
+    public UnityEvent OnGameStateChanged => gameMediator.OnGameStateChanged;
+    public PlayerDamagedEvent OnPlayerDamaged => gameMediator.OnPlayerDamaged;
+    public CreatureDamagedEvent OnCreatureDamaged => gameMediator.OnCreatureDamaged;
+    public CreatureDiedEvent OnCreatureDied => gameMediator.OnCreatureDied;
+    public GameOverEvent OnGameOver => gameMediator.OnGameOver;
 
     private bool isInitialized = false;
 
@@ -46,6 +50,19 @@ public class GameManager : MonoBehaviour {
         gameManager.BattlefieldUI = gameManager.EnsureComponent<BattlefieldUI>();
 
         Debug.Log("All required components initialized successfully");
+    }
+
+    protected void Awake() {
+        if (instance != null && instance != this) {
+            Destroy(gameObject);
+            return;
+        }
+        instance = this;
+        DontDestroyOnLoad(gameObject);
+
+        // Initialize GameMediator
+        gameMediator = GameMediator.Instance;
+        gameMediator.Initialize();
     }
 
     public void Start() {
@@ -65,11 +82,15 @@ public class GameManager : MonoBehaviour {
             Player1.Opponent = Player2;
             Player2.Opponent = Player1;
 
-            GameMediator.Instance.RegisterPlayer(Player1);
-            GameMediator.Instance.RegisterPlayer(Player2);
+            gameMediator.RegisterPlayer(Player1);
+            gameMediator.RegisterPlayer(Player2);
 
             if (GameUI != null) {
-                GameMediator.Instance.RegisterUI(GameUI);
+                gameMediator.RegisterUI(GameUI);
+            }
+
+            if (DamageResolver != null) {
+                gameMediator.RegisterDamageResolver(DamageResolver);
             }
 
             NotifyGameStateChanged();
@@ -95,11 +116,28 @@ public class GameManager : MonoBehaviour {
     }
 
     public void NotifyGameStateChanged() {
-        OnGameStateChanged?.Invoke();
-        GameMediator.Instance?.NotifyGameStateChanged();
+        gameMediator.NotifyGameStateChanged();
+    }
+
+    public void NotifyPlayerDamaged(IPlayer player, int damage) {
+        gameMediator.NotifyPlayerDamaged(player, damage);
+    }
+
+    public void NotifyCreatureDamaged(ICreature creature, int damage) {
+        gameMediator.NotifyCreatureDamaged(creature, damage);
+    }
+
+    public void NotifyCreatureDied(ICreature creature) {
+        gameMediator.NotifyCreatureDied(creature);
+    }
+
+    public void NotifyGameOver(IPlayer winner) {
+        gameMediator.NotifyGameOver(winner);
     }
 
     public void ResetGame() {
+        gameMediator.Cleanup();
+        gameMediator.Initialize();
         isInitialized = false;
         InitializeGame();
     }
@@ -112,11 +150,21 @@ public class GameManager : MonoBehaviour {
 
     public void OnApplicationQuit() {
         isInitialized = false;
+        gameMediator.Cleanup();
     }
 
     public void OnDestroy() {
         if (instance == this) {
-            DamageResolver?.Cleanup();
+            if (DamageResolver != null) {
+                gameMediator.UnregisterDamageResolver(DamageResolver);
+                DamageResolver.Cleanup();
+            }
+            if (GameUI != null) {
+                gameMediator.UnregisterUI(GameUI);
+            }
+            gameMediator.UnregisterPlayer(Player1);
+            gameMediator.UnregisterPlayer(Player2);
+            gameMediator.Cleanup();
             instance = null;
         }
     }

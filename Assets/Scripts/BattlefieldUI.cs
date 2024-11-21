@@ -7,15 +7,17 @@ public class BattlefieldUI : MonoBehaviour {
     private RectTransform player2Battlefield;
     private Button cardButtonPrefab;
     private Dictionary<string, Button> creatureButtons = new Dictionary<string, Button>();
-    private ICreature selectedCreature;
-    private bool isAttackMode;
+    private IGameMediator gameMediator;
 
     [SerializeField] private float cardSpacing = 220f;
     [SerializeField] private float cardOffset = 50f;
 
     public void Start() {
         InitializeReferences();
-        GameManager.Instance.OnGameStateChanged += UpdateBattlefield;
+        // Get GameMediator instance and subscribe to events
+        gameMediator = GameMediator.Instance;
+        gameMediator.OnGameStateChanged.AddListener(UpdateBattlefield);
+        gameMediator.OnCreatureDied.AddListener(OnCreatureDied);
         UpdateBattlefield();
     }
 
@@ -28,7 +30,6 @@ public class BattlefieldUI : MonoBehaviour {
     public void UpdateBattlefield() {
         ClearBattlefield(player1Battlefield);
         ClearBattlefield(player2Battlefield);
-
         CreateCreatureCards(GameManager.Instance.Player1, player1Battlefield, true);
         CreateCreatureCards(GameManager.Instance.Player2, player2Battlefield, false);
     }
@@ -47,7 +48,6 @@ public class BattlefieldUI : MonoBehaviour {
         for (int i = 0; i < player.Battlefield.Count; i++) {
             ICreature creature = player.Battlefield[i];
             Button button = Instantiate(cardButtonPrefab, battlefield);
-
             RectTransform rect = button.GetComponent<RectTransform>();
             rect.anchorMin = new Vector2(0, 0.5f);
             rect.anchorMax = new Vector2(0, 0.5f);
@@ -65,9 +65,19 @@ public class BattlefieldUI : MonoBehaviour {
         }
     }
 
+    private void OnCreatureDied(ICreature creature) {
+        if (creatureButtons.TryGetValue(creature.TargetId, out Button button)) {
+            Destroy(button.gameObject);
+            creatureButtons.Remove(creature.TargetId);
+        }
+        UpdateBattlefield();
+    }
+
     public void OnDestroy() {
-        if (GameManager.Instance != null) {
-            GameManager.Instance.OnGameStateChanged -= UpdateBattlefield;
+        if (gameMediator != null) {
+            // Unsubscribe from all events
+            gameMediator.OnGameStateChanged.RemoveListener(UpdateBattlefield);
+            gameMediator.OnCreatureDied.RemoveListener(OnCreatureDied);
         }
     }
 }
