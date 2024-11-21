@@ -2,7 +2,6 @@ public interface ICreature : ICard, ITarget {
     int Attack { get; }
     int Health { get; }
     void TakeDamage(int damage, GameContext context);
-    bool IsValidTarget(IPlayer controller) => true;
 }
 
 public class Creature : ICreature {

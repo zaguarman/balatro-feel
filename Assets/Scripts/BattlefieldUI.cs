@@ -31,6 +31,7 @@ public class BattlefieldUI : MonoBehaviour {
         foreach (Transform child in battlefield) {
             Destroy(child.gameObject);
         }
+        creatureButtons.Clear();
     }
 
     private void CreateCreatureCards(IPlayer player, RectTransform battlefield, bool isPlayer1) {

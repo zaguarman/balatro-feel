@@ -15,38 +15,56 @@ public class GameUI : MonoBehaviour {
 
     [Header("Card Layout")]
     [SerializeField] private Button cardButtonPrefab;
-    [SerializeField] private float cardSpacing = 220f; // Width + 20 padding
-    [SerializeField] private float cardOffset = 50f;   // Initial offset from left
+    [SerializeField] private float cardSpacing = 220f;
+    [SerializeField] private float cardOffset = 50f;
     [SerializeField] private List<CardData> testCards;
 
+    public void OnEnable() {
+        if (GameManager.Instance != null) {
+            GameManager.Instance.OnGameStateChanged += UpdateUI;
+        }
+        if (GameMediator.Instance != null) {
+            GameMediator.Instance.RegisterUI(this);
+        }
+    }
+
+    public void OnDisable() {
+        if (GameManager.Instance != null) {
+            GameManager.Instance.OnGameStateChanged -= UpdateUI;
+        }
+        if (GameMediator.Instance != null) {
+            GameMediator.Instance.UnregisterUI(this);
+        }
+    }
+
+    public void Start() {
+        SetupUI();
+        UpdateUI();
+    }
+
     private void SetupCardContainer(RectTransform container) {
-        // Remove any existing layout group
         var existingLayout = container.GetComponent<LayoutGroup>();
         if (existingLayout != null) {
             Destroy(existingLayout);
         }
 
-        // Set container size based on cards
         float totalWidth = cardOffset + (cardSpacing * testCards.Count);
-        container.sizeDelta = new Vector2(totalWidth, 320f); // Height + padding
+        container.sizeDelta = new Vector2(totalWidth, 320f);
     }
 
     private void CreateCardButton(CardData cardData, RectTransform parent, bool isPlayer1, int index) {
         Button buttonObj = Instantiate(cardButtonPrefab, parent);
         RectTransform rectTransform = buttonObj.GetComponent<RectTransform>();
 
-        // Position the card
         float xPos = cardOffset + (cardSpacing * index);
         rectTransform.anchorMin = new Vector2(0, 0.5f);
         rectTransform.anchorMax = new Vector2(0, 0.5f);
         rectTransform.pivot = new Vector2(0, 0.5f);
         rectTransform.anchoredPosition = new Vector2(xPos, 0);
 
-        // Setup the card
         CardButtonController controller = buttonObj.GetComponent<CardButtonController>();
         controller.Setup(cardData, isPlayer1);
 
-        // Add click listener
         buttonObj.onClick.AddListener(() => {
             GameManager.Instance.PlayCard(
                 cardData,
@@ -56,25 +74,17 @@ public class GameUI : MonoBehaviour {
     }
 
     public void CreateCardButtons() {
-        // Setup containers
         SetupCardContainer(player1CardContainer);
         SetupCardContainer(player2CardContainer);
 
-        // Create cards for both players
         for (int i = 0; i < testCards.Count; i++) {
             CreateCardButton(testCards[i], player1CardContainer, true, i);
             CreateCardButton(testCards[i], player2CardContainer, false, i);
         }
     }
 
-    public void Start() {
-        SetupUI();
-        UpdateUI();
-    }
-
     private void SetupUI() {
         LoadTestCards();
-
         CreateCardButtons();
 
         if (damageResolver != null) {
@@ -83,7 +93,6 @@ public class GameUI : MonoBehaviour {
     }
 
     private void LoadTestCards() {
-        // Load test cards if none are assigned
         if (testCards == null || testCards.Count == 0) {
             var testSetup = GetComponent<TestSetup>();
             if (testSetup == null) {
@@ -92,7 +101,6 @@ public class GameUI : MonoBehaviour {
             testCards = testSetup.CreateTestCards();
         }
     }
-
 
     public void UpdateUI() {
         UpdatePlayerHealth(GameManager.Instance.Player1);
@@ -109,13 +117,22 @@ public class GameUI : MonoBehaviour {
         }
     }
 
-    public void UpdateCreatureState(Creature creature) {
-        // Update the visual state of the creature card
-    }
-
     private void UpdateResolutionUI() {
         if (damageResolver != null) {
             damageResolver.UpdateResolutionState();
+        }
+    }
+
+    private void HandlePlayerDamaged(IPlayer player) {
+        UpdatePlayerHealth(player);
+    }
+
+
+
+    public void OnDestroy() {
+        if (GameManager.Instance != null) {
+            GameManager.Instance.OnGameStateChanged -= UpdateUI;
+            GameManager.Instance.OnPlayerDamaged -= HandlePlayerDamaged;
         }
     }
 }

@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using static Target;
 
 public class GameContext {
     private Queue<IGameAction> actionQueue = new Queue<IGameAction>();

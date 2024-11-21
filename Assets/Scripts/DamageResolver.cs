@@ -22,6 +22,20 @@ public class DamageResolver : MonoBehaviour {
         }
         SetupButton();
     }
+
+    private void OnEnable() {
+        if (GameMediator.Instance != null) {
+            GameMediator.Instance.RegisterDamageResolver(this);
+        }
+        UpdateResolutionState();
+    }
+
+    private void OnDisable() {
+        if (GameMediator.Instance != null) {
+            GameMediator.Instance.UnregisterDamageResolver(this);
+        }
+    }
+
     private void SetupButton() {
         if (resolveActionsButton != null) {
             resolveActionsButton.onClick.AddListener(ResolveDamage);
@@ -53,10 +67,6 @@ public class DamageResolver : MonoBehaviour {
         }
 
         isResolving = false;
-        UpdateResolutionState();
-    }
-
-    public void OnEnable() {
         UpdateResolutionState();
     }
 }

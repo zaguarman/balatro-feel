@@ -27,6 +27,10 @@ public class GameManager : MonoBehaviour {
         Player2 = new Player();
         Player1.Opponent = Player2;
         Player2.Opponent = Player1;
+
+        GameMediator.Instance.RegisterPlayer(Player1);
+        GameMediator.Instance.RegisterPlayer(Player2);
+
         NotifyGameStateChanged();
     }
 
@@ -64,5 +68,12 @@ public class GameManager : MonoBehaviour {
 
     public void NotifyGameStateChanged() {
         OnGameStateChanged?.Invoke();
+        GameMediator.Instance.NotifyGameStateChanged();
+    }
+
+    public void OnDestroy() {
+        if (Instance == this) {
+            Instance = null;
+        }
     }
 }
