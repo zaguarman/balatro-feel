@@ -75,31 +75,22 @@ public class GameMediator : Singleton<GameMediator>, IGameMediator {
 
     public void RegisterUI(GameUI ui) {
         if (!ValidateState("RegisterUI") || ui == null) return;
-
         gameUI = ui;
-        gameEvents.OnGameStateChanged.AddListener(ui.UpdateUI);
-        gameEvents.OnPlayerDamaged.AddListener((player, damage) => ui.UpdatePlayerHealth(player));
+        // The UI components will now register their own event listeners via UIComponent base class
     }
 
     public void UnregisterUI(GameUI ui) {
         if (!isInitialized || gameUI != ui) return;
-
-        gameEvents.OnGameStateChanged.RemoveListener(ui.UpdateUI);
-        gameEvents.OnPlayerDamaged.RemoveAllListeners();
         gameUI = null;
     }
 
     public void RegisterDamageResolver(DamageResolver resolver) {
         if (!ValidateState("RegisterDamageResolver") || resolver == null) return;
-
         damageResolver = resolver;
-        gameEvents.OnGameStateChanged.AddListener(resolver.UpdateResolutionState);
     }
 
     public void UnregisterDamageResolver(DamageResolver resolver) {
         if (!isInitialized || damageResolver != resolver) return;
-
-        gameEvents.OnGameStateChanged.RemoveListener(resolver.UpdateResolutionState);
         damageResolver = null;
     }
 
@@ -113,17 +104,10 @@ public class GameMediator : Singleton<GameMediator>, IGameMediator {
         players.Clear();
         gameUI = null;
         damageResolver = null;
-
-        gameEvents.OnGameStateChanged.RemoveAllListeners();
-        gameEvents.OnPlayerDamaged.RemoveAllListeners();
-        gameEvents.OnCreatureDamaged.RemoveAllListeners();
-        gameEvents.OnCreatureDied.RemoveAllListeners();
-        gameEvents.OnGameOver.RemoveAllListeners();
     }
 
     public void Cleanup() {
         if (!isInitialized) return;
-
         ClearRegistrations();
         isInitialized = false;
     }

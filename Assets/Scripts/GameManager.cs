@@ -1,6 +1,6 @@
 using UnityEngine;
-using System;
 using UnityEngine.Events;
+using System;
 
 public class GameManager : Singleton<GameManager> {
     // Game state properties
@@ -8,36 +8,42 @@ public class GameManager : Singleton<GameManager> {
     public IPlayer Player2 { get; private set; }
     public GameContext GameContext { get; private set; }
 
-    // Component references
-    public GameUI GameUI { get; private set; }
-    public DamageResolver DamageResolver => DamageResolver.Instance;
-    public TestSetup TestSetup { get; private set; }
-    public BattlefieldUI BattlefieldUI { get; private set; }
-
-    // GameMediator reference
+    // Core system references
     private IGameMediator gameMediator;
-
     private GameEvents gameEvents;
+    private bool isInitialized;
 
-    // Event accessors that delegate to GameMediator
+    // Component references
+    public GameUI GameUI => GameUI.Instance;
+    public DamageResolver DamageResolver => DamageResolver.Instance;
+
+    // Event accessors that delegate to GameEvents
     public UnityEvent OnGameStateChanged => gameEvents.OnGameStateChanged;
     public GameEvents.PlayerDamagedEvent OnPlayerDamaged => gameEvents.OnPlayerDamaged;
     public GameEvents.CreatureDamagedEvent OnCreatureDamaged => gameEvents.OnCreatureDamaged;
     public GameEvents.CreatureDiedEvent OnCreatureDied => gameEvents.OnCreatureDied;
     public GameEvents.GameOverEvent OnGameOver => gameEvents.OnGameOver;
 
-    private bool isInitialized = false;
-
     protected override void Awake() {
         base.Awake();
+        InitializeGameSystems();
+    }
+
+    private void InitializeGameSystems() {
+        // Initialize core systems in the correct order
         gameMediator = GameMediator.Instance;
         gameMediator.Initialize();
+
+        // Initialize references
+        GameReferences.Instance.ValidateReferences();
+
+        // Initialize UI
+        GameUI.Instance.UpdateUI();
+
         gameEvents = GameEvents.Instance;
     }
 
     public void Start() {
-        InitializeRequiredComponents(gameObject);
-
         if (!isInitialized) {
             InitializeGame();
             isInitialized = true;
@@ -55,8 +61,9 @@ public class GameManager : Singleton<GameManager> {
             gameMediator.RegisterPlayer(Player1);
             gameMediator.RegisterPlayer(Player2);
 
-            if (GameUI != null) {
-                gameMediator.RegisterUI(GameUI);
+            GameUI gameUI = GameUI.Instance;
+            if (gameUI != null) {
+                gameMediator.RegisterUI(gameUI);
             }
 
             if (DamageResolver != null) {
@@ -72,60 +79,76 @@ public class GameManager : Singleton<GameManager> {
         }
     }
 
+    // Card playing functionality
     public void PlayCard(CardData cardData, IPlayer player) {
         if (!isInitialized) {
             Debug.LogError("GameManager not properly initialized!");
             return;
         }
 
-        Debug.Log($"Playing card: {cardData.cardName}");
+        Debug.Log($"Playing card: {cardData.cardName} for player {(player == Player1 ? "1" : "2")}");
         ICard card = CardFactory.CreateCard(cardData);
         card.Play(GameContext, player);
         GameContext.ResolveActions();
         NotifyGameStateChanged();
     }
 
+    // Event notification methods
     public void NotifyGameStateChanged() => gameEvents.NotifyGameStateChanged();
     public void NotifyPlayerDamaged(IPlayer player, int damage) => gameEvents.NotifyPlayerDamaged(player, damage);
     public void NotifyCreatureDamaged(ICreature creature, int damage) => gameEvents.NotifyCreatureDamaged(creature, damage);
     public void NotifyCreatureDied(ICreature creature) => gameEvents.NotifyCreatureDied(creature);
     public void NotifyGameOver(IPlayer winner) => gameEvents.NotifyGameOver(winner);
 
+    // Game state management
     public void ResetGame() {
-        gameMediator.Cleanup();
-        gameMediator.Initialize();
+        UnregisterCurrentGame();
         isInitialized = false;
         InitializeGame();
     }
 
+    private void UnregisterCurrentGame() {
+        if (Player1 != null) gameMediator.UnregisterPlayer(Player1);
+        if (Player2 != null) gameMediator.UnregisterPlayer(Player2);
+        if (DamageResolver != null) gameMediator.UnregisterDamageResolver(DamageResolver);
+        if (GameUI != null) gameMediator.UnregisterUI(GameUI);
+
+        GameContext = null;
+        Player1 = null;
+        Player2 = null;
+    }
+
+    // Scene management
     public void OnSceneLoaded() {
         if (!isInitialized) {
             InitializeGame();
+        } else {
+            // Refresh UI references if needed
+            GameUI.Instance.UpdateUI();
         }
     }
 
+    // Cleanup
     public void OnApplicationQuit() {
         isInitialized = false;
-        gameMediator.Cleanup();
+        UnregisterCurrentGame();
+        if (gameMediator != null) {
+            gameMediator.Cleanup();
+        }
     }
 
     protected override void OnDestroy() {
         if (instance == this) {
-            if (DamageResolver != null) {
-                gameMediator.UnregisterDamageResolver(DamageResolver);
-                DamageResolver.Cleanup();
+            UnregisterCurrentGame();
+            if (gameMediator != null) {
+                gameMediator.Cleanup();
             }
-            if (GameUI != null) {
-                gameMediator.UnregisterUI(GameUI);
-            }
-            gameMediator.UnregisterPlayer(Player1);
-            gameMediator.UnregisterPlayer(Player2);
-            gameMediator.Cleanup();
             instance = null;
         }
+        base.OnDestroy();
     }
 
-    // Helper method to add a new component if it doesn't exist
+    // Helper methods for component management
     public T EnsureComponent<T>() where T : Component {
         var component = gameObject.GetComponent<T>();
         if (component == null) {
@@ -135,9 +158,48 @@ public class GameManager : Singleton<GameManager> {
         return component;
     }
 
-    private void InitializeRequiredComponents(GameObject go) {
-        GameUI = go.GetComponent<GameUI>() ?? go.AddComponent<GameUI>();
-        TestSetup = go.GetComponent<TestSetup>() ?? go.AddComponent<TestSetup>();
-        BattlefieldUI = go.GetComponent<BattlefieldUI>() ?? go.AddComponent<BattlefieldUI>();
+    // Debug methods
+    public void LogGameState() {
+        Debug.Log($"Game State:");
+        Debug.Log($"Initialized: {isInitialized}");
+        Debug.Log($"Player 1 Health: {Player1?.Health}");
+        Debug.Log($"Player 2 Health: {Player2?.Health}");
+        Debug.Log($"Pending Actions: {GameContext?.GetPendingActionsCount()}");
     }
+
+    // Test setup methods
+    public void SetupTestGame() {
+        if (!isInitialized) {
+            InitializeGame();
+        }
+
+        var testSetup = gameObject.GetComponent<TestSetup>() ?? gameObject.AddComponent<TestSetup>();
+        var testCards = testSetup.CreateTestCards();
+
+        // Add test cards to players' hands
+        foreach (var card in testCards) {
+            var cardInstance = CardFactory.CreateCard(card);
+            if (UnityEngine.Random.value > 0.5f) {
+                Player1.AddToHand(cardInstance);
+            } else {
+                Player2.AddToHand(cardInstance);
+            }
+        }
+
+        NotifyGameStateChanged();
+    }
+
+#if UNITY_EDITOR
+    // Editor-only validation
+    protected void OnValidate() {
+        if (Application.isPlaying) return;
+
+        var components = GetComponents<Component>();
+        foreach (var component in components) {
+            if (component != this && component.GetType().IsSubclassOf(typeof(MonoBehaviour))) {
+                Debug.LogWarning($"GameManager should be the only MonoBehaviour on this GameObject. Found: {component.GetType().Name}");
+            }
+        }
+    }
+#endif
 }
