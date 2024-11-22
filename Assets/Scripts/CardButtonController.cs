@@ -48,7 +48,6 @@ public class CardButtonController : MonoBehaviour {
 
     private void SetDefaultSize() {
         if (cardRect != null) {
-            // Set size based on parent container or default values
             Button prefab = gameRefs.GetCardButtonPrefab();
             if (prefab != null) {
                 RectTransform prefabRect = prefab.GetComponent<RectTransform>();
@@ -63,7 +62,7 @@ public class CardButtonController : MonoBehaviour {
         UpdateVisuals();
 
         // Set parent based on player
-        Transform parent = isPlayer1 ? gameRefs.GetPlayer1CardContainer() : gameRefs.GetPlayer2CardContainer();
+        Transform parent = isPlayer1 ? gameRefs.GetPlayer1Hand() : gameRefs.GetPlayer2Hand();
 
         if (parent != null) {
             transform.SetParent(parent, false);

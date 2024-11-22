@@ -1,14 +1,15 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class GameUI : MonoBehaviour {
     [Header("UI References")]
     [SerializeField] private TextMeshProUGUI player1HealthText;
     [SerializeField] private TextMeshProUGUI player2HealthText;
-    [SerializeField] private RectTransform player1CardContainer;
-    [SerializeField] private RectTransform player2CardContainer;
+    [SerializeField] private RectTransform player1Hand;
+    [SerializeField] private RectTransform player2Hand;
     [SerializeField] private Button cardButtonPrefab;
 
     [Header("Layout Settings")]
@@ -82,33 +83,39 @@ public class GameUI : MonoBehaviour {
     private void InitializeReferences() {
         player1HealthText = gameReferences.GetPlayer1HealthText();
         player2HealthText = gameReferences.GetPlayer2HealthText();
-        player1CardContainer = gameReferences.GetPlayer1CardContainer();
-        player2CardContainer = gameReferences.GetPlayer2CardContainer();
+        player1Hand = gameReferences.GetPlayer1Hand();
+        player2Hand = gameReferences.GetPlayer2Hand();
         cardButtonPrefab = gameReferences.GetCardButtonPrefab();
     }
 
-    private void SetupCardContainer(RectTransform container) {
-        var existingLayout = container.GetComponent<LayoutGroup>();
+    private void SetupPlayerHand(RectTransform hand) {
+        var existingLayout = hand.GetComponent<LayoutGroup>();
         if (existingLayout != null) {
             Destroy(existingLayout);
         }
 
         float totalWidth = cardOffset + (cardSpacing * testCards.Count);
-        container.sizeDelta = new Vector2(totalWidth, 320f);
+        hand.sizeDelta = new Vector2(totalWidth, 320f);
     }
 
     public void CreateCardButtons() {
-        SetupCardContainer(player1CardContainer);
-        SetupCardContainer(player2CardContainer);
+        SetupPlayerHand(player1Hand);
+        SetupPlayerHand(player2Hand);
 
         for (int i = 0; i < testCards.Count; i++) {
-            CreateCardButton(testCards[i], player1CardContainer, true, i);
-            CreateCardButton(testCards[i], player2CardContainer, false, i);
+            CreateCardButton(testCards[i], player1Hand, true, i);
+            CreateCardButton(testCards[i], player2Hand, false, i);
         }
     }
 
     private void CreateCardButton(CardData cardData, RectTransform parent, bool isPlayer1, int index) {
         Button buttonObj = Instantiate(cardButtonPrefab, parent);
+
+        if (EventSystem.current == null) {
+            Debug.LogError("No EventSystem found in the scene!");
+            return;
+        }
+
         RectTransform rectTransform = buttonObj.GetComponent<RectTransform>();
 
         float xPos = cardOffset + (cardSpacing * index);
@@ -129,6 +136,12 @@ public class GameUI : MonoBehaviour {
     }
 
     private void SetupUI() {
+        if (EventSystem.current == null) {
+            GameObject eventSystem = new GameObject("EventSystem");
+            eventSystem.AddComponent<EventSystem>();
+            eventSystem.AddComponent<StandaloneInputModule>();
+        }
+
         LoadTestCards();
         CreateCardButtons();
         UpdateResolutionUI();

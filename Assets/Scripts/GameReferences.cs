@@ -20,12 +20,12 @@ public class GameReferences : MonoBehaviour {
 
     [Header("Player 1 UI")]
     [SerializeField] private TextMeshProUGUI player1HealthText;
-    [SerializeField] private RectTransform player1CardContainer;
+    [SerializeField] private RectTransform player1Hand;
     [SerializeField] private RectTransform player1Battlefield;
 
     [Header("Player 2 UI")]
     [SerializeField] private TextMeshProUGUI player2HealthText;
-    [SerializeField] private RectTransform player2CardContainer;
+    [SerializeField] private RectTransform player2Hand;
     [SerializeField] private RectTransform player2Battlefield;
 
     [Header("Card Components")]
@@ -49,8 +49,8 @@ public class GameReferences : MonoBehaviour {
     // Original getters
     public TextMeshProUGUI GetPlayer1HealthText() => player1HealthText;
     public TextMeshProUGUI GetPlayer2HealthText() => player2HealthText;
-    public RectTransform GetPlayer1CardContainer() => player1CardContainer;
-    public RectTransform GetPlayer2CardContainer() => player2CardContainer;
+    public RectTransform GetPlayer1Hand() => player1Hand;
+    public RectTransform GetPlayer2Hand() => player2Hand;
     public Button GetResolveActionsButton() => resolveActionsButton;
     public TextMeshProUGUI GetPendingDamageText() => pendingDamageText;
     public RectTransform GetPlayer1Battlefield() => player1Battlefield;
@@ -69,10 +69,10 @@ public class GameReferences : MonoBehaviour {
         if (resolveActionsButton == null) { Debug.LogError("Resolve Actions Button is missing"); isValid = false; }
         if (pendingDamageText == null) { Debug.LogError("Pending Damage Text is missing"); isValid = false; }
         if (player1HealthText == null) { Debug.LogError("Player1 Health Text is missing"); isValid = false; }
-        if (player1CardContainer == null) { Debug.LogError("Player1 Card Container is missing"); isValid = false; }
+        if (player1Hand == null) { Debug.LogError("Player1 Hand is missing"); isValid = false; }
         if (player1Battlefield == null) { Debug.LogError("Player1 Battlefield is missing"); isValid = false; }
         if (player2HealthText == null) { Debug.LogError("Player2 Health Text is missing"); isValid = false; }
-        if (player2CardContainer == null) { Debug.LogError("Player2 Card Container is missing"); isValid = false; }
+        if (player2Hand == null) { Debug.LogError("Player2 Hand is missing"); isValid = false; }
         if (player2Battlefield == null) { Debug.LogError("Player2 Battlefield is missing"); isValid = false; }
         if (cardButtonPrefab == null) { Debug.LogError("Card Button Prefab is missing"); isValid = false; }
 
