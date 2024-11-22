@@ -17,12 +17,14 @@ public class GameManager : Singleton<GameManager> {
     // GameMediator reference
     private IGameMediator gameMediator;
 
+    private GameEvents gameEvents;
+
     // Event accessors that delegate to GameMediator
-    public UnityEvent OnGameStateChanged => gameMediator.OnGameStateChanged;
-    public PlayerDamagedEvent OnPlayerDamaged => gameMediator.OnPlayerDamaged;
-    public CreatureDamagedEvent OnCreatureDamaged => gameMediator.OnCreatureDamaged;
-    public CreatureDiedEvent OnCreatureDied => gameMediator.OnCreatureDied;
-    public GameOverEvent OnGameOver => gameMediator.OnGameOver;
+    public UnityEvent OnGameStateChanged => gameEvents.OnGameStateChanged;
+    public GameEvents.PlayerDamagedEvent OnPlayerDamaged => gameEvents.OnPlayerDamaged;
+    public GameEvents.CreatureDamagedEvent OnCreatureDamaged => gameEvents.OnCreatureDamaged;
+    public GameEvents.CreatureDiedEvent OnCreatureDied => gameEvents.OnCreatureDied;
+    public GameEvents.GameOverEvent OnGameOver => gameEvents.OnGameOver;
 
     private bool isInitialized = false;
 
@@ -30,6 +32,7 @@ public class GameManager : Singleton<GameManager> {
         base.Awake();
         gameMediator = GameMediator.Instance;
         gameMediator.Initialize();
+        gameEvents = GameEvents.Instance;
     }
 
     public void Start() {
@@ -82,25 +85,11 @@ public class GameManager : Singleton<GameManager> {
         NotifyGameStateChanged();
     }
 
-    public void NotifyGameStateChanged() {
-        gameMediator.NotifyGameStateChanged();
-    }
-
-    public void NotifyPlayerDamaged(IPlayer player, int damage) {
-        gameMediator.NotifyPlayerDamaged(player, damage);
-    }
-
-    public void NotifyCreatureDamaged(ICreature creature, int damage) {
-        gameMediator.NotifyCreatureDamaged(creature, damage);
-    }
-
-    public void NotifyCreatureDied(ICreature creature) {
-        gameMediator.NotifyCreatureDied(creature);
-    }
-
-    public void NotifyGameOver(IPlayer winner) {
-        gameMediator.NotifyGameOver(winner);
-    }
+    public void NotifyGameStateChanged() => gameEvents.NotifyGameStateChanged();
+    public void NotifyPlayerDamaged(IPlayer player, int damage) => gameEvents.NotifyPlayerDamaged(player, damage);
+    public void NotifyCreatureDamaged(ICreature creature, int damage) => gameEvents.NotifyCreatureDamaged(creature, damage);
+    public void NotifyCreatureDied(ICreature creature) => gameEvents.NotifyCreatureDied(creature);
+    public void NotifyGameOver(IPlayer winner) => gameEvents.NotifyGameOver(winner);
 
     public void ResetGame() {
         gameMediator.Cleanup();
@@ -120,7 +109,7 @@ public class GameManager : Singleton<GameManager> {
         gameMediator.Cleanup();
     }
 
-    public void OnDestroy() {
+    protected override void OnDestroy() {
         if (instance == this) {
             if (DamageResolver != null) {
                 gameMediator.UnregisterDamageResolver(DamageResolver);

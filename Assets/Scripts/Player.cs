@@ -22,41 +22,38 @@ public class Player : IPlayer {
     public List<ICard> Hand { get; private set; }
     public List<ICreature> Battlefield { get; private set; }
     public string TargetId { get; private set; }
-    public PlayerDamagedUnityEvent OnDamaged { get; private set; }
-
-    private readonly GameMediator mediator;
+    private readonly GameEvents gameEvents;
+    public PlayerDamagedUnityEvent OnDamaged { get; } = new PlayerDamagedUnityEvent();
 
     public Player() {
         TargetId = System.Guid.NewGuid().ToString();
         Hand = new List<ICard>();
         Battlefield = new List<ICreature>();
-        OnDamaged = new PlayerDamagedUnityEvent();
-        mediator = GameMediator.Instance;
-        mediator?.RegisterPlayer(this);
+        gameEvents = GameEvents.Instance;
     }
 
     public void TakeDamage(int amount) {
         Health = Math.Max(0, Health - amount);
-        OnDamaged?.Invoke(amount);
-        mediator?.NotifyPlayerDamaged(this, amount);
+        OnDamaged.Invoke(amount);
+        gameEvents.NotifyPlayerDamaged(this, amount);
     }
 
     public void AddToBattlefield(ICreature creature) {
         if (creature == null) return;
         Battlefield.Add(creature);
-        mediator?.NotifyGameStateChanged();
+        gameEvents.NotifyGameStateChanged();
     }
 
     public void RemoveFromBattlefield(ICreature creature) {
         if (creature == null) return;
         Battlefield.Remove(creature);
-        mediator?.NotifyGameStateChanged();
+        gameEvents.NotifyGameStateChanged();
     }
 
     public void AddToHand(ICard card) {
         if (card == null) return;
         Hand.Add(card);
-        mediator?.NotifyGameStateChanged();
+        gameEvents.NotifyGameStateChanged();
     }
 
     public bool IsValidTarget(IPlayer controller) => true;

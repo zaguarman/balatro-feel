@@ -1,19 +1,12 @@
 using UnityEngine;
-using UnityEngine.Events;
 using System.Collections.Generic;
-using System;
-
-[Serializable] public class PlayerDamagedEvent : UnityEvent<IPlayer, int> { }
-[Serializable] public class CreatureDamagedEvent : UnityEvent<ICreature, int> { }
-[Serializable] public class CreatureDiedEvent : UnityEvent<ICreature> { }
-[Serializable] public class GameOverEvent : UnityEvent<IPlayer> { }
 
 public interface IGameMediator {
-    UnityEvent OnGameStateChanged { get; }
-    PlayerDamagedEvent OnPlayerDamaged { get; }
-    CreatureDamagedEvent OnCreatureDamaged { get; }
-    CreatureDiedEvent OnCreatureDied { get; }
-    GameOverEvent OnGameOver { get; }
+    GameEvents.GameStateChangedEvent OnGameStateChanged { get; }
+    GameEvents.PlayerDamagedEvent OnPlayerDamaged { get; }
+    GameEvents.CreatureDamagedEvent OnCreatureDamaged { get; }
+    GameEvents.CreatureDiedEvent OnCreatureDied { get; }
+    GameEvents.GameOverEvent OnGameOver { get; }
 
     void Initialize();
     void RegisterPlayer(IPlayer player);
@@ -31,27 +24,23 @@ public interface IGameMediator {
 }
 
 public class GameMediator : Singleton<GameMediator>, IGameMediator {
-    [SerializeField] private UnityEvent onGameStateChanged = new UnityEvent();
-    [SerializeField] private PlayerDamagedEvent onPlayerDamaged = new PlayerDamagedEvent();
-    [SerializeField] private CreatureDamagedEvent onCreatureDamaged = new CreatureDamagedEvent();
-    [SerializeField] private CreatureDiedEvent onCreatureDied = new CreatureDiedEvent();
-    [SerializeField] private GameOverEvent onGameOver = new GameOverEvent();
+    private GameEvents gameEvents;
 
-    public UnityEvent OnGameStateChanged => onGameStateChanged;
-    public PlayerDamagedEvent OnPlayerDamaged => onPlayerDamaged;
-    public CreatureDamagedEvent OnCreatureDamaged => onCreatureDamaged;
-    public CreatureDiedEvent OnCreatureDied => onCreatureDied;
-    public GameOverEvent OnGameOver => onGameOver;
+    protected override void Awake() {
+        base.Awake();
+        gameEvents = GameEvents.Instance;
+    }
+
+    public GameEvents.GameStateChangedEvent OnGameStateChanged => gameEvents.OnGameStateChanged;
+    public GameEvents.PlayerDamagedEvent OnPlayerDamaged => gameEvents.OnPlayerDamaged;
+    public GameEvents.CreatureDamagedEvent OnCreatureDamaged => gameEvents.OnCreatureDamaged;
+    public GameEvents.CreatureDiedEvent OnCreatureDied => gameEvents.OnCreatureDied;
+    public GameEvents.GameOverEvent OnGameOver => gameEvents.OnGameOver;
 
     private readonly List<IPlayer> players = new List<IPlayer>();
     private GameUI gameUI;
     private DamageResolver damageResolver;
     private bool isInitialized;
-
-    protected override void Awake() {
-        base.Awake();
-        // Keep any specific Awake logic if needed
-    }
 
     public void Initialize() {
         if (isInitialized) {
@@ -88,15 +77,15 @@ public class GameMediator : Singleton<GameMediator>, IGameMediator {
         if (!ValidateState("RegisterUI") || ui == null) return;
 
         gameUI = ui;
-        onGameStateChanged.AddListener(ui.UpdateUI);
-        onPlayerDamaged.AddListener((player, damage) => ui.UpdatePlayerHealth(player));
+        gameEvents.OnGameStateChanged.AddListener(ui.UpdateUI);
+        gameEvents.OnPlayerDamaged.AddListener((player, damage) => ui.UpdatePlayerHealth(player));
     }
 
     public void UnregisterUI(GameUI ui) {
         if (!isInitialized || gameUI != ui) return;
 
-        onGameStateChanged.RemoveListener(ui.UpdateUI);
-        onPlayerDamaged.RemoveAllListeners();
+        gameEvents.OnGameStateChanged.RemoveListener(ui.UpdateUI);
+        gameEvents.OnPlayerDamaged.RemoveAllListeners();
         gameUI = null;
     }
 
@@ -104,59 +93,32 @@ public class GameMediator : Singleton<GameMediator>, IGameMediator {
         if (!ValidateState("RegisterDamageResolver") || resolver == null) return;
 
         damageResolver = resolver;
-        onGameStateChanged.AddListener(resolver.UpdateResolutionState);
+        gameEvents.OnGameStateChanged.AddListener(resolver.UpdateResolutionState);
     }
 
     public void UnregisterDamageResolver(DamageResolver resolver) {
         if (!isInitialized || damageResolver != resolver) return;
 
-        onGameStateChanged.RemoveListener(resolver.UpdateResolutionState);
+        gameEvents.OnGameStateChanged.RemoveListener(resolver.UpdateResolutionState);
         damageResolver = null;
     }
 
-    public void NotifyGameStateChanged() {
-        if (!isInitialized) return;
-        onGameStateChanged.Invoke();
-    }
-
-    public void NotifyPlayerDamaged(IPlayer player, int damage) {
-        if (!isInitialized || player == null) return;
-
-        onPlayerDamaged.Invoke(player, damage);
-        if (player.Health <= 0) {
-            NotifyGameOver(player.Opponent);
-        }
-    }
-
-    public void NotifyCreatureDamaged(ICreature creature, int damage) {
-        if (!isInitialized || creature == null) return;
-
-        onCreatureDamaged.Invoke(creature, damage);
-        if (creature.Health <= 0) {
-            NotifyCreatureDied(creature);
-        }
-    }
-
-    public void NotifyCreatureDied(ICreature creature) {
-        if (!isInitialized || creature == null) return;
-        onCreatureDied.Invoke(creature);
-    }
-
-    public void NotifyGameOver(IPlayer winner) {
-        if (!isInitialized || winner == null) return;
-        onGameOver.Invoke(winner);
-    }
+    public void NotifyGameStateChanged() => gameEvents.NotifyGameStateChanged();
+    public void NotifyPlayerDamaged(IPlayer player, int damage) => gameEvents.NotifyPlayerDamaged(player, damage);
+    public void NotifyCreatureDamaged(ICreature creature, int damage) => gameEvents.NotifyCreatureDamaged(creature, damage);
+    public void NotifyCreatureDied(ICreature creature) => gameEvents.NotifyCreatureDied(creature);
+    public void NotifyGameOver(IPlayer winner) => gameEvents.NotifyGameOver(winner);
 
     private void ClearRegistrations() {
         players.Clear();
         gameUI = null;
         damageResolver = null;
 
-        onGameStateChanged.RemoveAllListeners();
-        onPlayerDamaged.RemoveAllListeners();
-        onCreatureDamaged.RemoveAllListeners();
-        onCreatureDied.RemoveAllListeners();
-        onGameOver.RemoveAllListeners();
+        gameEvents.OnGameStateChanged.RemoveAllListeners();
+        gameEvents.OnPlayerDamaged.RemoveAllListeners();
+        gameEvents.OnCreatureDamaged.RemoveAllListeners();
+        gameEvents.OnCreatureDied.RemoveAllListeners();
+        gameEvents.OnGameOver.RemoveAllListeners();
     }
 
     public void Cleanup() {
