@@ -2,18 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class GameReferences : MonoBehaviour {
-    private static GameReferences instance;
-    public static GameReferences Instance {
-        get {
-            if (instance == null) {
-                var go = new GameObject("GameReferences");
-                instance = go.AddComponent<GameReferences>();
-            }
-            return instance;
-        }
-    }
-
+public class GameReferences : Singleton<GameReferences> {
     [Header("UI")]
     [SerializeField] private Button resolveActionsButton;
     [SerializeField] private TextMeshProUGUI pendingDamageText;
@@ -35,13 +24,8 @@ public class GameReferences : MonoBehaviour {
     [SerializeField] private Color player1CardColor = new Color(0.8f, 0.9f, 1f);
     [SerializeField] private Color player2CardColor = new Color(1f, 0.8f, 0.8f);
 
-    public void Awake() {
-        if (instance != null && instance != this) {
-            Destroy(gameObject);
-            return;
-        }
-        instance = this;
-        DontDestroyOnLoad(gameObject);
+    protected override void Awake() {
+        base.Awake();
         ValidateReferences();
         ReferenceManager.Initialize(this);
     }
@@ -77,11 +61,5 @@ public class GameReferences : MonoBehaviour {
         if (cardButtonPrefab == null) { Debug.LogError("Card Button Prefab is missing"); isValid = false; }
 
         return isValid;
-    }
-
-    public void OnDestroy() {
-        if (instance == this) {
-            instance = null;
-        }
     }
 }

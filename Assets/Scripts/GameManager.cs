@@ -2,22 +2,7 @@ using UnityEngine;
 using System;
 using UnityEngine.Events;
 
-public class GameManager : MonoBehaviour {
-    private static GameManager instance;
-    public static GameManager Instance {
-        get {
-            if (instance == null) {
-                instance = FindObjectOfType<GameManager>();
-                if (instance == null) {
-                    var go = new GameObject("GameManager");
-                    instance = go.AddComponent<GameManager>();
-                    InitializeRequiredComponents(go);
-                }
-            }
-            return instance;
-        }
-    }
-
+public class GameManager : Singleton<GameManager> {
     // Game state properties
     public IPlayer Player1 { get; private set; }
     public IPlayer Player2 { get; private set; }
@@ -41,26 +26,8 @@ public class GameManager : MonoBehaviour {
 
     private bool isInitialized = false;
 
-    private static void InitializeRequiredComponents(GameObject gameObject) {
-        var gameManager = gameObject.GetComponent<GameManager>();
-        if (gameManager == null) return;
-
-        gameManager.GameUI = gameManager.EnsureComponent<GameUI>();
-        gameManager.TestSetup = gameManager.EnsureComponent<TestSetup>();
-        gameManager.BattlefieldUI = gameManager.EnsureComponent<BattlefieldUI>();
-
-        Debug.Log("All required components initialized successfully");
-    }
-
-    protected void Awake() {
-        if (instance != null && instance != this) {
-            Destroy(gameObject);
-            return;
-        }
-        instance = this;
-        DontDestroyOnLoad(gameObject);
-
-        // Initialize GameMediator
+    protected override void Awake() {
+        base.Awake();
         gameMediator = GameMediator.Instance;
         gameMediator.Initialize();
     }
@@ -177,5 +144,11 @@ public class GameManager : MonoBehaviour {
             Debug.Log($"Added {typeof(T).Name} component");
         }
         return component;
+    }
+
+    private void InitializeRequiredComponents(GameObject go) {
+        GameUI = go.GetComponent<GameUI>() ?? go.AddComponent<GameUI>();
+        TestSetup = go.GetComponent<TestSetup>() ?? go.AddComponent<TestSetup>();
+        BattlefieldUI = go.GetComponent<BattlefieldUI>() ?? go.AddComponent<BattlefieldUI>();
     }
 }

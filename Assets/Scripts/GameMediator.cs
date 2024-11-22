@@ -30,18 +30,7 @@ public interface IGameMediator {
     void Cleanup();
 }
 
-public class GameMediator : MonoBehaviour, IGameMediator {
-    private static GameMediator instance;
-    public static GameMediator Instance {
-        get {
-            if (instance == null) {
-                var go = new GameObject("GameMediator");
-                instance = go.AddComponent<GameMediator>();
-            }
-            return instance;
-        }
-    }
-
+public class GameMediator : Singleton<GameMediator>, IGameMediator {
     [SerializeField] private UnityEvent onGameStateChanged = new UnityEvent();
     [SerializeField] private PlayerDamagedEvent onPlayerDamaged = new PlayerDamagedEvent();
     [SerializeField] private CreatureDamagedEvent onCreatureDamaged = new CreatureDamagedEvent();
@@ -59,13 +48,9 @@ public class GameMediator : MonoBehaviour, IGameMediator {
     private DamageResolver damageResolver;
     private bool isInitialized;
 
-    protected void Awake() {
-        if (instance != null && instance != this) {
-            Destroy(gameObject);
-            return;
-        }
-        instance = this;
-        DontDestroyOnLoad(gameObject);
+    protected override void Awake() {
+        base.Awake();
+        // Keep any specific Awake logic if needed
     }
 
     public void Initialize() {
@@ -181,7 +166,7 @@ public class GameMediator : MonoBehaviour, IGameMediator {
         isInitialized = false;
     }
 
-    protected void OnDestroy() {
+    protected override void OnDestroy() {
         if (instance == this) {
             Cleanup();
             instance = null;
