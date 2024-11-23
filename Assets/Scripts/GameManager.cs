@@ -39,6 +39,8 @@ public class GameManager : Singleton<GameManager> {
             InitializeGame();
             isInitialized = true;
         }
+
+        SetupTestGame();
     }
 
     private void InitializeGame() {
@@ -170,11 +172,8 @@ public class GameManager : Singleton<GameManager> {
         // Add test cards to players' hands
         foreach (var card in testCards) {
             var cardInstance = CardFactory.CreateCard(card);
-            if (UnityEngine.Random.value > 0.5f) {
-                Player1.AddToHand(cardInstance);
-            } else {
-                Player2.AddToHand(cardInstance);
-            }
+            Player1.AddToHand(cardInstance);
+            Player2.AddToHand(cardInstance);
         }
 
         NotifyGameStateChanged();
