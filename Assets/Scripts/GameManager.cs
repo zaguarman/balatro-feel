@@ -30,16 +30,7 @@ public class GameManager : Singleton<GameManager> {
     }
 
     private void InitializeGameSystems() {
-        // Initialize core systems in the correct order
         gameMediator = GameMediator.Instance;
-        gameMediator.Initialize();
-
-        // Initialize references
-        GameReferences.Instance.ValidateReferences();
-
-        // Initialize UI
-        GameUI.Instance.UpdateUI();
-
         gameEvents = GameEvents.Instance;
     }
 

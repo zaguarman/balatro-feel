@@ -29,6 +29,7 @@ public class GameMediator : Singleton<GameMediator>, IGameMediator {
     protected override void Awake() {
         base.Awake();
         gameEvents = GameEvents.Instance;
+        Initialize();
     }
 
     public GameEvents.GameStateChangedEvent OnGameStateChanged => gameEvents.OnGameStateChanged;

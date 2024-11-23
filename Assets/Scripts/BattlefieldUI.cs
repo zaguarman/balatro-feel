@@ -1,68 +1,100 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using System.Collections.Generic;
 
 public class BattlefieldUI : MonoBehaviour {
-    private RectTransform player1Battlefield;
-    private RectTransform player2Battlefield;
-    private Button cardButtonPrefab;
-    private Dictionary<string, Button> creatureButtons = new Dictionary<string, Button>();
-    private IGameMediator gameMediator;
-
     [SerializeField] private float cardSpacing = 220f;
     [SerializeField] private float cardOffset = 50f;
 
-    public void Start() {
+    private RectTransform player1Battlefield;
+    private RectTransform player2Battlefield;
+    private Dictionary<string, Button> creatureButtons = new Dictionary<string, Button>();
+    private IGameMediator gameMediator;
+
+    private void Start() {
         InitializeReferences();
-        // Get GameMediator instance and subscribe to events
-        gameMediator = GameMediator.Instance;
-        gameMediator.OnGameStateChanged.AddListener(UpdateBattlefield);
-        gameMediator.OnCreatureDied.AddListener(OnCreatureDied);
+        RegisterEvents();
         UpdateBattlefield();
     }
 
-    private void InitializeReferences() {
-        player1Battlefield = GameReferences.Instance.GetPlayer1Battlefield();
-        player2Battlefield = GameReferences.Instance.GetPlayer2Battlefield();
-        cardButtonPrefab = GameReferences.Instance.GetCardButtonPrefab();
+    private void OnDestroy() {
+        UnregisterEvents();
     }
 
-    public void UpdateBattlefield() {
+    private void InitializeReferences() {
+        var references = GameReferences.Instance;
+        player1Battlefield = references.GetPlayer1Battlefield();
+        player2Battlefield = references.GetPlayer2Battlefield();
+        gameMediator = GameMediator.Instance;
+    }
+
+    private void RegisterEvents() {
+        if (gameMediator != null) {
+            gameMediator.OnGameStateChanged.AddListener(UpdateBattlefield);
+            gameMediator.OnCreatureDied.AddListener(OnCreatureDied);
+        }
+    }
+
+    private void UnregisterEvents() {
+        if (gameMediator != null) {
+            gameMediator.OnGameStateChanged.RemoveListener(UpdateBattlefield);
+            gameMediator.OnCreatureDied.RemoveListener(OnCreatureDied);
+        }
+    }
+
+    private void UpdateBattlefield() {
         ClearBattlefield(player1Battlefield);
         ClearBattlefield(player2Battlefield);
-        CreateCreatureCards(GameManager.Instance.Player1, player1Battlefield, true);
-        CreateCreatureCards(GameManager.Instance.Player2, player2Battlefield, false);
-    }
 
-    private void ClearBattlefield(RectTransform battlefield) {
-        foreach (Transform child in battlefield) {
-            Destroy(child.gameObject);
-        }
-        creatureButtons.Clear();
+        var gameManager = GameManager.Instance;
+        CreateCreatureCards(gameManager.Player1, player1Battlefield, true);
+        CreateCreatureCards(gameManager.Player2, player2Battlefield, false);
     }
 
     private void CreateCreatureCards(IPlayer player, RectTransform battlefield, bool isPlayer1) {
+        if (battlefield == null || player == null) return;
+
         float totalWidth = cardOffset + (cardSpacing * player.Battlefield.Count);
         battlefield.sizeDelta = new Vector2(totalWidth, 320f);
 
         for (int i = 0; i < player.Battlefield.Count; i++) {
-            ICreature creature = player.Battlefield[i];
-            Button button = Instantiate(cardButtonPrefab, battlefield);
-            RectTransform rect = button.GetComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0, 0.5f);
-            rect.anchorMax = new Vector2(0, 0.5f);
-            rect.pivot = new Vector2(0, 0.5f);
-            rect.anchoredPosition = new Vector2(cardOffset + (cardSpacing * i), 0);
-
-            CardButtonController controller = button.GetComponent<CardButtonController>();
-            CreatureData creatureData = ScriptableObject.CreateInstance<CreatureData>();
-            creatureData.cardName = creature.Name;
-            creatureData.attack = creature.Attack;
-            creatureData.health = creature.Health;
-            controller.Setup(creatureData, isPlayer1);
-
-            creatureButtons[creature.TargetId] = button;
+            CreateCreatureCard(player.Battlefield[i], battlefield, i, isPlayer1);
         }
+    }
+
+    private void CreateCreatureCard(ICreature creature, RectTransform battlefield, int index, bool isPlayer1) {
+        var references = GameReferences.Instance;
+        Button button = Instantiate(references.GetCardButtonPrefab(), battlefield);
+
+        SetupCardTransform(button.GetComponent<RectTransform>(), index);
+        SetupCardController(button.GetComponent<CardButtonController>(), creature, isPlayer1);
+
+        creatureButtons[creature.TargetId] = button;
+    }
+
+    private void SetupCardTransform(RectTransform rect, int index) {
+        rect.anchorMin = new Vector2(0, 0.5f);
+        rect.anchorMax = new Vector2(0, 0.5f);
+        rect.pivot = new Vector2(0, 0.5f);
+        rect.anchoredPosition = new Vector2(cardOffset + (cardSpacing * index), 0);
+    }
+
+    private void SetupCardController(CardButtonController controller, ICreature creature, bool isPlayer1) {
+        var creatureData = ScriptableObject.CreateInstance<CreatureData>();
+        creatureData.cardName = creature.Name;
+        creatureData.attack = creature.Attack;
+        creatureData.health = creature.Health;
+
+        controller.Setup(creatureData, isPlayer1);
+    }
+
+    private void ClearBattlefield(RectTransform battlefield) {
+        if (battlefield == null) return;
+
+        foreach (Transform child in battlefield) {
+            Destroy(child.gameObject);
+        }
+        creatureButtons.Clear();
     }
 
     private void OnCreatureDied(ICreature creature) {
@@ -71,13 +103,5 @@ public class BattlefieldUI : MonoBehaviour {
             creatureButtons.Remove(creature.TargetId);
         }
         UpdateBattlefield();
-    }
-
-    public void OnDestroy() {
-        if (gameMediator != null) {
-            // Unsubscribe from all events
-            gameMediator.OnGameStateChanged.RemoveListener(UpdateBattlefield);
-            gameMediator.OnCreatureDied.RemoveListener(OnCreatureDied);
-        }
     }
 }

@@ -1,81 +1,67 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 
-public class CardButtonController : MonoBehaviour {
-    [Header("UI References")]
+public class CardButtonController : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler {
+    [Header("UI Components")]
     [SerializeField] private TextMeshProUGUI nameText;
     [SerializeField] private TextMeshProUGUI statsText;
     [SerializeField] private TextMeshProUGUI descriptionText;
 
-    [Header("Style")]
-    [SerializeField] private Color player1Color = new Color(0.8f, 0.9f, 1f);
-    [SerializeField] private Color player2Color = new Color(1f, 0.8f, 0.8f);
+    [Header("Card Appearance")]
+    [SerializeField] private Vector2 defaultSize = new Vector2(200f, 300f);
+    [SerializeField] private float hoverScaleFactor = 1.1f;
 
     private Button button;
+    private Image backgroundImage;
+    private RectTransform rectTransform;
     private CardData cardData;
     private bool isPlayer1;
-    private GameReferences gameRefs;
-    private RectTransform cardRect;
-    private Image buttonImage;
 
-    public void Awake() {
-        button = GetComponent<Button>();
-        cardRect = GetComponent<RectTransform>();
-        gameRefs = GameReferences.Instance;
-        InitializeCard();
-    }
-
-    private void InitializeCard() {
-        if (gameRefs == null) {
-            Debug.LogError("GameReferences not found");
-            return;
-        }
-
-        buttonImage = GetComponent<Image>();
-
+    private void Awake() {
+        InitializeComponents();
         ValidateComponents();
         SetDefaultSize();
     }
 
+    private void InitializeComponents() {
+        button = GetComponent<Button>();
+        backgroundImage = GetComponent<Image>();
+        rectTransform = GetComponent<RectTransform>();
+    }
+
     private void ValidateComponents() {
-        if (nameText == null) Debug.LogError("Name Text component missing");
-        if (statsText == null) Debug.LogError("Stats Text component missing");
-        if (descriptionText == null) Debug.LogError("Description Text component missing");
-        if (button == null) Debug.LogError("Button component missing");
-        if (buttonImage == null) Debug.LogError("Image component missing");
+        if (nameText == null) Debug.LogError($"Name Text component missing on {gameObject.name}");
+        if (statsText == null) Debug.LogError($"Stats Text component missing on {gameObject.name}");
+        if (descriptionText == null) Debug.LogError($"Description Text component missing on {gameObject.name}");
+        if (button == null) Debug.LogError($"Button component missing on {gameObject.name}");
+        if (backgroundImage == null) Debug.LogError($"Image component missing on {gameObject.name}");
     }
 
     private void SetDefaultSize() {
-        if (cardRect != null) {
-            Button prefab = gameRefs.GetCardButtonPrefab();
-            if (prefab != null) {
-                RectTransform prefabRect = prefab.GetComponent<RectTransform>();
-                cardRect.sizeDelta = prefabRect.sizeDelta;
-            }
+        if (rectTransform != null) {
+            rectTransform.sizeDelta = defaultSize;
         }
     }
 
     public void Setup(CardData data, bool isPlayerOne) {
         cardData = data;
         isPlayer1 = isPlayerOne;
-        UpdateVisuals();
 
-        // Set parent based on player
-        Transform parent = isPlayer1 ? gameRefs.GetPlayer1Hand() : gameRefs.GetPlayer2Hand();
-
-        if (parent != null) {
-            transform.SetParent(parent, false);
-        }
+        UpdateCardContent();
+        UpdateCardColor();
     }
 
-    private void UpdateVisuals() {
+    private void UpdateCardContent() {
         if (cardData == null) return;
 
+        // Update name
         if (nameText != null) {
             nameText.text = cardData.cardName;
         }
 
+        // Update stats for creature cards
         if (statsText != null) {
             if (cardData is CreatureData creatureData) {
                 statsText.gameObject.SetActive(true);
@@ -85,11 +71,19 @@ public class CardButtonController : MonoBehaviour {
             }
         }
 
+        // Update description
         if (descriptionText != null) {
             descriptionText.text = cardData.description;
         }
+    }
 
-        buttonImage.color = isPlayer1 ? player1Color : player2Color;
+    private void UpdateCardColor() {
+        if (backgroundImage != null) {
+            Color cardColor = isPlayer1
+                ? GameReferences.Instance.GetPlayer1CardColor()
+                : GameReferences.Instance.GetPlayer2CardColor();
+            backgroundImage.color = cardColor;
+        }
     }
 
     public void SetInteractable(bool interactable) {
@@ -98,23 +92,15 @@ public class CardButtonController : MonoBehaviour {
         }
     }
 
-    public void OnPointerEnter() {
-        transform.localScale = Vector3.one * 1.1f;
+    public void OnPointerEnter(PointerEventData eventData) {
+        transform.localScale = Vector3.one * hoverScaleFactor;
     }
 
-    public void OnPointerExit() {
+    public void OnPointerExit(PointerEventData eventData) {
         transform.localScale = Vector3.one;
     }
 
-    public void MoveToBattlefield() {
-        if (gameRefs == null) return;
+    public CardData GetCardData() => cardData;
 
-        Transform battlefield = isPlayer1 ?
-            gameRefs.GetPlayer1Battlefield() :
-            gameRefs.GetPlayer2Battlefield();
-
-        if (battlefield != null) {
-            transform.SetParent(battlefield, false);
-        }
-    }
+    public bool IsPlayer1Card() => isPlayer1;
 }
