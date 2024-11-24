@@ -1,189 +1,101 @@
-
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
-using System.Collections;
-using UnityEngine.UI;
 
-public class DraggableCard : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler, IPointerEnterHandler, IPointerExitHandler, IPointerUpHandler, IPointerDownHandler
-{
+// The main component that handles drag and drop functionality
+public class DraggableCard : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler, IPointerUpHandler, IPointerDownHandler {
     private Canvas canvas;
-    private Image imageComponent;
-    [SerializeField] private bool instantiateVisual = true;
-    private VisualCardsHandler visualHandler;
-    private Vector3 offset;
+    private RectTransform rectTransform;
+    private Vector3 originalPosition;
+    private bool isDragging = false;
 
-    [Header("Movement")]
-    [SerializeField] private float moveSpeedLimit = 50;
+    // Events that other components can subscribe to
+    public UnityEvent<DraggableCard> OnBeginDragEvent = new UnityEvent<DraggableCard>();
+    public UnityEvent<DraggableCard> OnEndDragEvent = new UnityEvent<DraggableCard>();
+    public UnityEvent<DraggableCard> OnPointerDownEvent = new UnityEvent<DraggableCard>();
+    public UnityEvent<DraggableCard> OnPointerUpEvent = new UnityEvent<DraggableCard>();
 
-    [Header("Selection")]
-    public bool selected;
-    public float selectionOffset = 50;
-    private float pointerDownTime;
-    private float pointerUpTime;
-
-    [Header("Visual")]
-    [SerializeField] private GameObject cardVisualPrefab;
-    [HideInInspector] public CardVisual cardVisual;
-
-    [Header("States")]
-    public bool isHovering;
-    public bool isDragging;
-    [HideInInspector] public bool wasDragged;
-
-    [Header("Events")]
-    [HideInInspector] public UnityEvent<DraggableCard> PointerEnterEvent;
-    [HideInInspector] public UnityEvent<DraggableCard> PointerExitEvent;
-    [HideInInspector] public UnityEvent<DraggableCard, bool> PointerUpEvent;
-    [HideInInspector] public UnityEvent<DraggableCard> PointerDownEvent;
-    [HideInInspector] public UnityEvent<DraggableCard> BeginDragEvent;
-    [HideInInspector] public UnityEvent<DraggableCard> EndDragEvent;
-    [HideInInspector] public UnityEvent<DraggableCard, bool> SelectEvent;
-
-    void Start()
-    {
+    private void Awake() {
         canvas = GetComponentInParent<Canvas>();
-        imageComponent = GetComponent<Image>();
-
-        if (!instantiateVisual)
-            return;
-
-        visualHandler = FindObjectOfType<VisualCardsHandler>();
-        cardVisual = Instantiate(cardVisualPrefab, visualHandler ? visualHandler.transform : canvas.transform).GetComponent<CardVisual>();
-        cardVisual.Initialize(this);
+        rectTransform = GetComponent<RectTransform>();
+        originalPosition = rectTransform.localPosition;
     }
 
-    void Update()
-    {
-        ClampPosition();
+    public void OnBeginDrag(PointerEventData eventData) {
+        if (eventData.button != PointerEventData.InputButton.Left) return;
 
-        if (isDragging)
-        {
-            Vector2 targetPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition) - offset;
-            Vector2 direction = (targetPosition - (Vector2)transform.position).normalized;
-            Vector2 velocity = direction * Mathf.Min(moveSpeedLimit, Vector2.Distance(transform.position, targetPosition) / Time.deltaTime);
-            transform.Translate(velocity * Time.deltaTime);
-        }
-    }
-
-    void ClampPosition()
-    {
-        Vector2 screenBounds = Camera.main.ScreenToWorldPoint(new Vector3(Screen.width, Screen.height, Camera.main.transform.position.z));
-        Vector3 clampedPosition = transform.position;
-        clampedPosition.x = Mathf.Clamp(clampedPosition.x, -screenBounds.x, screenBounds.x);
-        clampedPosition.y = Mathf.Clamp(clampedPosition.y, -screenBounds.y, screenBounds.y);
-        transform.position = new Vector3(clampedPosition.x, clampedPosition.y, 0);
-    }
-
-    public void OnBeginDrag(PointerEventData eventData)
-    {
-        BeginDragEvent.Invoke(this);
-        Vector2 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        offset = mousePosition - (Vector2)transform.position;
         isDragging = true;
-        canvas.GetComponent<GraphicRaycaster>().enabled = false;
-        imageComponent.raycastTarget = false;
-
-        wasDragged = true;
+        OnBeginDragEvent.Invoke(this);
     }
 
-    public void OnDrag(PointerEventData eventData)
-    {
+    public void OnDrag(PointerEventData eventData) {
+        if (!isDragging) return;
+
+        // Convert screen point to local point within canvas
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            canvas.transform as RectTransform,
+            eventData.position,
+            canvas.worldCamera,
+            out Vector2 localPoint
+        );
+
+        transform.position = canvas.transform.TransformPoint(localPoint);
     }
 
-    public void OnEndDrag(PointerEventData eventData)
-    {
-        EndDragEvent.Invoke(this);
+    public void OnEndDrag(PointerEventData eventData) {
         isDragging = false;
-        canvas.GetComponent<GraphicRaycaster>().enabled = true;
-        imageComponent.raycastTarget = true;
+        OnEndDragEvent.Invoke(this);
+    }
 
-        StartCoroutine(FrameWait());
+    public void OnPointerDown(PointerEventData eventData) {
+        if (eventData.button != PointerEventData.InputButton.Left) return;
+        OnPointerDownEvent.Invoke(this);
+    }
 
-        IEnumerator FrameWait()
-        {
-            yield return new WaitForEndOfFrame();
-            wasDragged = false;
+    public void OnPointerUp(PointerEventData eventData) {
+        if (eventData.button != PointerEventData.InputButton.Left) return;
+        OnPointerUpEvent.Invoke(this);
+    }
+
+    public void ResetPosition() {
+        rectTransform.localPosition = originalPosition;
+    }
+}
+
+// Optional card holder class to manage multiple cards
+public class CardHolder : MonoBehaviour {
+    private DraggableCard[] cards;
+
+    private void Start() {
+        // Get all draggable cards in children
+        cards = GetComponentsInChildren<DraggableCard>();
+
+        // Subscribe to events for each card
+        foreach (var card in cards) {
+            card.OnBeginDragEvent.AddListener(OnCardBeginDrag);
+            card.OnEndDragEvent.AddListener(OnCardEndDrag);
         }
     }
 
-    public void OnPointerEnter(PointerEventData eventData)
-    {
-        PointerEnterEvent.Invoke(this);
-        isHovering = true;
+    private void OnCardBeginDrag(DraggableCard card) {
+        // Bring dragged card to front
+        card.transform.SetAsLastSibling();
     }
 
-    public void OnPointerExit(PointerEventData eventData)
-    {
-        PointerExitEvent.Invoke(this);
-        isHovering = false;
+    private void OnCardEndDrag(DraggableCard card) {
+        // Implement any logic for when a card is dropped
+        // For example, checking if it's dropped in a valid zone
     }
 
-
-    public void OnPointerDown(PointerEventData eventData)
-    {
-        if (eventData.button != PointerEventData.InputButton.Left)
-            return;
-
-        PointerDownEvent.Invoke(this);
-        pointerDownTime = Time.time;
-    }
-
-    public void OnPointerUp(PointerEventData eventData)
-    {
-        if (eventData.button != PointerEventData.InputButton.Left)
-            return;
-
-        pointerUpTime = Time.time;
-
-        PointerUpEvent.Invoke(this, pointerUpTime - pointerDownTime > .2f);
-
-        if (pointerUpTime - pointerDownTime > .2f)
-            return;
-
-        if (wasDragged)
-            return;
-
-        selected = !selected;
-        SelectEvent.Invoke(this, selected);
-
-        if (selected)
-            transform.localPosition += (cardVisual.transform.up * selectionOffset);
-        else
-            transform.localPosition = Vector3.zero;
-    }
-
-    public void Deselect()
-    {
-        if (selected)
-        {
-            selected = false;
-            if (selected)
-                transform.localPosition += (cardVisual.transform.up * 50);
-            else
-                transform.localPosition = Vector3.zero;
+    private void OnDestroy() {
+        // Clean up event listeners
+        if (cards != null) {
+            foreach (var card in cards) {
+                if (card != null) {
+                    card.OnBeginDragEvent.RemoveListener(OnCardBeginDrag);
+                    card.OnEndDragEvent.RemoveListener(OnCardEndDrag);
+                }
+            }
         }
-    }
-
-
-    public int SiblingAmount()
-    {
-        return transform.parent.CompareTag("Slot") ? transform.parent.parent.childCount - 1 : 0;
-    }
-
-    public int ParentIndex()
-    {
-        return transform.parent.CompareTag("Slot") ? transform.parent.GetSiblingIndex() : 0;
-    }
-
-    public float NormalizedPosition()
-    {
-        return transform.parent.CompareTag("Slot") ? ExtensionMethods.Remap((float)ParentIndex(), 0, (float)(transform.parent.parent.childCount - 1), 0, 1) : 0;
-    }
-
-    private void OnDestroy()
-    {
-        if(cardVisual != null)
-        Destroy(cardVisual.gameObject);
     }
 }
