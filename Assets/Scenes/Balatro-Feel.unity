@@ -1076,8 +1076,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameUI: {fileID: 1458677300}
-  resolveActionsButton: {fileID: 776573425}
-  pendingActionsText: {fileID: 1600603287}
+  resolveActionsButton: {fileID: 0}
+  pendingActionsText: {fileID: 0}
   player1UI: {fileID: 500666786}
   player1HealthText: {fileID: 1544506893}
   player1Hand: {fileID: 1587845787}
@@ -2471,10 +2471,10 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 519420032}
+  - {fileID: 908617627}
   - {fileID: 1608072351}
   - {fileID: 619394802}
   - {fileID: 2014619536}
-  - {fileID: 946047124}
   - {fileID: 1784775079}
+  - {fileID: 946047124}
   - {fileID: 1458677301}
-  - {fileID: 908617627}
