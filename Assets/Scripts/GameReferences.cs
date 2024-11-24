@@ -35,7 +35,8 @@ public class GameReferences : Singleton<GameReferences> {
         base.Awake();
         EnsureCanvasExists();
         ValidateAndCreateReferences();
-        InitializePlayerUIs();
+
+        InitializeUI();
     }
 
     private void EnsureCanvasExists() {
@@ -160,7 +161,10 @@ public class GameReferences : Singleton<GameReferences> {
         return rect;
     }
 
-    private void InitializePlayerUIs() {
+    public void InitializeUI() {
+        // Add debug logging
+        Debug.Log("Initializing UI references");
+
         if (player1UI != null) {
             var player1Refs = new PlayerUIReferences {
                 healthText = player1HealthText,
@@ -169,6 +173,9 @@ public class GameReferences : Singleton<GameReferences> {
             };
             player1UI.SetReferences(player1Refs);
             player1UI.SetIsPlayer1(true);
+            Debug.Log("Player1 UI references initialized");
+        } else {
+            Debug.LogError("Player1 UI component is null");
         }
 
         if (player2UI != null) {
@@ -179,6 +186,9 @@ public class GameReferences : Singleton<GameReferences> {
             };
             player2UI.SetReferences(player2Refs);
             player2UI.SetIsPlayer1(false);
+            Debug.Log("Player2 UI references initialized");
+        } else {
+            Debug.LogError("Player2 UI component is null");
         }
     }
 

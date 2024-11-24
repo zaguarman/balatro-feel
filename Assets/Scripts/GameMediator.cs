@@ -40,7 +40,6 @@ public class GameMediator : Singleton<GameMediator>, IGameMediator {
             gameEvents = GameEvents.Instance;
             ClearRegistrations();
             isInitialized = true;
-            Debug.Log("GameMediator initialized");
         }
     }
 
@@ -49,8 +48,8 @@ public class GameMediator : Singleton<GameMediator>, IGameMediator {
     }
 
     private bool ValidateState(string operation) {
-        InitializeIfNeeded(); // Always ensure initialized
-        return true; // No longer block operations if not initialized
+        InitializeIfNeeded(); 
+        return true; 
     }
 
     public void RegisterPlayer(IPlayer player) {
@@ -60,38 +59,32 @@ public class GameMediator : Singleton<GameMediator>, IGameMediator {
         if (!players.Contains(player)) {
             players.Add(player);
             player.OnDamaged.AddListener((damage) => NotifyPlayerDamaged(player, damage));
-            Debug.Log($"Player registered with GameMediator");
         }
     }
 
     public void UnregisterPlayer(IPlayer player) {
         if (player == null) return;
         players.Remove(player);
-        Debug.Log($"Player unregistered from GameMediator");
     }
 
     public void RegisterUI(GameUI ui) {
         if (!ValidateState("RegisterUI") || ui == null) return;
         gameUI = ui;
-        Debug.Log("UI registered with GameMediator");
     }
 
     public void UnregisterUI(GameUI ui) {
         if (gameUI != ui) return;
         gameUI = null;
-        Debug.Log("UI unregistered from GameMediator");
     }
 
     public void RegisterDamageResolver(DamageResolver resolver) {
         if (!ValidateState("RegisterDamageResolver") || resolver == null) return;
         damageResolver = resolver;
-        Debug.Log("DamageResolver registered with GameMediator");
     }
 
     public void UnregisterDamageResolver(DamageResolver resolver) {
         if (damageResolver != resolver) return;
         damageResolver = null;
-        Debug.Log("DamageResolver unregistered from GameMediator");
     }
 
     public GameEvents.GameStateChangedEvent OnGameStateChanged => gameEvents.OnGameStateChanged;
@@ -115,7 +108,6 @@ public class GameMediator : Singleton<GameMediator>, IGameMediator {
     public void Cleanup() {
         ClearRegistrations();
         isInitialized = false;
-        Debug.Log("GameMediator cleaned up");
     }
 
     protected override void OnDestroy() {

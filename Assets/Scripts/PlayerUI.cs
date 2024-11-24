@@ -1,6 +1,5 @@
-using UnityEngine;
 using TMPro;
-using UnityEngine.UI;
+using UnityEngine;
 using System.Collections.Generic;
 
 public struct PlayerUIReferences {
@@ -38,11 +37,16 @@ public class PlayerUI : MonoBehaviour {
         if (gameEvents != null) {
             gameEvents.OnGameInitialized.AddListener(InitializePlayer);
         }
+
+        // Add debug logging
+        Debug.Log($"PlayerUI Dependencies initialized - Mediator: {gameMediator != null}, Events: {gameEvents != null}");
     }
 
     public void SetReferences(PlayerUIReferences refs) {
         references = refs;
         ValidateReferences();
+        // Log reference setup
+        Debug.Log($"PlayerUI References set - Health Text: {references.healthText != null}, Hand Container: {references.handContainer != null}");
     }
 
     private void ValidateReferences() {
@@ -57,6 +61,7 @@ public class PlayerUI : MonoBehaviour {
     public void SetIsPlayer1(bool value) {
         isPlayer1 = value;
         InitializePlayer();
+        Debug.Log($"PlayerUI SetIsPlayer1 called with value: {value}");
     }
 
     private void InitializePlayer() {
@@ -67,14 +72,23 @@ public class PlayerUI : MonoBehaviour {
                 isInitialized = true;
                 UpdateUI();
                 Debug.Log($"Player{(isPlayer1 ? "1" : "2")} UI initialized successfully");
+            } else {
+                Debug.LogError($"Failed to get player reference from GameManager for Player{(isPlayer1 ? "1" : "2")}");
             }
+        } else {
+            Debug.LogError("GameManager instance not found during PlayerUI initialization");
         }
     }
 
     public void UpdateUI() {
-        if (!isInitialized || player == null) return;
+        if (!isInitialized || player == null) {
+            Debug.LogWarning($"UpdateUI called but not ready - Initialized: {isInitialized}, Player: {player != null}");
+            return;
+        }
+
         UpdateHealth();
         UpdateHand();
+        Debug.Log($"UpdateUI called for Player{(isPlayer1 ? "1" : "2")} - Hand Count: {player.Hand.Count}");
     }
 
     private void UpdateHealth() {
@@ -84,13 +98,18 @@ public class PlayerUI : MonoBehaviour {
     }
 
     private void UpdateHand() {
+        if (references.handContainer == null) {
+            Debug.LogError($"Hand container is null for Player{(isPlayer1 ? "1" : "2")}");
+            return;
+        }
+
         ClearContainer(references.handContainer);
         handCards.Clear();
 
-        if (references.handContainer == null) return;
-
         float totalWidth = cardOffset + (cardSpacing * player.Hand.Count);
         references.handContainer.sizeDelta = new Vector2(totalWidth, 320f);
+
+        Debug.Log($"Updating hand for Player{(isPlayer1 ? "1" : "2")} with {player.Hand.Count} cards");
 
         for (int i = 0; i < player.Hand.Count; i++) {
             CreateCardInHand(player.Hand[i], i);
@@ -98,8 +117,39 @@ public class PlayerUI : MonoBehaviour {
     }
 
     private void CreateCardInHand(ICard card, int index) {
-        var buttonObj = CreateCardButton(references.handContainer, index);
+        // Check if we have valid hand container reference
+        if (references.handContainer == null) {
+            Debug.LogError($"Hand container is null for Player{(isPlayer1 ? "1" : "2")}");
+            return;
+        }
+
+        // Get card button prefab from GameReferences
+        var gameRefs = GameReferences.Instance;
+        if (gameRefs == null) {
+            Debug.LogError("GameReferences instance is null");
+            return;
+        }
+
+        var cardButtonPrefab = gameRefs.GetCardButtonPrefab();
+        if (cardButtonPrefab == null) {
+            Debug.LogError("Card button prefab is null");
+            return;
+        }
+
+        // Instantiate the card in our hand container
+        var buttonObj = Instantiate(cardButtonPrefab, references.handContainer);
+        if (buttonObj == null) {
+            Debug.LogError("Failed to instantiate card button");
+            return;
+        }
+
+        SetupCardTransform(buttonObj.GetComponent<RectTransform>(), index);
+
         var controller = buttonObj.GetComponent<CardButtonController>();
+        if (controller == null) {
+            Debug.LogError("CardButtonController component not found on instantiated button");
+            return;
+        }
 
         var cardData = CreateCardData(card);
         controller.Setup(cardData, isPlayer1);
@@ -109,32 +159,16 @@ public class PlayerUI : MonoBehaviour {
         });
 
         handCards.Add(controller);
+        Debug.Log($"Created card in hand: {card.Name} at index {index} for Player{(isPlayer1 ? "1" : "2")}");
     }
 
-    private Button CreateCardButton(RectTransform parent, int index) {
-        var references = GameReferences.Instance;
-        Button buttonObj = Instantiate(references.GetCardButtonPrefab(), parent);
-        RectTransform rectTransform = buttonObj.GetComponent<RectTransform>();
+    private void SetupCardTransform(RectTransform rect, int index) {
+        if (rect == null) return;
 
-        rectTransform.anchorMin = new Vector2(0, 0.5f);
-        rectTransform.anchorMax = new Vector2(0, 0.5f);
-        rectTransform.pivot = new Vector2(0, 0.5f);
-        rectTransform.anchoredPosition = new Vector2(cardOffset + (cardSpacing * index), 0);
-
-        return buttonObj;
-    }
-
-    private void HandlePlayerDamaged(IPlayer damagedPlayer, int damage) {
-        if (damagedPlayer == player) {
-            UpdateHealth();
-        }
-    }
-
-    private void ClearContainer(RectTransform container) {
-        if (container == null) return;
-        foreach (Transform child in container) {
-            Destroy(child.gameObject);
-        }
+        rect.anchorMin = new Vector2(0, 0.5f);
+        rect.anchorMax = new Vector2(0, 0.5f);
+        rect.pivot = new Vector2(0, 0.5f);
+        rect.anchoredPosition = new Vector2(cardOffset + (cardSpacing * index), 0);
     }
 
     private CardData CreateCardData(ICard card) {
@@ -147,6 +181,20 @@ public class PlayerUI : MonoBehaviour {
         }
 
         return cardData;
+    }
+
+    private void HandlePlayerDamaged(IPlayer damagedPlayer, int damage) {
+        if (damagedPlayer == player) {
+            UpdateHealth();
+        }
+    }
+
+    private void ClearContainer(RectTransform container) {
+        if (container == null) return;
+
+        foreach (Transform child in container) {
+            Destroy(child.gameObject);
+        }
     }
 
     private void OnDestroy() {

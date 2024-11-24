@@ -23,7 +23,6 @@ public class GameUI : Singleton<GameUI> {
 
         if (gameEvents != null) {
             gameEvents.OnGameInitialized.AddListener(InitializeUI);
-            Debug.Log("GameUI registered for initialization events");
         }
     }
 
