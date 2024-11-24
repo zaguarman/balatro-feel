@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine.UI;
+using UnityEngine;
 
 public class DamageResolver {
     private static DamageResolver instance;
@@ -10,6 +11,7 @@ public class DamageResolver {
     private readonly GameContext gameContext;
     private readonly GameManager gameManager;
     private bool isResolving;
+    private readonly GameEvents gameEvents;
 
     public DamageResolver(Button resolveButton, TextMeshProUGUI damageText, GameManager manager) {
         if (instance != null) return;
@@ -19,6 +21,7 @@ public class DamageResolver {
         pendingDamageText = damageText;
         gameManager = manager;
         gameContext = manager?.GameContext;
+        gameEvents = GameEvents.Instance;
 
         if (resolveActionsButton != null) {
             resolveActionsButton.onClick.AddListener(ResolveDamage);
@@ -39,7 +42,7 @@ public class DamageResolver {
 
         isResolving = true;
         gameContext.ResolveActions();
-        gameManager?.NotifyGameStateChanged();
+        gameEvents?.NotifyGameStateChanged();
         isResolving = false;
         UpdateResolutionState();
     }

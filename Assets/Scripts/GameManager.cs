@@ -2,13 +2,16 @@ using UnityEngine;
 using System;
 
 public class GameManager : Singleton<GameManager> {
-    private bool isInitialized;
-    private IGameMediator gameMediator;
-    private GameEvents gameEvents;
-
     public IPlayer Player1 { get; private set; }
     public IPlayer Player2 { get; private set; }
     public GameContext GameContext { get; private set; }
+
+    private IGameMediator gameMediator;
+    private GameEvents gameEvents;
+    private bool isInitialized;
+
+    public GameUI GameUI => GameUI.Instance;
+    public DamageResolver DamageResolver => DamageResolver.Instance;
 
     protected override void Awake() {
         base.Awake();
@@ -19,12 +22,12 @@ public class GameManager : Singleton<GameManager> {
         if (!isInitialized) {
             InitializeGame();
         }
-        SetupTestGame();
     }
 
     private void InitializeGameSystems() {
         gameMediator = GameMediator.Instance;
         gameEvents = GameEvents.Instance;
+        Debug.Log("Game systems initialized");
     }
 
     private void InitializeGame() {
@@ -38,9 +41,16 @@ public class GameManager : Singleton<GameManager> {
             gameMediator.RegisterPlayer(Player1);
             gameMediator.RegisterPlayer(Player2);
 
+            if (DamageResolver != null) {
+                gameMediator.RegisterDamageResolver(DamageResolver);
+            }
+
             isInitialized = true;
-            NotifyGameStateChanged();
+            gameEvents.NotifyGameInitialized();
+            gameEvents.NotifyGameStateChanged();
+
             Debug.Log("GameManager initialized successfully");
+            SetupTestGame();
         } catch (Exception e) {
             Debug.LogError($"Error initializing GameManager: {e.Message}");
             isInitialized = false;
@@ -57,13 +67,11 @@ public class GameManager : Singleton<GameManager> {
         ICard card = CardFactory.CreateCard(cardData);
         card.Play(GameContext, player);
         GameContext.ResolveActions();
-        NotifyGameStateChanged();
+        gameEvents.NotifyGameStateChanged();
     }
 
-    public void SetupTestGame() {
-        if (!isInitialized) {
-            InitializeGame();
-        }
+    private void SetupTestGame() {
+        if (!isInitialized) return;
 
         var testSetup = gameObject.GetComponent<TestSetup>() ?? gameObject.AddComponent<TestSetup>();
         var testCards = testSetup.CreateTestCards();
@@ -74,13 +82,28 @@ public class GameManager : Singleton<GameManager> {
             Player2.AddToHand(cardInstance);
         }
 
-        NotifyGameStateChanged();
+        gameEvents.NotifyGameStateChanged();
     }
 
-    public void NotifyGameStateChanged() => gameEvents.NotifyGameStateChanged();
+    public void ResetGame() {
+        if (gameMediator != null) {
+            if (Player1 != null) gameMediator.UnregisterPlayer(Player1);
+            if (Player2 != null) gameMediator.UnregisterPlayer(Player2);
+            if (DamageResolver != null) gameMediator.UnregisterDamageResolver(DamageResolver);
+            if (GameUI != null) gameMediator.UnregisterUI(GameUI);
+        }
+
+        isInitialized = false;
+        GameContext = null;
+        Player1 = null;
+        Player2 = null;
+
+        InitializeGame();
+    }
 
     protected override void OnDestroy() {
         if (instance == this) {
+            ResetGame();
             if (gameMediator != null) {
                 gameMediator.Cleanup();
             }

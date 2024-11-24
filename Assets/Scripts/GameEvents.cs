@@ -8,12 +8,19 @@ public class GameEvents : Singleton<GameEvents> {
     [Serializable] public class CreatureDiedEvent : UnityEvent<ICreature> { }
     [Serializable] public class GameOverEvent : UnityEvent<IPlayer> { }
     [Serializable] public class GameStateChangedEvent : UnityEvent { }
+    [Serializable] public class GameInitializedEvent : UnityEvent { }
 
     public GameStateChangedEvent OnGameStateChanged { get; } = new GameStateChangedEvent();
     public PlayerDamagedEvent OnPlayerDamaged { get; } = new PlayerDamagedEvent();
     public CreatureDamagedEvent OnCreatureDamaged { get; } = new CreatureDamagedEvent();
     public CreatureDiedEvent OnCreatureDied { get; } = new CreatureDiedEvent();
     public GameOverEvent OnGameOver { get; } = new GameOverEvent();
+    public GameInitializedEvent OnGameInitialized { get; } = new GameInitializedEvent();
+
+    public void NotifyGameInitialized() {
+        Debug.Log("Game initialization completed");
+        OnGameInitialized.Invoke();
+    }
 
     public void NotifyGameStateChanged() {
         Debug.Log("Game state changed");
@@ -45,4 +52,4 @@ public class GameEvents : Singleton<GameEvents> {
         Debug.Log($"Game over - Winner: {winner.TargetId}");
         OnGameOver.Invoke(winner);
     }
-} 
+}

@@ -1,10 +1,14 @@
-using TMPro;
 using UnityEngine;
+using TMPro;
 using UnityEngine.UI;
 
 public class GameReferences : Singleton<GameReferences> {
     [Header("Main UI Components")]
     [SerializeField] private GameUI gameUI;
+
+    [Header("Damage Resolution")]
+    [SerializeField] private Button resolveActionsButton;
+    [SerializeField] private TextMeshProUGUI pendingActionsText;
 
     [Header("Player 1 UI")]
     [SerializeField] private PlayerUI player1UI;
@@ -25,35 +29,168 @@ public class GameReferences : Singleton<GameReferences> {
     [SerializeField] private Color player1CardColor = new Color(0.8f, 0.9f, 1f);
     [SerializeField] private Color player2CardColor = new Color(1f, 0.8f, 0.8f);
 
+    private Canvas mainCanvas;
+
     protected override void Awake() {
         base.Awake();
-        ValidateReferences();
+        EnsureCanvasExists();
+        ValidateAndCreateReferences();
+        InitializePlayerUIs();
+    }
+
+    private void EnsureCanvasExists() {
+        mainCanvas = FindObjectOfType<Canvas>();
+        if (mainCanvas == null) {
+            var canvasObj = new GameObject("MainCanvas");
+            mainCanvas = canvasObj.AddComponent<Canvas>();
+            mainCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvasObj.AddComponent<CanvasScaler>();
+            canvasObj.AddComponent<GraphicRaycaster>();
+            Debug.Log("Created new canvas");
+        }
+    }
+
+    public void ValidateAndCreateReferences() {
+        CreateGameUIIfNeeded();
+        CreatePlayerUIComponentsIfNeeded();
+        CreateDamageResolutionIfNeeded();
+        CreateCardPrefabIfNeeded();
+    }
+
+    private void CreateGameUIIfNeeded() {
+        if (gameUI == null) {
+            var gameUIObj = new GameObject("GameUI");
+            gameUIObj.transform.SetParent(mainCanvas.transform, false);
+            gameUI = gameUIObj.AddComponent<GameUI>();
+            Debug.Log("Created GameUI");
+        }
+    }
+
+    private void CreatePlayerUIComponentsIfNeeded() {
+        // Player 1 Components
+        if (player1UI == null) {
+            var player1Container = CreatePlayerContainer("Player1Container");
+            player1UI = player1Container.AddComponent<PlayerUI>();
+        }
+
+        if (player1HealthText == null) {
+            player1HealthText = CreateTextComponent("Player1Health", player1UI.transform);
+        }
+
+        if (player1Hand == null) {
+            player1Hand = CreateContainer("Player1Hand", player1UI.transform);
+        }
+
+        if (player1Battlefield == null) {
+            player1Battlefield = CreateContainer("Player1Battlefield", player1UI.transform);
+        }
+
+        // Player 2 Components
+        if (player2UI == null) {
+            var player2Container = CreatePlayerContainer("Player2Container");
+            player2UI = player2Container.AddComponent<PlayerUI>();
+        }
+
+        if (player2HealthText == null) {
+            player2HealthText = CreateTextComponent("Player2Health", player2UI.transform);
+        }
+
+        if (player2Hand == null) {
+            player2Hand = CreateContainer("Player2Hand", player2UI.transform);
+        }
+
+        if (player2Battlefield == null) {
+            player2Battlefield = CreateContainer("Player2Battlefield", player2UI.transform);
+        }
+    }
+
+    private void CreateDamageResolutionIfNeeded() {
+        if (resolveActionsButton == null) {
+            var buttonObj = new GameObject("ResolveActionsButton");
+            buttonObj.transform.SetParent(mainCanvas.transform, false);
+            resolveActionsButton = buttonObj.AddComponent<Button>();
+            var buttonText = CreateTextComponent("ButtonText", buttonObj.transform);
+            buttonText.text = "Resolve Actions";
+        }
+
+        if (pendingActionsText == null) {
+            pendingActionsText = CreateTextComponent("PendingActionsText", mainCanvas.transform);
+        }
+    }
+
+    private void CreateCardPrefabIfNeeded() {
+        if (cardButtonPrefab == null) {
+            var cardObj = new GameObject("CardButtonPrefab");
+            cardButtonPrefab = cardObj.AddComponent<Button>();
+            var cardController = cardObj.AddComponent<CardButtonController>();
+            cardObj.SetActive(false); // Prefab should be inactive
+            Debug.Log("Created card button prefab");
+        }
+    }
+
+    private GameObject CreatePlayerContainer(string name) {
+        var container = new GameObject(name);
+        container.transform.SetParent(mainCanvas.transform, false);
+        var rect = container.AddComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.sizeDelta = Vector2.zero;
+        return container;
+    }
+
+    private TextMeshProUGUI CreateTextComponent(string name, Transform parent) {
+        var textObj = new GameObject(name);
+        textObj.transform.SetParent(parent, false);
+        var text = textObj.AddComponent<TextMeshProUGUI>();
+        text.fontSize = 24;
+        text.alignment = TextAlignmentOptions.Center;
+        text.color = Color.white;
+        var rect = text.GetComponent<RectTransform>();
+        rect.anchoredPosition = Vector2.zero;
+        return text;
+    }
+
+    private RectTransform CreateContainer(string name, Transform parent) {
+        var container = new GameObject(name);
+        container.transform.SetParent(parent, false);
+        var rect = container.AddComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.sizeDelta = Vector2.zero;
+        return rect;
+    }
+
+    private void InitializePlayerUIs() {
+        if (player1UI != null) {
+            var player1Refs = new PlayerUIReferences {
+                healthText = player1HealthText,
+                handContainer = player1Hand,
+                battlefieldContainer = player1Battlefield
+            };
+            player1UI.SetReferences(player1Refs);
+            player1UI.SetIsPlayer1(true);
+        }
+
+        if (player2UI != null) {
+            var player2Refs = new PlayerUIReferences {
+                healthText = player2HealthText,
+                handContainer = player2Hand,
+                battlefieldContainer = player2Battlefield
+            };
+            player2UI.SetReferences(player2Refs);
+            player2UI.SetIsPlayer1(false);
+        }
     }
 
     // Getters
     public GameUI GetGameUI() => gameUI;
     public PlayerUI GetPlayer1UI() => player1UI;
     public PlayerUI GetPlayer2UI() => player2UI;
-    public TextMeshProUGUI GetPlayer1HealthText() => player1HealthText;
-    public TextMeshProUGUI GetPlayer2HealthText() => player2HealthText;
-    public RectTransform GetPlayer1Hand() => player1Hand;
-    public RectTransform GetPlayer2Hand() => player2Hand;
     public RectTransform GetPlayer1Battlefield() => player1Battlefield;
     public RectTransform GetPlayer2Battlefield() => player2Battlefield;
     public Button GetCardButtonPrefab() => cardButtonPrefab;
     public Color GetPlayer1CardColor() => player1CardColor;
     public Color GetPlayer2CardColor() => player2CardColor;
-
-    private void ValidateReferences() {
-        if (gameUI == null) Debug.LogError("GameUI reference is missing");
-        if (player1UI == null) Debug.LogError("Player1 UI reference is missing");
-        if (player2UI == null) Debug.LogError("Player2 UI reference is missing");
-        if (player1HealthText == null) Debug.LogError("Player1 Health Text is missing");
-        if (player1Hand == null) Debug.LogError("Player1 Hand is missing");
-        if (player1Battlefield == null) Debug.LogError("Player1 Battlefield is missing");
-        if (player2HealthText == null) Debug.LogError("Player2 Health Text is missing");
-        if (player2Hand == null) Debug.LogError("Player2 Hand is missing");
-        if (player2Battlefield == null) Debug.LogError("Player2 Battlefield is missing");
-        if (cardButtonPrefab == null) Debug.LogError("Card Button Prefab is missing");
-    }
+    public Button GetResolveActionsButton() => resolveActionsButton;
+    public TextMeshProUGUI GetPendingActionsText() => pendingActionsText;
 }
