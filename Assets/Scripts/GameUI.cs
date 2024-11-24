@@ -6,14 +6,7 @@ public class GameUI : Singleton<GameUI> {
     protected override void Awake() {
         base.Awake();
         InitializeDependencies();
-        UpdateUI();
-    }
-
-    protected override void OnDestroy() {
-        if (instance == this) {
-            UnregisterFromMediator();
-            instance = null;
-        }
+        InitializePlayerUIs();
     }
 
     private void InitializeDependencies() {
@@ -21,9 +14,32 @@ public class GameUI : Singleton<GameUI> {
         gameMediator?.RegisterUI(this);
     }
 
-    public void SetPlayerUIs(PlayerUI player1, PlayerUI player2) {
-        player1UI = player1;
-        player2UI = player2;
+    private void InitializePlayerUIs() {
+        var references = GameReferences.Instance;
+
+        // Initialize Player 1 UI
+        player1UI = references.GetPlayer1UI();
+        if (player1UI != null) {
+            player1UI.SetIsPlayer1(true);
+            var player1References = new PlayerUIReferences {
+                healthText = references.GetPlayer1HealthText(),
+                handContainer = references.GetPlayer1Hand(),
+                battlefieldContainer = references.GetPlayer1Battlefield()
+            };
+            player1UI.SetReferences(player1References);
+        }
+
+        // Initialize Player 2 UI
+        player2UI = references.GetPlayer2UI();
+        if (player2UI != null) {
+            player2UI.SetIsPlayer1(false);
+            var player2References = new PlayerUIReferences {
+                healthText = references.GetPlayer2HealthText(),
+                handContainer = references.GetPlayer2Hand(),
+                battlefieldContainer = references.GetPlayer2Battlefield()
+            };
+            player2UI.SetReferences(player2References);
+        }
     }
 
     public void UpdateUI() {
@@ -31,9 +47,12 @@ public class GameUI : Singleton<GameUI> {
         player2UI?.UpdateUI();
     }
 
-    private void UnregisterFromMediator() {
-        if (gameMediator != null) {
-            gameMediator.UnregisterUI(this);
+    protected override void OnDestroy() {
+        if (instance == this) {
+            if (gameMediator != null) {
+                gameMediator.UnregisterUI(this);
+            }
+            instance = null;
         }
     }
 }
