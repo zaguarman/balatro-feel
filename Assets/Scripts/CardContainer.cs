@@ -1,0 +1,381 @@
+using UnityEngine;
+using UnityEngine.UI;
+using System.Collections.Generic;
+using DG.Tweening;
+
+public enum ContainerLayout {
+    Horizontal,
+    Vertical,
+    Grid
+}
+
+[System.Serializable]
+public class ContainerSettings {
+    [Header("Layout")]
+    public ContainerLayout layoutType = ContainerLayout.Horizontal;
+    public float spacing = 220f;
+    public float offset = 50f;
+    public Vector2 gridCellSize = new Vector2(220f, 320f);
+    public int gridColumns = 3;
+
+    [Header("Animation")]
+    public float cardMoveDuration = 0.15f;
+    public Ease cardMoveEase = Ease.OutBack;
+    public float cardHoverOffset = 30f;
+    public float cardDragScale = 1.1f;
+}
+
+public class CardContainer : UIComponent {
+    [SerializeField] private ContainerSettings settings = new ContainerSettings();
+    [SerializeField] private bool autoInitialize = true;
+
+    private RectTransform containerRect;
+    private List<CardButtonController> cards = new List<CardButtonController>();
+    private CardButtonController selectedCard;
+    private CardButtonController hoveredCard;
+    private bool isSwapping = false;
+    private bool isPlayer1;
+    private GameMediator gameMediator;
+
+    // Cache for layout calculations
+    private Vector2[] cardPositions;
+    private Vector2 containerSize;
+
+    private void Start() {
+        containerRect = GetComponent<RectTransform>();
+        gameMediator = GameMediator.Instance;
+        if (autoInitialize) {
+            InitializeContainer();
+        }
+    }
+
+    protected override void RegisterEvents() {
+        if (gameMediator != null) {
+            gameMediator.OnGameStateChanged.AddListener(() => UpdateUI());
+            gameMediator.OnGameInitialized.AddListener(() => InitializeContainer());
+        }
+    }
+
+    protected override void UnregisterEvents() {
+        if (gameMediator != null) {
+            gameMediator.OnGameStateChanged.RemoveListener(() => UpdateUI());
+            gameMediator.OnGameInitialized.RemoveListener(() => InitializeContainer());
+        }
+    }
+
+    public void InitializeContainer(bool isPlayer1Container = true) {
+        if (containerRect == null) {
+            containerRect = gameObject.AddComponent<RectTransform>();
+        }
+
+        isPlayer1 = isPlayer1Container;
+        ClearContainer();
+        ConfigureDropZone();
+        UpdateLayout();
+    }
+
+    private void ConfigureDropZone() {
+        var existingDropZone = GetComponent<CardDropZone>();
+        if (existingDropZone == null) {
+            var dropZone = gameObject.AddComponent<CardDropZone>();
+            dropZone.acceptPlayer1Cards = isPlayer1;
+            dropZone.acceptPlayer2Cards = !isPlayer1;
+        }
+    }
+
+    public void AddCard(ICard card) {
+        var references = GameReferences.Instance;
+        if (references == null) return;
+
+        Button cardPrefab = references.GetCardButtonPrefab();
+        if (cardPrefab == null) return;
+
+        CreateCardButton(card, cardPrefab);
+        UpdateLayout();
+    }
+
+    public void RemoveCard(CardButtonController card) {
+        if (card == null) return;
+
+        cards.Remove(card);
+        Destroy(card.gameObject);
+        UpdateLayout();
+    }
+
+    private void CreateCardButton(ICard card, Button prefab) {
+        var cardObj = Instantiate(prefab, transform);
+        var controller = cardObj.GetComponent<CardButtonController>();
+
+        if (controller != null) {
+            var cardData = CreateCardData(card);
+            controller.Setup(cardData, isPlayer1);
+            SetupCardHandlers(controller);
+            cards.Add(controller);
+            PositionCard(controller.GetComponent<RectTransform>(), cards.Count - 1, false);
+        }
+    }
+
+    private CardData CreateCardData(ICard card) {
+        var cardData = ScriptableObject.CreateInstance<CreatureData>();
+        if (card is ICreature creature) {
+            cardData.cardName = creature.Name;
+            cardData.attack = creature.Attack;
+            cardData.health = creature.Health;
+        } else {
+            cardData.cardName = card.Name;
+        }
+        return cardData;
+    }
+
+    private void SetupCardHandlers(CardButtonController card) {
+        card.OnBeginDragEvent.AddListener(OnCardBeginDrag);
+        card.OnEndDragEvent.AddListener(OnCardEndDrag);
+        card.OnPointerEnterHandler += () => OnCardHoverEnter(card);
+        card.OnPointerExitHandler += () => OnCardHoverExit(card);
+    }
+
+    private void UpdateLayout() {
+        CalculateLayout();
+        UpdateContainerSize();
+        RepositionAllCards();
+    }
+
+    private void CalculateLayout() {
+        cardPositions = new Vector2[cards.Count];
+
+        switch (settings.layoutType) {
+            case ContainerLayout.Horizontal:
+                CalculateHorizontalLayout();
+                break;
+            case ContainerLayout.Vertical:
+                CalculateVerticalLayout();
+                break;
+            case ContainerLayout.Grid:
+                CalculateGridLayout();
+                break;
+        }
+    }
+
+    private void CalculateHorizontalLayout() {
+        containerSize = new Vector2(
+            settings.offset + (settings.spacing * cards.Count),
+            containerRect.sizeDelta.y
+        );
+
+        for (int i = 0; i < cards.Count; i++) {
+            cardPositions[i] = new Vector2(
+                settings.offset + (settings.spacing * i),
+                0
+            );
+        }
+    }
+
+    private void CalculateVerticalLayout() {
+        containerSize = new Vector2(
+            containerRect.sizeDelta.x,
+            settings.offset + (settings.spacing * cards.Count)
+        );
+
+        for (int i = 0; i < cards.Count; i++) {
+            cardPositions[i] = new Vector2(
+                0,
+                -(settings.offset + (settings.spacing * i))
+            );
+        }
+    }
+
+    private void CalculateGridLayout() {
+        int rows = Mathf.CeilToInt((float)cards.Count / settings.gridColumns);
+
+        containerSize = new Vector2(
+            settings.offset + (settings.gridCellSize.x * settings.gridColumns),
+            settings.offset + (settings.gridCellSize.y * rows)
+        );
+
+        for (int i = 0; i < cards.Count; i++) {
+            int row = i / settings.gridColumns;
+            int col = i % settings.gridColumns;
+
+            cardPositions[i] = new Vector2(
+                settings.offset + (settings.gridCellSize.x * col),
+                -(settings.offset + (settings.gridCellSize.y * row))
+            );
+        }
+    }
+
+    private void UpdateContainerSize() {
+        if (containerRect != null) {
+            containerRect.sizeDelta = containerSize;
+        }
+    }
+
+    private void RepositionAllCards() {
+        for (int i = 0; i < cards.Count; i++) {
+            PositionCard(cards[i].GetComponent<RectTransform>(), i, true);
+        }
+    }
+
+    private void PositionCard(RectTransform cardRect, int index, bool animate) {
+        if (cardRect == null || index >= cardPositions.Length) return;
+
+        Vector3 targetPosition = new Vector3(cardPositions[index].x, cardPositions[index].y, 0);
+
+        if (animate) {
+            cardRect.DOLocalMove(targetPosition, settings.cardMoveDuration).SetEase(settings.cardMoveEase);
+        } else {
+            cardRect.localPosition = targetPosition;
+        }
+    }
+
+    private void OnCardHoverEnter(CardButtonController card) {
+        hoveredCard = card;
+        if (selectedCard == null) {
+            Vector2 hoverOffset = settings.layoutType == ContainerLayout.Vertical
+                ? Vector2.right * settings.cardHoverOffset
+                : Vector2.up * settings.cardHoverOffset;
+
+            Vector3 targetPosition = new Vector3(
+                cardPositions[cards.IndexOf(card)].x + hoverOffset.x,
+                cardPositions[cards.IndexOf(card)].y + hoverOffset.y,
+                0
+            );
+            card.GetComponent<RectTransform>().DOLocalMove(targetPosition, settings.cardMoveDuration)
+                .SetEase(settings.cardMoveEase);
+        }
+    }
+
+    private void OnCardHoverExit(CardButtonController card) {
+        if (hoveredCard == card) {
+            hoveredCard = null;
+            if (selectedCard == null) {
+                Vector3 targetPosition = new Vector3(
+                    cardPositions[cards.IndexOf(card)].x,
+                    cardPositions[cards.IndexOf(card)].y,
+                    0
+                );
+                card.GetComponent<RectTransform>().DOLocalMove(targetPosition, settings.cardMoveDuration)
+                    .SetEase(settings.cardMoveEase);
+            }
+        }
+    }
+
+    private void OnCardBeginDrag(CardButtonController card) {
+        selectedCard = card;
+        card.transform.SetAsLastSibling();
+        card.transform.DOScale(settings.cardDragScale, settings.cardMoveDuration);
+    }
+
+    private void OnCardEndDrag(CardButtonController card) {
+        if (selectedCard == null) return;
+
+        card.transform.DOScale(1f, settings.cardMoveDuration);
+        PositionCard(card.GetComponent<RectTransform>(), cards.IndexOf(card), true);
+        selectedCard = null;
+    }
+
+    private void Update() {
+        if (selectedCard == null || isSwapping) return;
+        CheckAndHandleSwap();
+    }
+
+    private void CheckAndHandleSwap() {
+        for (int i = 0; i < cards.Count; i++) {
+            var currentCard = cards[i];
+            if (currentCard == selectedCard) continue;
+
+            if (ShouldSwap(selectedCard, currentCard)) {
+                SwapCards(cards.IndexOf(selectedCard), i);
+                break;
+            }
+        }
+    }
+
+    private bool ShouldSwap(CardButtonController card1, CardButtonController card2) {
+        int card1Index = cards.IndexOf(card1);
+        int card2Index = cards.IndexOf(card2);
+
+        switch (settings.layoutType) {
+            case ContainerLayout.Horizontal:
+                return ShouldSwapHorizontal(card1, card2, card1Index, card2Index);
+            case ContainerLayout.Vertical:
+                return ShouldSwapVertical(card1, card2, card1Index, card2Index);
+            case ContainerLayout.Grid:
+                return ShouldSwapGrid(card1, card2, card1Index, card2Index);
+            default:
+                return false;
+        }
+    }
+
+    private bool ShouldSwapHorizontal(CardButtonController card1, CardButtonController card2, int index1, int index2) {
+        float card1X = card1.transform.position.x;
+        float card2X = card2.transform.position.x;
+        return (card1X > card2X && index1 < index2) ||
+               (card1X < card2X && index1 > index2);
+    }
+
+    private bool ShouldSwapVertical(CardButtonController card1, CardButtonController card2, int index1, int index2) {
+        float card1Y = card1.transform.position.y;
+        float card2Y = card2.transform.position.y;
+        return (card1Y > card2Y && index1 < index2) ||
+               (card1Y < card2Y && index1 > index2);
+    }
+
+    private bool ShouldSwapGrid(CardButtonController card1, CardButtonController card2, int index1, int index2) {
+        Vector2 card1Pos = card1.transform.position;
+        Vector2 card2Pos = card2.transform.position;
+        float distanceSqr = Vector2.SqrMagnitude(card1Pos - card2Pos);
+        return distanceSqr < (settings.gridCellSize.x * settings.gridCellSize.x);
+    }
+
+    private void SwapCards(int index1, int index2) {
+        isSwapping = true;
+
+        // Swap in list
+        var temp = cards[index1];
+        cards[index1] = cards[index2];
+        cards[index2] = temp;
+
+        // Update positions
+        PositionCard(cards[index1].GetComponent<RectTransform>(), index1, true);
+        PositionCard(cards[index2].GetComponent<RectTransform>(), index2, true);
+
+        // Notify game state changed using gameMediator
+        gameMediator?.NotifyGameStateChanged();
+
+        isSwapping = false;
+    }
+
+    private void ClearContainer() {
+        foreach (Transform child in transform) {
+            Destroy(child.gameObject);
+        }
+        cards.Clear();
+    }
+
+    public override void UpdateUI() {
+        foreach (var card in cards) {
+            card?.UpdateUI();
+        }
+    }
+
+    private void OnDestroy() {
+        // Clean up event listeners and card references
+        foreach (var card in cards) {
+            if (card != null) {
+                card.OnBeginDragEvent.RemoveListener(OnCardBeginDrag);
+                card.OnEndDragEvent.RemoveListener(OnCardEndDrag);
+                card.OnPointerEnterHandler = null;
+                card.OnPointerExitHandler = null;
+            }
+        }
+    }
+
+    // Public accessor methods
+    public List<CardButtonController> GetCards() => cards;
+    public bool IsPlayer1Container() => isPlayer1;
+    public ContainerSettings GetSettings() => settings;
+    public void SetSettings(ContainerSettings newSettings) {
+        settings = newSettings;
+        UpdateLayout();
+    }
+}

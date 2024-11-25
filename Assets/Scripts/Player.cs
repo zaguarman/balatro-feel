@@ -22,38 +22,39 @@ public class Player : IPlayer {
     public List<ICard> Hand { get; private set; }
     public List<ICreature> Battlefield { get; private set; }
     public string TargetId { get; private set; }
-    private readonly GameEvents gameEvents;
     public PlayerDamagedUnityEvent OnDamaged { get; } = new PlayerDamagedUnityEvent();
+
+    private readonly GameMediator gameMediator;
 
     public Player() {
         TargetId = System.Guid.NewGuid().ToString();
         Hand = new List<ICard>();
         Battlefield = new List<ICreature>();
-        gameEvents = GameEvents.Instance;
+        gameMediator = GameMediator.Instance;
     }
 
     public void TakeDamage(int amount) {
         Health = Math.Max(0, Health - amount);
         OnDamaged.Invoke(amount);
-        gameEvents.NotifyPlayerDamaged(this, amount);
-    }
-
-    public void AddToBattlefield(ICreature creature) {
-        if (creature == null) return;
-        Battlefield.Add(creature);
-        gameEvents.NotifyGameStateChanged();
-    }
-
-    public void RemoveFromBattlefield(ICreature creature) {
-        if (creature == null) return;
-        Battlefield.Remove(creature);
-        gameEvents.NotifyGameStateChanged();
+        // Event notification is handled through OnDamaged event listener in GameMediator
     }
 
     public void AddToHand(ICard card) {
         if (card == null) return;
         Hand.Add(card);
-        gameEvents.NotifyGameStateChanged();
+        gameMediator.NotifyGameStateChanged();
+    }
+
+    public void AddToBattlefield(ICreature creature) {
+        if (creature == null) return;
+        Battlefield.Add(creature);
+        gameMediator.NotifyGameStateChanged();
+    }
+
+    public void RemoveFromBattlefield(ICreature creature) {
+        if (creature == null) return;
+        Battlefield.Remove(creature);
+        gameMediator.NotifyGameStateChanged();
     }
 
     public bool IsValidTarget(IPlayer controller) => true;

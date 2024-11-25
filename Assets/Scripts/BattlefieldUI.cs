@@ -2,23 +2,15 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class BattlefieldUI : MonoBehaviour {
-    [SerializeField] private float cardSpacing = 220f;
-    [SerializeField] private float cardOffset = 50f;
-
-    private RectTransform player1Battlefield;
-    private RectTransform player2Battlefield;
-    private Dictionary<string, Button> creatureButtons = new Dictionary<string, Button>();
-    private IGameMediator gameMediator;
+public class BattlefieldUI : UIComponent {
+    private CardContainer player1Battlefield;
+    private CardContainer player2Battlefield;
+    private Dictionary<string, CardButtonController> creatureCards = new Dictionary<string, CardButtonController>();
+    private GameMediator gameMediator;
 
     private void Start() {
         InitializeReferences();
-        RegisterEvents();
-        UpdateBattlefield();
-    }
-
-    private void OnDestroy() {
-        UnregisterEvents();
+        InitializeContainers();
     }
 
     private void InitializeReferences() {
@@ -28,80 +20,128 @@ public class BattlefieldUI : MonoBehaviour {
         gameMediator = GameMediator.Instance;
     }
 
-    private void RegisterEvents() {
+    private void InitializeContainers() {
+        // Configure Player 1's battlefield
+        if (player1Battlefield != null) {
+            var settings1 = new ContainerSettings {
+                layoutType = ContainerLayout.Horizontal,
+                spacing = 220f,
+                offset = 50f,
+                cardMoveDuration = 0.15f,
+                cardMoveEase = DG.Tweening.Ease.OutBack,
+                cardHoverOffset = 30f
+            };
+
+            var dropZone1 = player1Battlefield.gameObject.AddComponent<BattlefieldDropZone>();
+            dropZone1.acceptPlayer1Cards = true;
+            dropZone1.acceptPlayer2Cards = false;
+        }
+
+        // Configure Player 2's battlefield
+        if (player2Battlefield != null) {
+            var settings2 = new ContainerSettings {
+                layoutType = ContainerLayout.Horizontal,
+                spacing = 220f,
+                offset = 50f,
+                cardMoveDuration = 0.15f,
+                cardMoveEase = DG.Tweening.Ease.OutBack,
+                cardHoverOffset = 30f
+            };
+
+            var dropZone2 = player2Battlefield.gameObject.AddComponent<BattlefieldDropZone>();
+            dropZone2.acceptPlayer1Cards = false;
+            dropZone2.acceptPlayer2Cards = true;
+        }
+    }
+
+    protected override void RegisterEvents() {
         if (gameMediator != null) {
-            gameMediator.OnGameStateChanged.AddListener(UpdateBattlefield);
+            gameMediator.OnGameStateChanged.AddListener(UpdateUI);
             gameMediator.OnCreatureDied.AddListener(OnCreatureDied);
         }
     }
 
-    private void UnregisterEvents() {
+    protected override void UnregisterEvents() {
         if (gameMediator != null) {
-            gameMediator.OnGameStateChanged.RemoveListener(UpdateBattlefield);
+            gameMediator.OnGameStateChanged.RemoveListener(UpdateUI);
             gameMediator.OnCreatureDied.RemoveListener(OnCreatureDied);
         }
     }
 
-    private void UpdateBattlefield() {
-        ClearBattlefield(player1Battlefield);
-        ClearBattlefield(player2Battlefield);
-
+    public override void UpdateUI() {
         var gameManager = GameManager.Instance;
-        CreateCreatureCards(gameManager.Player1, player1Battlefield, true);
-        CreateCreatureCards(gameManager.Player2, player2Battlefield, false);
+        if (gameManager == null) return;
+
+        UpdatePlayerBattlefield(gameManager.Player1, player1Battlefield, true);
+        UpdatePlayerBattlefield(gameManager.Player2, player2Battlefield, false);
     }
 
-    private void CreateCreatureCards(IPlayer player, RectTransform battlefield, bool isPlayer1) {
+    private void UpdatePlayerBattlefield(IPlayer player, CardContainer battlefield, bool isPlayer1) {
         if (battlefield == null || player == null) return;
 
-        float totalWidth = cardOffset + (cardSpacing * player.Battlefield.Count);
-        battlefield.sizeDelta = new Vector2(totalWidth, 320f);
-
-        for (int i = 0; i < player.Battlefield.Count; i++) {
-            CreateCreatureCard(player.Battlefield[i], battlefield, i, isPlayer1);
+        // Clear existing cards but maintain the dictionary
+        foreach (var existingCard in creatureCards.Values) {
+            if (existingCard != null) {
+                Destroy(existingCard.gameObject);
+            }
         }
+        creatureCards.Clear();
+
+        // Create new cards for each creature
+        foreach (var creature in player.Battlefield) {
+            CreateCreatureCard(creature, battlefield, isPlayer1);
+        }
+
+        // Let the container handle layout
+        battlefield.UpdateUI();
     }
 
-    private void CreateCreatureCard(ICreature creature, RectTransform battlefield, int index, bool isPlayer1) {
+    private void CreateCreatureCard(ICreature creature, CardContainer battlefield, bool isPlayer1) {
         var references = GameReferences.Instance;
-        Button button = Instantiate(references.GetCardButtonPrefab(), battlefield);
+        var cardPrefab = references.GetCardButtonPrefab();
 
-        SetupCardTransform(button.GetComponent<RectTransform>(), index);
-        SetupCardController(button.GetComponent<CardButtonController>(), creature, isPlayer1);
+        if (cardPrefab == null) return;
 
-        creatureButtons[creature.TargetId] = button;
-    }
+        var cardObj = Instantiate(cardPrefab, battlefield.transform);
+        var controller = cardObj.GetComponent<CardButtonController>();
 
-    private void SetupCardTransform(RectTransform rect, int index) {
-        rect.anchorMin = new Vector2(0, 0.5f);
-        rect.anchorMax = new Vector2(0, 0.5f);
-        rect.pivot = new Vector2(0, 0.5f);
-        rect.anchoredPosition = new Vector2(cardOffset + (cardSpacing * index), 0);
-    }
+        if (controller != null) {
+            // Setup the card data
+            var creatureData = ScriptableObject.CreateInstance<CreatureData>();
+            creatureData.cardName = creature.Name;
+            creatureData.attack = creature.Attack;
+            creatureData.health = creature.Health;
 
-    private void SetupCardController(CardButtonController controller, ICreature creature, bool isPlayer1) {
-        var creatureData = ScriptableObject.CreateInstance<CreatureData>();
-        creatureData.cardName = creature.Name;
-        creatureData.attack = creature.Attack;
-        creatureData.health = creature.Health;
+            controller.Setup(creatureData, isPlayer1);
 
-        controller.Setup(creatureData, isPlayer1);
-    }
-
-    private void ClearBattlefield(RectTransform battlefield) {
-        if (battlefield == null) return;
-
-        foreach (Transform child in battlefield) {
-            Destroy(child.gameObject);
+            // Store reference in dictionary
+            creatureCards[creature.TargetId] = controller;
         }
-        creatureButtons.Clear();
     }
 
     private void OnCreatureDied(ICreature creature) {
-        if (creatureButtons.TryGetValue(creature.TargetId, out Button button)) {
-            Destroy(button.gameObject);
-            creatureButtons.Remove(creature.TargetId);
+        if (creatureCards.TryGetValue(creature.TargetId, out CardButtonController card)) {
+            if (card != null) {
+                var container = card.transform.parent.GetComponent<CardContainer>();
+                if (container != null) {
+                    container.RemoveCard(card);
+                }
+            }
+            creatureCards.Remove(creature.TargetId);
         }
-        UpdateBattlefield();
+
+        // Update both battlefields
+        player1Battlefield?.UpdateUI();
+        player2Battlefield?.UpdateUI();
+    }
+
+    private void OnDestroy() {
+        // Clean up any remaining cards
+        foreach (var card in creatureCards.Values) {
+            if (card != null) {
+                Destroy(card.gameObject);
+            }
+        }
+        creatureCards.Clear();
     }
 }

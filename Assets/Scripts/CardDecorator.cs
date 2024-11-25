@@ -18,7 +18,7 @@ public class TriggeredEffectDecorator : ICardDecorator {
         BaseCard = baseCard;
         Trigger = trigger;
         Actions = actions;
-        Debug.Log($"Created TriggeredEffectDecorator for {baseCard.Name} with trigger {trigger}");
+        //Debug.Log($"Created TriggeredEffectDecorator for {baseCard.Name} with trigger {trigger}");
     }
 
     public void Play(GameContext context, IPlayer owner) {

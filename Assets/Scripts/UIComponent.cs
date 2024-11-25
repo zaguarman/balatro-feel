@@ -1,7 +1,6 @@
 using UnityEngine;
 
 public abstract class UIComponent : MonoBehaviour {
-    protected GameEvents Events => GameEvents.Instance;
     protected GameMediator Mediator => GameMediator.Instance;
     protected GameReferences References => GameReferences.Instance;
 

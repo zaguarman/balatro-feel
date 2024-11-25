@@ -30,7 +30,7 @@ public class Deck : IDeck {
             cards.Enqueue(card);
         }
 
-        Debug.Log($"Deck initialized with {cards.Count} cards");
+        //Debug.Log($"Deck initialized with {cards.Count} cards");
     }
 
     public ICard DrawCard() {
@@ -40,7 +40,7 @@ public class Deck : IDeck {
         }
 
         var drawnCard = cards.Dequeue();
-        Debug.Log($"Drew card: {drawnCard.Name}");
+        //Debug.Log($"Drew card: {drawnCard.Name}");
         return drawnCard;
     }
 
