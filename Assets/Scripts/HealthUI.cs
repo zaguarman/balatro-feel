@@ -21,17 +21,17 @@ public class HealthUI : UIComponent {
 
     protected override void RegisterEvents() {
         if (gameMediator != null) {
-            gameMediator.OnGameStateChanged.AddListener(UpdateUI);
-            gameMediator.OnPlayerDamaged.AddListener(HandlePlayerDamaged);
-            gameMediator.OnGameInitialized.AddListener(InitializePlayer);
+            gameMediator.AddGameStateChangedListener(UpdateUI);
+            gameMediator.AddPlayerDamagedListener(HandlePlayerDamaged);
+            gameMediator.AddGameInitializedListener(InitializePlayer);
         }
     }
 
     protected override void UnregisterEvents() {
         if (gameMediator != null) {
-            gameMediator.OnGameStateChanged.RemoveListener(UpdateUI);
-            gameMediator.OnPlayerDamaged.RemoveListener(HandlePlayerDamaged);
-            gameMediator.OnGameInitialized.RemoveListener(InitializePlayer);
+            gameMediator.RemoveGameStateChangedListener(UpdateUI);
+            gameMediator.RemovePlayerDamagedListener(HandlePlayerDamaged);
+            gameMediator.RemoveGameInitializedListener(InitializePlayer);
         }
     }
 

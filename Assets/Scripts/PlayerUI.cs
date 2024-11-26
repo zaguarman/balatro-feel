@@ -45,8 +45,15 @@ public class PlayerUI : MonoBehaviour {
 
     private void RegisterEvents() {
         if (gameMediator != null) {
-            gameMediator.OnGameStateChanged.AddListener(UpdateUI);
-            gameMediator.OnPlayerDamaged.AddListener(HandlePlayerDamaged);
+            gameMediator.AddGameStateChangedListener(UpdateUI);
+            gameMediator.AddPlayerDamagedListener(HandlePlayerDamaged);
+        }
+    }
+
+    private void UnregisterEvents() {
+        if (gameMediator != null) {
+            gameMediator.AddGameStateChangedListener(UpdateUI);
+            gameMediator.RemovePlayerDamagedListener(HandlePlayerDamaged);
         }
     }
 
@@ -89,10 +96,5 @@ public class PlayerUI : MonoBehaviour {
         UnregisterEvents();
     }
 
-    private void UnregisterEvents() {
-        if (gameMediator != null) {
-            gameMediator.OnGameStateChanged.RemoveListener(UpdateUI);
-            gameMediator.OnPlayerDamaged.RemoveListener(HandlePlayerDamaged);
-        }
-    }
+    
 }

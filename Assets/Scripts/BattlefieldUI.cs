@@ -56,15 +56,15 @@ public class BattlefieldUI : UIComponent {
 
     protected override void RegisterEvents() {
         if (gameMediator != null) {
-            gameMediator.OnGameStateChanged.AddListener(UpdateUI);
-            gameMediator.OnCreatureDied.AddListener(OnCreatureDied);
+            gameMediator.AddGameStateChangedListener(UpdateUI);
+            gameMediator.AddCreatureDiedListener(OnCreatureDied);
         }
     }
 
     protected override void UnregisterEvents() {
         if (gameMediator != null) {
-            gameMediator.OnGameStateChanged.RemoveListener(UpdateUI);
-            gameMediator.OnCreatureDied.RemoveListener(OnCreatureDied);
+            gameMediator.RemoveGameStateChangedListener(UpdateUI);
+            gameMediator.RemoveCreatureDiedListener(OnCreatureDied);
         }
     }
 

@@ -51,15 +51,15 @@ public class CardContainer : UIComponent {
 
     protected override void RegisterEvents() {
         if (gameMediator != null) {
-            gameMediator.OnGameStateChanged.AddListener(() => UpdateUI());
-            gameMediator.OnGameInitialized.AddListener(() => InitializeContainer());
+            gameMediator.AddGameStateChangedListener(UpdateUI);
+            gameMediator.AddGameInitializedListener(() => InitializeContainer());
         }
     }
 
     protected override void UnregisterEvents() {
         if (gameMediator != null) {
-            gameMediator.OnGameStateChanged.RemoveListener(() => UpdateUI());
-            gameMediator.OnGameInitialized.RemoveListener(() => InitializeContainer());
+            gameMediator.RemoveGameStateChangedListener(UpdateUI);
+            gameMediator.RemoveGameInitializedListener(() => InitializeContainer());
         }
     }
 

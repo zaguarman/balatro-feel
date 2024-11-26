@@ -33,15 +33,15 @@ public class HandUI : UIComponent {
 
     protected override void RegisterEvents() {
         if (gameMediator != null) {
-            gameMediator.OnGameStateChanged.AddListener(UpdateUI);
-            gameMediator.OnGameInitialized.AddListener(InitializePlayer);
+            gameMediator.AddGameStateChangedListener(UpdateUI);
+            gameMediator.AddGameInitializedListener(InitializePlayer);
         }
     }
 
     protected override void UnregisterEvents() {
         if (gameMediator != null) {
-            gameMediator.OnGameStateChanged.RemoveListener(UpdateUI);
-            gameMediator.OnGameInitialized.RemoveListener(InitializePlayer);
+            gameMediator.RemoveGameStateChangedListener(UpdateUI);
+            gameMediator.RemoveGameInitializedListener(InitializePlayer);
         }
     }
 

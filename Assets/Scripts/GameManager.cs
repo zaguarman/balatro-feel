@@ -102,7 +102,7 @@ public class GameManager : Singleton<GameManager> {
         if (card != null) {
             player.AddToHand(card);
             gameMediator.NotifyGameStateChanged();
-            Debug.Log($"Player {(player == Player1 ? 1 : 2)} drew card {card.Name}");
+            //Debug.Log($"Player {(player == Player1 ? 1 : 2)} drew card {card.Name}");
         }
     }
 

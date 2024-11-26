@@ -25,13 +25,13 @@ public class GameUI : Singleton<GameUI> {
 
     private void RegisterEvents() {
         if (gameMediator != null) {
-            gameMediator.OnGameStateChanged.AddListener(UpdateUI);
+            gameMediator.AddGameStateChangedListener(UpdateUI);
         }
     }
 
     private void UnregisterEvents() {
         if (gameMediator != null) {
-            gameMediator.OnGameStateChanged.RemoveListener(UpdateUI);
+            gameMediator.RemoveGameStateChangedListener(UpdateUI);
             gameMediator.UnregisterUI(this);
         }
     }

@@ -1,12 +1,12 @@
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 using System;
-using UnityEditor.PackageManager;
 
-[System.Serializable]
-public class UnityEventCardButton : UnityEngine.Events.UnityEvent<CardButtonController> { }
+[Serializable]
+public class UnityEventCardButton : UnityEvent<CardButtonController> { }
 
 public class CardButtonController : UIComponent, IPointerEnterHandler, IPointerExitHandler,
     IDragHandler, IBeginDragHandler, IEndDragHandler {
@@ -31,13 +31,13 @@ public class CardButtonController : UIComponent, IPointerEnterHandler, IPointerE
 
     protected override void RegisterEvents() {
         if (gameMediator != null) {
-            gameMediator.OnGameStateChanged.AddListener(UpdateUI);
+            gameMediator.AddGameStateChangedListener(UpdateUI);
         }
     }
 
     protected override void UnregisterEvents() {
         if (gameMediator != null) {
-            gameMediator.OnGameStateChanged.RemoveListener(UpdateUI);
+            gameMediator.RemoveGameStateChangedListener(UpdateUI);
         }
     }
 
@@ -48,6 +48,8 @@ public class CardButtonController : UIComponent, IPointerEnterHandler, IPointerE
         parentCanvas = GetComponentInParent<Canvas>();
         canvasGroup = gameObject.AddComponent<CanvasGroup>();
         rectTransform.sizeDelta = defaultSize;
+
+        RegisterEvents();
     }
 
     public void Setup(CardData data, bool isPlayerOne) {
@@ -102,6 +104,8 @@ public class CardButtonController : UIComponent, IPointerEnterHandler, IPointerE
         canvasGroup.blocksRaycasts = true;
         OnEndDragEvent.Invoke(this);
         OnCardDropped.Invoke(this);
+
+        gameMediator?.NotifyGameStateChanged();
     }
 
     public void OnPointerEnter(PointerEventData eventData) {
@@ -120,6 +124,8 @@ public class CardButtonController : UIComponent, IPointerEnterHandler, IPointerE
     public bool IsPlayer1Card() => isPlayer1;
 
     private void OnDestroy() {
+        UnregisterEvents();
+
         OnBeginDragEvent.RemoveAllListeners();
         OnEndDragEvent.RemoveAllListeners();
         OnCardDropped.RemoveAllListeners();
