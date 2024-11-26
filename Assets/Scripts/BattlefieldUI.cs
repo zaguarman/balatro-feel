@@ -1,63 +1,58 @@
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
+using System.Collections.Generic;
 
 public class BattlefieldUI : UIComponent {
-    private CardContainer player1Battlefield;
-    private CardContainer player2Battlefield;
+    private CardContainer battlefield;
     private Dictionary<string, CardButtonController> creatureCards = new Dictionary<string, CardButtonController>();
     private GameMediator gameMediator;
+    private IPlayer player;
+    private bool isInitialized = false;
 
     private void Start() {
         InitializeReferences();
-        InitializeContainers();
     }
 
     private void InitializeReferences() {
-        var references = GameReferences.Instance;
-        player1Battlefield = references.GetPlayer1Battlefield();
-        player2Battlefield = references.GetPlayer2Battlefield();
         gameMediator = GameMediator.Instance;
+        RegisterEvents();
     }
 
-    private void InitializeContainers() {
-        // Configure Player 1's battlefield
-        if (player1Battlefield != null) {
-            var settings1 = new ContainerSettings {
-                layoutType = ContainerLayout.Horizontal,
-                spacing = 220f,
-                offset = 50f,
-                cardMoveDuration = 0.15f,
-                cardMoveEase = DG.Tweening.Ease.OutBack,
-                cardHoverOffset = 30f
-            };
+    public void Initialize(CardContainer battlefield, IPlayer player) {
+        this.battlefield = battlefield;
+        this.player = player;
 
-            var dropZone1 = player1Battlefield.gameObject.AddComponent<BattlefieldDropZone>();
-            dropZone1.acceptPlayer1Cards = true;
-            dropZone1.acceptPlayer2Cards = false;
+        if (battlefield != null) {
+            InitializeContainer();
         }
 
-        // Configure Player 2's battlefield
-        if (player2Battlefield != null) {
-            var settings2 = new ContainerSettings {
-                layoutType = ContainerLayout.Horizontal,
-                spacing = 220f,
-                offset = 50f,
-                cardMoveDuration = 0.15f,
-                cardMoveEase = DG.Tweening.Ease.OutBack,
-                cardHoverOffset = 30f
-            };
+        isInitialized = true;
+        UpdateUI();
+    }
 
-            var dropZone2 = player2Battlefield.gameObject.AddComponent<BattlefieldDropZone>();
-            dropZone2.acceptPlayer1Cards = false;
-            dropZone2.acceptPlayer2Cards = true;
-        }
+    private void InitializeContainer() {
+        if (battlefield == null) return;
+
+        var settings = new ContainerSettings {
+            layoutType = ContainerLayout.Horizontal,
+            spacing = 220f,
+            offset = 50f,
+            cardMoveDuration = 0.15f,
+            cardMoveEase = DG.Tweening.Ease.OutBack,
+            cardHoverOffset = 30f
+        };
+
+        battlefield.SetSettings(settings);
+
+        var dropZone = battlefield.gameObject.AddComponent<BattlefieldDropZone>();
+        dropZone.acceptPlayer1Cards = player == GameManager.Instance.Player1;
+        dropZone.acceptPlayer2Cards = player == GameManager.Instance.Player2;
     }
 
     protected override void RegisterEvents() {
         if (gameMediator != null) {
             gameMediator.AddGameStateChangedListener(UpdateUI);
             gameMediator.AddCreatureDiedListener(OnCreatureDied);
+            gameMediator.AddGameInitializedListener(OnGameInitialized);
         }
     }
 
@@ -65,19 +60,17 @@ public class BattlefieldUI : UIComponent {
         if (gameMediator != null) {
             gameMediator.RemoveGameStateChangedListener(UpdateUI);
             gameMediator.RemoveCreatureDiedListener(OnCreatureDied);
+            gameMediator.RemoveGameInitializedListener(OnGameInitialized);
         }
     }
 
-    public override void UpdateUI() {
-        var gameManager = GameManager.Instance;
-        if (gameManager == null) return;
-
-        UpdatePlayerBattlefield(gameManager.Player1, player1Battlefield, true);
-        UpdatePlayerBattlefield(gameManager.Player2, player2Battlefield, false);
+    private void OnGameInitialized() {
+        if (!isInitialized) return;
+        UpdateUI();
     }
 
-    private void UpdatePlayerBattlefield(IPlayer player, CardContainer battlefield, bool isPlayer1) {
-        if (battlefield == null || player == null) return;
+    public override void UpdateUI() {
+        if (!isInitialized || player == null || battlefield == null) return;
 
         // Clear existing cards but maintain the dictionary
         foreach (var existingCard in creatureCards.Values) {
@@ -89,14 +82,14 @@ public class BattlefieldUI : UIComponent {
 
         // Create new cards for each creature
         foreach (var creature in player.Battlefield) {
-            CreateCreatureCard(creature, battlefield, isPlayer1);
+            CreateCreatureCard(creature);
         }
 
         // Let the container handle layout
         battlefield.UpdateUI();
     }
 
-    private void CreateCreatureCard(ICreature creature, CardContainer battlefield, bool isPlayer1) {
+    private void CreateCreatureCard(ICreature creature) {
         var references = GameReferences.Instance;
         var cardPrefab = references.GetCardButtonPrefab();
 
@@ -112,7 +105,7 @@ public class BattlefieldUI : UIComponent {
             creatureData.attack = creature.Attack;
             creatureData.health = creature.Health;
 
-            controller.Setup(creatureData, isPlayer1);
+            controller.Setup(creatureData, player);
 
             // Store reference in dictionary
             creatureCards[creature.TargetId] = controller;
@@ -120,6 +113,8 @@ public class BattlefieldUI : UIComponent {
     }
 
     private void OnCreatureDied(ICreature creature) {
+        if (!isInitialized) return;
+
         if (creatureCards.TryGetValue(creature.TargetId, out CardButtonController card)) {
             if (card != null) {
                 var container = card.transform.parent.GetComponent<CardContainer>();
@@ -130,12 +125,12 @@ public class BattlefieldUI : UIComponent {
             creatureCards.Remove(creature.TargetId);
         }
 
-        // Update both battlefields
-        player1Battlefield?.UpdateUI();
-        player2Battlefield?.UpdateUI();
+        battlefield?.UpdateUI();
     }
 
     private void OnDestroy() {
+        UnregisterEvents();
+
         // Clean up any remaining cards
         foreach (var card in creatureCards.Values) {
             if (card != null) {

@@ -1,9 +1,20 @@
 using UnityEngine;
 
 public class GameUI : Singleton<GameUI> {
+    // Public accessors for UI components
+    public PlayerUI GetPlayer1UI() => player1UI;
+    public PlayerUI GetPlayer2UI() => player2UI;
+    public BattlefieldUI GetBattlefieldUI() => battlefieldUI;
+
+    // Utility method to check initialization status
+    public bool IsInitialized() => initialized;
+
     [SerializeField] private PlayerUI player1UI;
     [SerializeField] private PlayerUI player2UI;
     [SerializeField] private BattlefieldUI battlefieldUI;
+    [SerializeField] private GameManager gameManager;
+    [SerializeField] private BattlefieldUI player1BattlefieldUI;
+    [SerializeField] private BattlefieldUI player2BattlefieldUI;
 
     private GameMediator gameMediator;
     private bool initialized;
@@ -14,6 +25,7 @@ public class GameUI : Singleton<GameUI> {
     }
 
     private void InitializeDependencies() {
+        gameManager = GameManager.Instance;
         gameMediator = GameMediator.Instance;
 
         if (gameMediator != null) {
@@ -36,10 +48,11 @@ public class GameUI : Singleton<GameUI> {
         }
     }
 
-    public void SetUIReferences(PlayerUI player1UI, PlayerUI player2UI, BattlefieldUI battlefieldUI) {
+    public void SetUIReferences(PlayerUI player1UI, PlayerUI player2UI, BattlefieldUI player1BattlefieldUI, BattlefieldUI player2BattlefieldUI) {
         this.player1UI = player1UI;
         this.player2UI = player2UI;
-        this.battlefieldUI = battlefieldUI;
+        this.player1BattlefieldUI = battlefieldUI;
+        this.player2BattlefieldUI = battlefieldUI;
 
         if (!initialized) {
             InitializeUI();
@@ -47,27 +60,29 @@ public class GameUI : Singleton<GameUI> {
     }
 
     private void InitializeUI() {
-        if (!initialized) {
+        if (!initialized && gameManager != null) {
             SetupPlayerUIs();
             UpdateUI();
             initialized = true;
             Debug.Log("GameUI initialized");
+        } else if (gameManager == null) {
+            Debug.LogError("GameManager reference is missing");
         }
     }
 
     private void SetupPlayerUIs() {
-        if (player1UI != null) {
-            player1UI.SetIsPlayer1(true);
+        if (player1UI != null && gameManager.Player1 != null) {
+            player1UI.Initialize(gameManager.Player1);
             Debug.Log("Player1 UI initialized");
         } else {
-            Debug.LogWarning("Player1 UI reference missing");
+            Debug.LogWarning("Player1 UI reference or Player1 is missing");
         }
 
-        if (player2UI != null) {
-            player2UI.SetIsPlayer1(false);
+        if (player2UI != null && gameManager.Player2 != null) {
+            player2UI.Initialize(gameManager.Player2);
             Debug.Log("Player2 UI initialized");
         } else {
-            Debug.LogWarning("Player2 UI reference missing");
+            Debug.LogWarning("Player2 UI reference or Player2 is missing");
         }
     }
 
@@ -84,19 +99,9 @@ public class GameUI : Singleton<GameUI> {
 
     protected override void OnDestroy() {
         UnregisterEvents();
-
         if (instance == this) {
             instance = null;
         }
-
         base.OnDestroy();
     }
-
-    // Public accessors for UI components
-    public PlayerUI GetPlayer1UI() => player1UI;
-    public PlayerUI GetPlayer2UI() => player2UI;
-    public BattlefieldUI GetBattlefieldUI() => battlefieldUI;
-
-    // Utility method to check initialization status
-    public bool IsInitialized() => initialized;
 }

@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
-
+using System.Collections;
 public class GameManager : Singleton<GameManager> {
     public IPlayer Player1 { get; private set; }
     public IPlayer Player2 { get; private set; }
@@ -15,14 +15,49 @@ public class GameManager : Singleton<GameManager> {
     private Canvas mainCanvas;
     private bool isInitialized;
     private GameReferences gameReferences;
+    private bool dependenciesInitialized = false;
 
-    public GameUI GameUI => gameReferences?.GetGameUI();
+    public GameUI gameUI => gameReferences?.GetGameUI();
 
     protected override void Awake() {
         base.Awake();
+        // Only initialize dependencies in Awake, don't start game yet
+        InitializeDependencies();
+    }
+
+    private void Start() {
+        // Start game only after dependencies are confirmed initialized
+        StartCoroutine(WaitForDependenciesAndStartGame());
+    }
+
+    private void InitializeDependencies() {
         gameReferences = GameReferences.Instance;
         gameMediator = GameMediator.Instance;
         EnsureCanvasExists();
+
+        // Subscribe to initialization events
+        if (gameMediator != null) {
+            gameMediator.AddGameInitializedListener(OnGameInitialized);
+        }
+    }
+
+    private IEnumerator WaitForDependenciesAndStartGame() {
+        // Wait for required dependencies
+        while (gameReferences == null || gameMediator == null || mainCanvas == null) {
+            Debug.Log("Waiting for core dependencies...");
+            yield return new WaitForSeconds(0.1f);
+        }
+
+        // Wait for UI references
+        while (gameReferences.GetGameUI() == null ||
+               gameReferences.GetPlayer1UI() == null ||
+               gameReferences.GetPlayer2UI() == null) {
+            Debug.Log("Waiting for UI references...");
+            yield return new WaitForSeconds(0.1f);
+        }
+
+        dependenciesInitialized = true;
+        Debug.Log("All dependencies initialized, starting game...");
         StartGame();
     }
 
@@ -34,6 +69,22 @@ public class GameManager : Singleton<GameManager> {
             mainCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvasObj.AddComponent<CanvasScaler>();
             canvasObj.AddComponent<GraphicRaycaster>();
+        }
+    }
+
+    private void OnGameInitialized() {
+        Debug.Log("Game initialization completed");
+        isInitialized = true;
+    }
+
+    public void StartGame() {
+        if (!dependenciesInitialized) {
+            Debug.LogWarning("Attempted to start game before dependencies were initialized");
+            return;
+        }
+
+        if (!isInitialized) {
+            InitializeGame();
         }
     }
 
@@ -51,9 +102,15 @@ public class GameManager : Singleton<GameManager> {
         gameMediator.RegisterPlayer(Player1);
         gameMediator.RegisterPlayer(Player2);
 
-        isInitialized = true;
         gameMediator.NotifyGameInitialized();
         gameMediator.NotifyGameStateChanged();
+
+        gameUI.SetUIReferences(
+            gameReferences.GetPlayer1UI(),
+            gameReferences.GetPlayer2UI(),
+            gameReferences.GetPlayer1BattlefieldUI(),
+            gameReferences.GetPlayer2BattlefieldUI()
+        );
 
         LogGameState("Game initialized");
         DealInitialHands();
@@ -150,14 +207,12 @@ public class GameManager : Singleton<GameManager> {
         Debug.Log(stateLog.ToString());
     }
 
-    public void StartGame() {
-        if (!isInitialized) {
-            InitializeGame();
-        }
-    }
-
     protected override void OnDestroy() {
         if (instance == this) {
+            if (gameMediator != null) {
+                gameMediator.RemoveGameInitializedListener(OnGameInitialized);
+            }
+
             if (Player1 != null) {
                 gameMediator?.UnregisterPlayer(Player1);
             }
@@ -166,8 +221,8 @@ public class GameManager : Singleton<GameManager> {
                 gameMediator?.UnregisterPlayer(Player2);
             }
 
-            if (GameUI != null) {
-                gameMediator?.UnregisterUI(GameUI);
+            if (gameUI != null) {
+                gameMediator?.UnregisterUI(gameUI);
             }
 
             instance = null;

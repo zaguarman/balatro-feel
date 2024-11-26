@@ -26,6 +26,10 @@ public class ContainerSettings {
 }
 
 public class CardContainer : UIComponent {
+    
+
+    public List<CardButtonController> GetCards() => cards;
+
     [SerializeField] private ContainerSettings settings = new ContainerSettings();
     [SerializeField] private bool autoInitialize = true;
 
@@ -34,12 +38,17 @@ public class CardContainer : UIComponent {
     private CardButtonController selectedCard;
     private CardButtonController hoveredCard;
     private bool isSwapping = false;
-    private bool isPlayer1;
+    private IPlayer player;
     private GameMediator gameMediator;
 
     // Cache for layout calculations
     private Vector2[] cardPositions;
     private Vector2 containerSize;
+
+    public void SetSettings(ContainerSettings newSettings) {
+        settings = newSettings;
+        UpdateLayout();
+    }
 
     private void Start() {
         containerRect = GetComponent<RectTransform>();
@@ -63,12 +72,15 @@ public class CardContainer : UIComponent {
         }
     }
 
-    public void InitializeContainer(bool isPlayer1Container = true) {
+    public void InitializeContainer(IPlayer assignedPlayer = null) {
         if (containerRect == null) {
             containerRect = gameObject.AddComponent<RectTransform>();
         }
 
-        isPlayer1 = isPlayer1Container;
+        if (assignedPlayer != null) {
+            player = assignedPlayer;
+        }
+
         ClearContainer();
         ConfigureDropZone();
         UpdateLayout();
@@ -76,12 +88,21 @@ public class CardContainer : UIComponent {
 
     private void ConfigureDropZone() {
         var existingDropZone = GetComponent<CardDropZone>();
-        if (existingDropZone == null) {
+        if (existingDropZone == null && player != null) {
             var dropZone = gameObject.AddComponent<CardDropZone>();
-            dropZone.acceptPlayer1Cards = isPlayer1;
-            dropZone.acceptPlayer2Cards = !isPlayer1;
+            var gameManager = GameManager.Instance;
+            dropZone.acceptPlayer1Cards = player == gameManager.Player1;
+            dropZone.acceptPlayer2Cards = player == gameManager.Player2;
         }
     }
+
+    public void SetPlayer(IPlayer newPlayer) {
+        player = newPlayer;
+        ConfigureDropZone();
+        UpdateUI();
+    }
+
+    public IPlayer GetPlayer() => player;
 
     public void AddCard(ICard card) {
         var references = GameReferences.Instance;
@@ -103,12 +124,14 @@ public class CardContainer : UIComponent {
     }
 
     private void CreateCardButton(ICard card, Button prefab) {
+        if (player == null) return;
+
         var cardObj = Instantiate(prefab, transform);
         var controller = cardObj.GetComponent<CardButtonController>();
 
         if (controller != null) {
             var cardData = CreateCardData(card);
-            controller.Setup(cardData, isPlayer1);
+            controller.Setup(cardData, player);
             SetupCardHandlers(controller);
             cards.Add(controller);
             PositionCard(controller.GetComponent<RectTransform>(), cards.Count - 1, false);
@@ -353,6 +376,8 @@ public class CardContainer : UIComponent {
     }
 
     public override void UpdateUI() {
+        if (player == null) return;
+
         foreach (var card in cards) {
             card?.UpdateUI();
         }
@@ -370,12 +395,5 @@ public class CardContainer : UIComponent {
         }
     }
 
-    // Public accessor methods
-    public List<CardButtonController> GetCards() => cards;
-    public bool IsPlayer1Container() => isPlayer1;
-    public ContainerSettings GetSettings() => settings;
-    public void SetSettings(ContainerSettings newSettings) {
-        settings = newSettings;
-        UpdateLayout();
-    }
+
 }

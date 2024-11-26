@@ -6,6 +6,7 @@ using System.Collections.Generic;
 
 public interface IPlayer : ITarget {
     int Health { get; set; }
+    bool IsPlayer1();
     IPlayer Opponent { get; set; }
     List<ICard> Hand { get; }
     List<ICreature> Battlefield { get; }
@@ -31,6 +32,11 @@ public class Player : IPlayer {
         Hand = new List<ICard>();
         Battlefield = new List<ICreature>();
         gameMediator = GameMediator.Instance;
+    }
+
+    public bool IsPlayer1() {
+        var gameManager = GameManager.Instance;
+        return gameManager != null && gameManager.Player1 == this;
     }
 
     public void TakeDamage(int amount) {

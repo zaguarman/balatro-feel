@@ -14,12 +14,18 @@ public class GameReferences : Singleton<GameReferences> {
     [SerializeField] private TextMeshProUGUI player1HealthText;
     [SerializeField] private CardContainer player1Hand;
     [SerializeField] private CardContainer player1Battlefield;
+    [SerializeField] private BattlefieldUI player1BattlefieldUI;
+    [SerializeField] private HandUI player1HandUI;
+    [SerializeField] private HealthUI player1HealthUI; 
 
     [Header("Player 2 UI")]
     [SerializeField] private PlayerUI player2UI;
     [SerializeField] private TextMeshProUGUI player2HealthText;
     [SerializeField] private CardContainer player2Hand;
     [SerializeField] private CardContainer player2Battlefield;
+    [SerializeField] private BattlefieldUI player2BattlefieldUI;
+    [SerializeField] private HandUI player2HandUI;
+    [SerializeField] private HealthUI player2HealthUI;
 
     [Header("Card Components")]
     [SerializeField] private Button cardButtonPrefab;
@@ -42,4 +48,11 @@ public class GameReferences : Singleton<GameReferences> {
     public Button GetResolveActionsButton() => resolveActionsButton;
     public TextMeshProUGUI GetPlayer1HealthText() => player1HealthText;
     public TextMeshProUGUI GetPlayer2HealthText() => player2HealthText;
+    public BattlefieldUI GetPlayer1BattlefieldUI() => player1BattlefieldUI;
+    public BattlefieldUI GetPlayer2BattlefieldUI() => player2BattlefieldUI;
+    public HandUI GetPlayer1HandUI() => player1HandUI;
+    public HandUI GetPlayer2HandUI() => player2HandUI;
+    public HealthUI GetPlayer1HealthUI() => player1HealthUI;
+    public HealthUI GetPlayer2HealthUI() => player2HealthUI;
+
 }

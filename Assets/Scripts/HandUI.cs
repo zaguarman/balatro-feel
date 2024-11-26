@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class HandUI : UIComponent {
     [SerializeField] private float cardSpacing = 220f;
@@ -10,7 +11,6 @@ public class HandUI : UIComponent {
     private GameManager gameManager;
     private GameReferences gameReferences;
     private GameMediator gameMediator;
-    private bool isPlayer1;
     private CardContainer handContainer;
 
     private void Start() {
@@ -21,34 +21,29 @@ public class HandUI : UIComponent {
         gameManager = GameManager.Instance;
         gameReferences = GameReferences.Instance;
         gameMediator = GameMediator.Instance;
-        handContainer = isPlayer1
-            ? gameReferences.GetPlayer1Hand()
-            : gameReferences.GetPlayer2Hand();
+
+        if (player != null) {
+            handContainer = player.IsPlayer1()
+                ? gameReferences.GetPlayer1Hand()
+                : gameReferences.GetPlayer2Hand();
+        }
     }
 
-    public void SetIsPlayer1(bool value) {
-        isPlayer1 = value;
+    public void Initialize(IPlayer player) {
+        this.player = player;
         InitializeReferences();
+        UpdateUI();
     }
 
     protected override void RegisterEvents() {
         if (gameMediator != null) {
             gameMediator.AddGameStateChangedListener(UpdateUI);
-            gameMediator.AddGameInitializedListener(InitializePlayer);
         }
     }
 
     protected override void UnregisterEvents() {
         if (gameMediator != null) {
             gameMediator.RemoveGameStateChangedListener(UpdateUI);
-            gameMediator.RemoveGameInitializedListener(InitializePlayer);
-        }
-    }
-
-    private void InitializePlayer() {
-        if (gameManager != null) {
-            player = isPlayer1 ? gameManager.Player1 : gameManager.Player2;
-            UpdateUI();
         }
     }
 
@@ -81,9 +76,8 @@ public class HandUI : UIComponent {
 
         SetupCardTransform(buttonObj.GetComponent<RectTransform>(), index);
         var cardData = CreateCardData(card);
-        controller.Setup(cardData, isPlayer1);
+        controller.Setup(cardData, player);
 
-        // Setup drag and drop handlers
         SetupCardDragHandlers(controller);
         handCards.Add(controller);
     }
@@ -137,6 +131,9 @@ public class HandUI : UIComponent {
     private void ClearHand() {
         foreach (var card in handCards) {
             if (card != null) {
+                card.OnBeginDragEvent.RemoveAllListeners();
+                card.OnEndDragEvent.RemoveAllListeners();
+                card.OnCardDropped.RemoveAllListeners();
                 Destroy(card.gameObject);
             }
         }
@@ -144,12 +141,7 @@ public class HandUI : UIComponent {
     }
 
     private void OnDestroy() {
-        foreach (var card in handCards) {
-            if (card != null) {
-                card.OnBeginDragEvent.RemoveAllListeners();
-                card.OnEndDragEvent.RemoveAllListeners();
-                card.OnCardDropped.RemoveAllListeners();
-            }
-        }
+        ClearHand();
+        UnregisterEvents();
     }
 }

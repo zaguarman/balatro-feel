@@ -133,6 +133,7 @@ GameObject:
   - component: {fileID: 54383537}
   - component: {fileID: 54383539}
   - component: {fileID: 54383538}
+  - component: {fileID: 54383540}
   m_Layer: 5
   m_Name: PlayerHealth 2
   m_TagString: Untagged
@@ -256,6 +257,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 54383536}
   m_CullTransparentMesh: 1
+--- !u!114 &54383540
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 54383536}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ffca7fb8b5efe6947a43353ee1d4dc03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  healthText: {fileID: 0}
+  gameMediator: {fileID: 0}
 --- !u!1 &500666784
 GameObject:
   m_ObjectHideFlags: 0
@@ -982,15 +997,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gameUI: {fileID: 1458677300}
   resolveActionsButton: {fileID: 776573425}
-  pendingActionsText: {fileID: 0}
   player1UI: {fileID: 500666786}
   player1HealthText: {fileID: 1544506893}
   player1Hand: {fileID: 1587845790}
   player1Battlefield: {fileID: 1445917819}
+  player1BattlefieldUI: {fileID: 0}
+  player1HandUI: {fileID: 0}
+  player1HealthUI: {fileID: 0}
   player2UI: {fileID: 1592228239}
   player2HealthText: {fileID: 54383538}
   player2Hand: {fileID: 1707401505}
   player2Battlefield: {fileID: 1270125519}
+  player2BattlefieldUI: {fileID: 0}
+  player2HandUI: {fileID: 0}
+  player2HealthUI: {fileID: 0}
   cardButtonPrefab: {fileID: 5464925446207512663, guid: 9164b01cda78bc545b913d180247e537, type: 3}
   player1CardColor: {r: 0.8, g: 0.9, b: 1, a: 1}
   player2CardColor: {r: 1, g: 0.8, b: 0.8, a: 1}
@@ -1157,7 +1177,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -0.00000022897, y: 56}
+  m_AnchoredPosition: {x: -0.00000022897, y: -156}
   m_SizeDelta: {x: 50, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1270125519
@@ -1497,6 +1517,9 @@ MonoBehaviour:
   player1UI: {fileID: 0}
   player2UI: {fileID: 0}
   battlefieldUI: {fileID: 0}
+  gameManager: {fileID: 0}
+  player1BattlefieldUI: {fileID: 0}
+  player2BattlefieldUI: {fileID: 0}
 --- !u!4 &1458677301
 Transform:
   m_ObjectHideFlags: 0
@@ -1524,6 +1547,7 @@ GameObject:
   - component: {fileID: 1544506892}
   - component: {fileID: 1544506894}
   - component: {fileID: 1544506893}
+  - component: {fileID: 1544506895}
   m_Layer: 5
   m_Name: PlayerHealth 1
   m_TagString: Untagged
@@ -1647,6 +1671,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1544506891}
   m_CullTransparentMesh: 1
+--- !u!114 &1544506895
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1544506891}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ffca7fb8b5efe6947a43353ee1d4dc03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  healthText: {fileID: 0}
+  gameMediator: {fileID: 0}
 --- !u!1 &1587845786
 GameObject:
   m_ObjectHideFlags: 0
@@ -2087,7 +2125,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0.000061035, y: -155}
+  m_AnchoredPosition: {x: 0.000061035, y: 66}
   m_SizeDelta: {x: 350, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1707401505

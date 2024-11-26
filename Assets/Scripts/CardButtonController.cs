@@ -21,7 +21,7 @@ public class CardButtonController : UIComponent, IPointerEnterHandler, IPointerE
     private CanvasGroup canvasGroup;
     private bool isDragging;
     private CardData cardData;
-    private bool isPlayer1;
+    private IPlayer player;
 
     public UnityEventCardButton OnBeginDragEvent = new UnityEventCardButton();
     public UnityEventCardButton OnEndDragEvent = new UnityEventCardButton();
@@ -52,9 +52,9 @@ public class CardButtonController : UIComponent, IPointerEnterHandler, IPointerE
         RegisterEvents();
     }
 
-    public void Setup(CardData data, bool isPlayerOne) {
+    public void Setup(CardData data, IPlayer player) {
         cardData = data;
-        isPlayer1 = isPlayerOne;
+        this.player = player;
         UpdateUI();
     }
 
@@ -71,7 +71,7 @@ public class CardButtonController : UIComponent, IPointerEnterHandler, IPointerE
         }
 
         descriptionText.text = cardData.description ?? string.Empty;
-        GetComponent<Image>().color = isPlayer1
+        GetComponent<Image>().color = player.IsPlayer1()
             ? References.GetPlayer1CardColor()
             : References.GetPlayer2CardColor();
     }
@@ -121,7 +121,7 @@ public class CardButtonController : UIComponent, IPointerEnterHandler, IPointerE
     }
 
     public CardData GetCardData() => cardData;
-    public bool IsPlayer1Card() => isPlayer1;
+    public bool IsPlayer1Card() => player.IsPlayer1();
 
     private void OnDestroy() {
         UnregisterEvents();
