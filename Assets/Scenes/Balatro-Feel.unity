@@ -1516,8 +1516,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   player1UI: {fileID: 0}
   player2UI: {fileID: 0}
-  battlefieldUI: {fileID: 0}
-  gameManager: {fileID: 0}
   player1BattlefieldUI: {fileID: 0}
   player2BattlefieldUI: {fileID: 0}
 --- !u!4 &1458677301

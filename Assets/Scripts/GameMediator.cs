@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 using UnityEngine.Events;
 
-public class GameMediator : Singleton<GameMediator> {
+public class GameMediator : Singleton<GameMediator>, IInitializable {
+    public bool IsInitialized { get; private set; }
+
     private readonly List<IPlayer> players = new List<IPlayer>();
     private GameUI gameUI;
-    private bool isInitialized;
+    private InitializationManager initManager;
 
     // Event definitions
     [Serializable] private class PlayerDamagedEvent : UnityEvent<IPlayer, int> { }
@@ -26,22 +27,24 @@ public class GameMediator : Singleton<GameMediator> {
 
     protected override void Awake() {
         base.Awake();
+        initManager = InitializationManager.Instance;
+        initManager.RegisterComponent(this);
         Initialize();
     }
 
     public void Initialize() {
-        if (!isInitialized) {
-            ClearRegistrations();
-            isInitialized = true;
-        }
+        if (IsInitialized) return;
+
+        ClearRegistrations();
+        IsInitialized = true;
+        initManager.MarkComponentInitialized(this);
     }
 
     private bool ValidateState(string operation) {
-        if (!isInitialized) {
-            Debug.LogError($"GameMediator: Attempted {operation} before initialization");
+        if (!IsInitialized) {
             Initialize();
         }
-        return isInitialized;
+        return IsInitialized;
     }
 
     // Event subscription methods
@@ -118,19 +121,16 @@ public class GameMediator : Singleton<GameMediator> {
     public void UnregisterPlayer(IPlayer player) {
         if (player == null) return;
         players.Remove(player);
-        Debug.Log($"Unregistered player: {player.TargetId}");
     }
 
     public void RegisterUI(GameUI ui) {
         if (!ValidateState("RegisterUI") || ui == null) return;
         gameUI = ui;
-        Debug.Log("Registered GameUI");
     }
 
     public void UnregisterUI(GameUI ui) {
         if (gameUI == ui) {
             gameUI = null;
-            Debug.Log("Unregistered GameUI");
         }
     }
 
@@ -138,7 +138,6 @@ public class GameMediator : Singleton<GameMediator> {
     public void NotifyGameInitialized() {
         if (!ValidateState("NotifyGameInitialized")) return;
         onGameInitialized.Invoke();
-        Debug.Log("Game initialization completed");
     }
 
     public void NotifyGameStateChanged() {
@@ -150,7 +149,6 @@ public class GameMediator : Singleton<GameMediator> {
         if (!ValidateState("NotifyPlayerDamaged") || player == null) return;
 
         onPlayerDamaged.Invoke(player, damage);
-        Debug.Log($"Player {player.TargetId} damaged for {damage}");
 
         if (player.Health <= 0) {
             NotifyGameOver(player.Opponent);
@@ -161,7 +159,6 @@ public class GameMediator : Singleton<GameMediator> {
         if (!ValidateState("NotifyCreatureDamaged") || creature == null) return;
 
         onCreatureDamaged.Invoke(creature, damage);
-        Debug.Log($"Creature {creature.Name} damaged for {damage}");
 
         if (creature.Health <= 0) {
             NotifyCreatureDied(creature);
@@ -172,15 +169,12 @@ public class GameMediator : Singleton<GameMediator> {
         if (!ValidateState("NotifyCreatureDied") || creature == null) return;
 
         onCreatureDied.Invoke(creature);
-        Debug.Log($"Creature {creature.Name} died");
         NotifyGameStateChanged();
     }
 
     public void NotifyGameOver(IPlayer winner) {
         if (!ValidateState("NotifyGameOver") || winner == null) return;
-
         onGameOver.Invoke(winner);
-        Debug.Log($"Game over - Winner: {winner.TargetId}");
     }
 
     private void ClearRegistrations() {
@@ -190,7 +184,7 @@ public class GameMediator : Singleton<GameMediator> {
 
     public void Cleanup() {
         ClearRegistrations();
-        isInitialized = false;
+        IsInitialized = false;
     }
 
     protected override void OnDestroy() {

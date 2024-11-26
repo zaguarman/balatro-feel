@@ -11,6 +11,10 @@ public class PlayerUI : MonoBehaviour {
 
     public void Initialize(IPlayer player) {
         this.player = player;
+
+        InitializeHealthUI();
+        InitializeHandUI();
+        RegisterEvents();
     }
 
     public void Start() {
@@ -20,10 +24,6 @@ public class PlayerUI : MonoBehaviour {
     private void InitializeDependencies() {
         gameMediator = GameMediator.Instance;
         gameReferences = GameReferences.Instance;
-
-        InitializeHealthUI();
-        InitializeHandUI();
-        RegisterEvents();
     }
 
     private void InitializeHealthUI() {
