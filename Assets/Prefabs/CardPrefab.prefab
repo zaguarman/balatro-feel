@@ -416,7 +416,7 @@ GameObject:
   - component: {fileID: 5464925446207512663}
   - component: {fileID: 4247672974874967921}
   m_Layer: 5
-  m_Name: CardButtonPrefab
+  m_Name: CardPrefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
