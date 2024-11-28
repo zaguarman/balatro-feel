@@ -8,17 +8,21 @@ public class PlayerUI : MonoBehaviour {
     private HandUI handUI;
     private HealthUI healthUI;
 
-
     public void Initialize(IPlayer player) {
         this.player = player;
+
+        InitializeDependencies();
+
+        if (gameReferences == null) {
+            Debug.LogError("GameReferences not found during PlayerUI initialization");
+            return;
+        }
 
         InitializeHealthUI();
         InitializeHandUI();
         RegisterEvents();
-    }
 
-    public void Start() {
-        InitializeDependencies();
+        isInitialized = true;
     }
 
     private void InitializeDependencies() {
@@ -28,14 +32,22 @@ public class PlayerUI : MonoBehaviour {
 
     private void InitializeHealthUI() {
         if (player == null) {
-            Debug.Log("Player is null on PlayerUI");
+            Debug.LogError("Player is null on PlayerUI");
+            return;
         }
 
         if (healthUI == null) {
             healthUI = gameObject.AddComponent<HealthUI>();
-            var healthText = (player == GameManager.Instance.Player1) ?
+            var healthText = player.IsPlayer1() ?
                 gameReferences.GetPlayer1HealthText() :
                 gameReferences.GetPlayer2HealthText();
+
+            if (healthText == null) {
+                Debug.LogError("Health text reference missing for " +
+                    (player.IsPlayer1() ? "Player 1" : "Player 2"));
+                return;
+            }
+
             healthUI.Initialize(healthText, player);
         }
     }

@@ -5,8 +5,12 @@ public abstract class UIComponent : MonoBehaviour {
     protected GameReferences References => GameReferences.Instance;
 
     protected virtual void OnEnable() {
-        RegisterEvents();
-        UpdateUI();
+        // Only register events if the system is fully initialized
+        // TODO: Check what component is the last to initialize and add it here
+        if (InitializationManager.Instance.IsComponentInitialized<GameMediator>()) {
+            RegisterEvents();
+            UpdateUI();
+        }
     }
 
     protected virtual void OnDisable() {

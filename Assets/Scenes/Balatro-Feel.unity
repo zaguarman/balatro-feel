@@ -270,7 +270,50 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   healthText: {fileID: 0}
-  gameMediator: {fileID: 0}
+--- !u!1 &150658577
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 150658578}
+  - component: {fileID: 150658579}
+  m_Layer: 0
+  m_Name: GameBootstrap
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &150658578
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 150658577}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &150658579
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 150658577}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f46b3bc35c8f6044eb9286e1335c33c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &500666784
 GameObject:
   m_ObjectHideFlags: 0
@@ -1000,17 +1043,17 @@ MonoBehaviour:
   player1UI: {fileID: 500666786}
   player1HealthText: {fileID: 1544506893}
   player1Hand: {fileID: 1587845790}
-  player1Battlefield: {fileID: 1445917819}
-  player1BattlefieldUI: {fileID: 0}
-  player1HandUI: {fileID: 0}
-  player1HealthUI: {fileID: 0}
+  player1Battlefield: {fileID: 1270125519}
+  player1BattlefieldUI: {fileID: 1445917820}
+  player1HandUI: {fileID: 1587845791}
+  player1HealthUI: {fileID: 1544506895}
   player2UI: {fileID: 1592228239}
   player2HealthText: {fileID: 54383538}
   player2Hand: {fileID: 1707401505}
   player2Battlefield: {fileID: 1270125519}
-  player2BattlefieldUI: {fileID: 0}
-  player2HandUI: {fileID: 0}
-  player2HealthUI: {fileID: 0}
+  player2BattlefieldUI: {fileID: 1270125520}
+  player2HandUI: {fileID: 1707401508}
+  player2HealthUI: {fileID: 54383540}
   cardButtonPrefab: {fileID: 5464925446207512663, guid: 9164b01cda78bc545b913d180247e537, type: 3}
   player1CardColor: {r: 0.8, g: 0.9, b: 1, a: 1}
   player2CardColor: {r: 1, g: 0.8, b: 0.8, a: 1}
@@ -1682,7 +1725,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   healthText: {fileID: 0}
-  gameMediator: {fileID: 0}
 --- !u!1 &1587845786
 GameObject:
   m_ObjectHideFlags: 0
@@ -1695,6 +1737,7 @@ GameObject:
   - component: {fileID: 1587845789}
   - component: {fileID: 1587845788}
   - component: {fileID: 1587845790}
+  - component: {fileID: 1587845791}
   m_Layer: 5
   m_Name: PlayerHand 1
   m_TagString: Untagged
@@ -1843,6 +1886,20 @@ MonoBehaviour:
     cardHoverOffset: 30
     cardDragScale: 1.1
   autoInitialize: 1
+--- !u!114 &1587845791
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1587845786}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 363b628a9519fa8489a28e6c6223e373, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  cardSpacing: 220
+  cardOffset: 50
 --- !u!1 &1592228237
 GameObject:
   m_ObjectHideFlags: 0
@@ -2100,6 +2157,7 @@ GameObject:
   - component: {fileID: 1707401507}
   - component: {fileID: 1707401506}
   - component: {fileID: 1707401505}
+  - component: {fileID: 1707401508}
   m_Layer: 5
   m_Name: PlayerHand 2
   m_TagString: Untagged
@@ -2246,50 +2304,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1707401503}
   m_CullTransparentMesh: 1
---- !u!1 &1784775077
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1784775079}
-  - component: {fileID: 1784775078}
-  m_Layer: 0
-  m_Name: GameManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1784775078
+--- !u!114 &1707401508
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1784775077}
+  m_GameObject: {fileID: 1707401503}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cfea4d2602016a9418688d8813aaaaef, type: 3}
+  m_Script: {fileID: 11500000, guid: 363b628a9519fa8489a28e6c6223e373, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!4 &1784775079
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1784775077}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.3038047, y: 0.2509378, z: -4.040263}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  cardSpacing: 220
+  cardOffset: 50
 --- !u!1 &2014619533
 GameObject:
   m_ObjectHideFlags: 0
@@ -2417,6 +2445,6 @@ SceneRoots:
   - {fileID: 1608072351}
   - {fileID: 619394802}
   - {fileID: 2014619536}
-  - {fileID: 1784775079}
   - {fileID: 946047124}
+  - {fileID: 150658578}
   - {fileID: 1458677301}

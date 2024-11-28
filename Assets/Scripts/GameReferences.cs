@@ -1,8 +1,21 @@
-using UnityEngine;
 using TMPro;
+using UnityEngine;
 using UnityEngine.UI;
 
-public class GameReferences : Singleton<GameReferences> {
+public class GameReferences : InitializableComponent {
+    private static GameReferences instance;
+    public static GameReferences Instance {
+        get {
+            if (instance == null) {
+                instance = FindObjectOfType<GameReferences>();
+                if (instance == null) {
+                    Debug.LogError("GameReferences not found in scene!");
+                }
+            }
+            return instance;
+        }
+    }
+
     [Header("Main UI Components")]
     [SerializeField] private GameUI gameUI;
 
@@ -16,7 +29,7 @@ public class GameReferences : Singleton<GameReferences> {
     [SerializeField] private CardContainer player1Battlefield;
     [SerializeField] private BattlefieldUI player1BattlefieldUI;
     [SerializeField] private HandUI player1HandUI;
-    [SerializeField] private HealthUI player1HealthUI; 
+    [SerializeField] private HealthUI player1HealthUI;
 
     [Header("Player 2 UI")]
     [SerializeField] private PlayerUI player2UI;
@@ -34,7 +47,30 @@ public class GameReferences : Singleton<GameReferences> {
     [SerializeField] private Color player1CardColor = new Color(0.8f, 0.9f, 1f);
     [SerializeField] private Color player2CardColor = new Color(1f, 0.8f, 0.8f);
 
-    // Getters
+    protected override void Awake() {
+        base.Awake();
+        if (instance != null && instance != this) {
+            Destroy(gameObject);
+            return;
+        }
+        instance = this;
+    }
+
+    public override void Initialize() {
+        if (IsInitialized) return;
+
+        ValidateReferences();
+        base.Initialize();
+    }
+
+    private void ValidateReferences() {
+        if (gameUI == null) Debug.LogError("GameUI reference missing!");
+        if (player1UI == null) Debug.LogError("Player1UI reference missing!");
+        if (player2UI == null) Debug.LogError("Player2UI reference missing!");
+        if (cardButtonPrefab == null) Debug.LogError("CardButtonPrefab reference missing!");
+    }
+
+    // Getters for all components
     public GameUI GetGameUI() => gameUI;
     public PlayerUI GetPlayer1UI() => player1UI;
     public PlayerUI GetPlayer2UI() => player2UI;
@@ -55,4 +91,9 @@ public class GameReferences : Singleton<GameReferences> {
     public HealthUI GetPlayer1HealthUI() => player1HealthUI;
     public HealthUI GetPlayer2HealthUI() => player2HealthUI;
 
+    private void OnDestroy() {
+        if (instance == this) {
+            instance = null;
+        }
+    }
 }

@@ -1,154 +1,139 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine.Events;
+using UnityEngine;
 
-public class GameMediator : Singleton<GameMediator>, IInitializable {
-    public bool IsInitialized { get; private set; }
+public class GameMediator : InitializableComponent {
+    private static GameMediator instance;
+    public static GameMediator Instance {
+        get {
+            if (instance == null) {
+                var go = new GameObject("GameMediator");
+                instance = go.AddComponent<GameMediator>();
+                DontDestroyOnLoad(go);
+            }
+            return instance;
+        }
+    }
 
-    private readonly List<IPlayer> players = new List<IPlayer>();
-    private GameUI gameUI;
-    private InitializationManager initManager;
+    private readonly UnityEvent<IPlayer, int> onPlayerDamaged = new UnityEvent<IPlayer, int>();
+    private readonly UnityEvent<ICreature, int> onCreatureDamaged = new UnityEvent<ICreature, int>();
+    private readonly UnityEvent<ICreature> onCreatureDied = new UnityEvent<ICreature>();
+    private readonly UnityEvent<IPlayer> onGameOver = new UnityEvent<IPlayer>();
+    private readonly UnityEvent onGameStateChanged = new UnityEvent();
+    private readonly UnityEvent onGameInitialized = new UnityEvent();
 
-    // Event definitions
-    [Serializable] private class PlayerDamagedEvent : UnityEvent<IPlayer, int> { }
-    [Serializable] private class CreatureDamagedEvent : UnityEvent<ICreature, int> { }
-    [Serializable] private class CreatureDiedEvent : UnityEvent<ICreature> { }
-    [Serializable] private class GameOverEvent : UnityEvent<IPlayer> { }
-    [Serializable] private class GameStateChangedEvent : UnityEvent { }
-    [Serializable] private class GameInitializedEvent : UnityEvent { }
-
-    // Private event instances
-    private readonly PlayerDamagedEvent onPlayerDamaged = new PlayerDamagedEvent();
-    private readonly CreatureDamagedEvent onCreatureDamaged = new CreatureDamagedEvent();
-    private readonly CreatureDiedEvent onCreatureDied = new CreatureDiedEvent();
-    private readonly GameOverEvent onGameOver = new GameOverEvent();
-    private readonly GameStateChangedEvent onGameStateChanged = new GameStateChangedEvent();
-    private readonly GameInitializedEvent onGameInitialized = new GameInitializedEvent();
+    private readonly HashSet<IPlayer> registeredPlayers = new HashSet<IPlayer>();
 
     protected override void Awake() {
         base.Awake();
-        initManager = InitializationManager.Instance;
-        initManager.RegisterComponent(this);
-        Initialize();
+        if (instance != null && instance != this) {
+            Destroy(gameObject);
+            return;
+        }
+        instance = this;
+        DontDestroyOnLoad(gameObject);
     }
 
-    public void Initialize() {
+    public override void Initialize() {
         if (IsInitialized) return;
 
-        ClearRegistrations();
-        IsInitialized = true;
-        initManager.MarkComponentInitialized(this);
-    }
-
-    private bool ValidateState(string operation) {
-        if (!IsInitialized) {
-            Initialize();
+        if (!InitializationManager.Instance.IsComponentInitialized<GameReferences>()) {
+            Debug.LogWarning("GameReferences must be initialized before GameMediator");
+            return;
         }
-        return IsInitialized;
+
+        ClearAllListeners();
+        base.Initialize();
     }
 
-    // Event subscription methods
     public void AddGameStateChangedListener(UnityAction listener) {
-        if (!ValidateState("AddGameStateChangedListener") || listener == null) return;
+        ValidateInitialization();
         onGameStateChanged.AddListener(listener);
     }
 
     public void RemoveGameStateChangedListener(UnityAction listener) {
-        if (listener == null) return;
         onGameStateChanged.RemoveListener(listener);
     }
 
     public void AddPlayerDamagedListener(UnityAction<IPlayer, int> listener) {
-        if (!ValidateState("AddPlayerDamagedListener") || listener == null) return;
+        ValidateInitialization();
         onPlayerDamaged.AddListener(listener);
     }
 
     public void RemovePlayerDamagedListener(UnityAction<IPlayer, int> listener) {
-        if (listener == null) return;
         onPlayerDamaged.RemoveListener(listener);
     }
 
     public void AddCreatureDamagedListener(UnityAction<ICreature, int> listener) {
-        if (!ValidateState("AddCreatureDamagedListener") || listener == null) return;
+        ValidateInitialization();
         onCreatureDamaged.AddListener(listener);
     }
 
     public void RemoveCreatureDamagedListener(UnityAction<ICreature, int> listener) {
-        if (listener == null) return;
         onCreatureDamaged.RemoveListener(listener);
     }
 
     public void AddCreatureDiedListener(UnityAction<ICreature> listener) {
-        if (!ValidateState("AddCreatureDiedListener") || listener == null) return;
+        ValidateInitialization();
         onCreatureDied.AddListener(listener);
     }
 
     public void RemoveCreatureDiedListener(UnityAction<ICreature> listener) {
-        if (listener == null) return;
         onCreatureDied.RemoveListener(listener);
     }
 
     public void AddGameOverListener(UnityAction<IPlayer> listener) {
-        if (!ValidateState("AddGameOverListener") || listener == null) return;
+        ValidateInitialization();
         onGameOver.AddListener(listener);
     }
 
     public void RemoveGameOverListener(UnityAction<IPlayer> listener) {
-        if (listener == null) return;
         onGameOver.RemoveListener(listener);
     }
 
     public void AddGameInitializedListener(UnityAction listener) {
-        if (!ValidateState("AddGameInitializedListener") || listener == null) return;
+        ValidateInitialization();
         onGameInitialized.AddListener(listener);
     }
 
     public void RemoveGameInitializedListener(UnityAction listener) {
-        if (listener == null) return;
         onGameInitialized.RemoveListener(listener);
     }
 
-    // Registration methods
     public void RegisterPlayer(IPlayer player) {
-        if (!ValidateState("RegisterPlayer") || player == null) return;
+        ValidateInitialization();
+        if (player == null) throw new System.ArgumentNullException(nameof(player));
 
-        if (!players.Contains(player)) {
-            players.Add(player);
+        if (registeredPlayers.Add(player)) {
             player.OnDamaged.AddListener((damage) => NotifyPlayerDamaged(player, damage));
+            Debug.Log($"Player registered with GameMediator: {(player.IsPlayer1() ? "Player 1" : "Player 2")}");
         }
     }
 
     public void UnregisterPlayer(IPlayer player) {
         if (player == null) return;
-        players.Remove(player);
-    }
-
-    public void RegisterUI(GameUI ui) {
-        if (!ValidateState("RegisterUI") || ui == null) return;
-        gameUI = ui;
-    }
-
-    public void UnregisterUI(GameUI ui) {
-        if (gameUI == ui) {
-            gameUI = null;
+        if (registeredPlayers.Remove(player)) {
+            Debug.Log($"Player unregistered from GameMediator: {(player.IsPlayer1() ? "Player 1" : "Player 2")}");
         }
     }
 
-    // Notification methods
     public void NotifyGameInitialized() {
-        if (!ValidateState("NotifyGameInitialized")) return;
+        ValidateInitialization();
+        Debug.Log("Game initialization notification sent");
         onGameInitialized.Invoke();
     }
 
     public void NotifyGameStateChanged() {
-        if (!ValidateState("NotifyGameStateChanged")) return;
+        ValidateInitialization();
         onGameStateChanged.Invoke();
     }
 
     public void NotifyPlayerDamaged(IPlayer player, int damage) {
-        if (!ValidateState("NotifyPlayerDamaged") || player == null) return;
+        ValidateInitialization();
+        if (player == null) throw new System.ArgumentNullException(nameof(player));
 
         onPlayerDamaged.Invoke(player, damage);
+        Debug.Log($"Player damaged notification: {damage} damage to {(player.IsPlayer1() ? "Player 1" : "Player 2")}");
 
         if (player.Health <= 0) {
             NotifyGameOver(player.Opponent);
@@ -156,9 +141,11 @@ public class GameMediator : Singleton<GameMediator>, IInitializable {
     }
 
     public void NotifyCreatureDamaged(ICreature creature, int damage) {
-        if (!ValidateState("NotifyCreatureDamaged") || creature == null) return;
+        ValidateInitialization();
+        if (creature == null) throw new System.ArgumentNullException(nameof(creature));
 
         onCreatureDamaged.Invoke(creature, damage);
+        Debug.Log($"Creature damaged notification: {damage} damage to {creature.Name}");
 
         if (creature.Health <= 0) {
             NotifyCreatureDied(creature);
@@ -166,31 +153,36 @@ public class GameMediator : Singleton<GameMediator>, IInitializable {
     }
 
     public void NotifyCreatureDied(ICreature creature) {
-        if (!ValidateState("NotifyCreatureDied") || creature == null) return;
+        ValidateInitialization();
+        if (creature == null) throw new System.ArgumentNullException(nameof(creature));
 
         onCreatureDied.Invoke(creature);
+        Debug.Log($"Creature died notification: {creature.Name}");
+
         NotifyGameStateChanged();
     }
 
     public void NotifyGameOver(IPlayer winner) {
-        if (!ValidateState("NotifyGameOver") || winner == null) return;
+        ValidateInitialization();
+        if (winner == null) throw new System.ArgumentNullException(nameof(winner));
+
+        Debug.Log($"Game over notification: {(winner.IsPlayer1() ? "Player 1" : "Player 2")} wins");
         onGameOver.Invoke(winner);
     }
 
-    private void ClearRegistrations() {
-        players.Clear();
-        gameUI = null;
-    }
-
-    public void Cleanup() {
-        ClearRegistrations();
-        IsInitialized = false;
-    }
-
-    protected override void OnDestroy() {
-        if (instance == this) {
-            Cleanup();
+    private void ValidateInitialization() {
+        if (!IsInitialized) {
+            throw new System.InvalidOperationException("GameMediator is not initialized");
         }
-        base.OnDestroy();
+    }
+
+    private void ClearAllListeners() {
+        onPlayerDamaged.RemoveAllListeners();
+        onCreatureDamaged.RemoveAllListeners();
+        onCreatureDied.RemoveAllListeners();
+        onGameOver.RemoveAllListeners();
+        onGameStateChanged.RemoveAllListeners();
+        onGameInitialized.RemoveAllListeners();
+        registeredPlayers.Clear();
     }
 }

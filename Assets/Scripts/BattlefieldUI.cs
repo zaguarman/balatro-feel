@@ -1,16 +1,12 @@
-using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class BattlefieldUI : UIComponent {
     private CardContainer battlefield;
     private Dictionary<string, CardButtonController> creatureCards = new Dictionary<string, CardButtonController>();
     private GameMediator gameMediator;
     private IPlayer player;
-    private bool isInitialized = false;
-
-    private void Start() {
-        InitializeReferences();
-    }
+    private bool isInitialized;
 
     private void InitializeReferences() {
         gameMediator = GameMediator.Instance;
@@ -18,6 +14,11 @@ public class BattlefieldUI : UIComponent {
     }
 
     public void Initialize(CardContainer battlefield, IPlayer player) {
+        if (battlefield == null) {
+            Debug.LogError("Battlefield container is null in BattlefieldUI.Initialize");
+            return;
+        }
+
         this.battlefield = battlefield;
         this.player = player;
 
@@ -30,7 +31,10 @@ public class BattlefieldUI : UIComponent {
     }
 
     private void InitializeContainer() {
-        if (battlefield == null) return;
+        if (battlefield == null) {
+            Debug.LogError("Battlefield is null in BattlefieldUI.InitializeContainer");
+            return;
+        }
 
         var settings = new ContainerSettings {
             layoutType = ContainerLayout.Horizontal,
@@ -42,6 +46,12 @@ public class BattlefieldUI : UIComponent {
         };
 
         battlefield.SetSettings(settings);
+
+        // Ensure RectTransform exists
+        var rectTransform = battlefield.GetComponent<RectTransform>();
+        if (rectTransform == null) {
+            rectTransform = battlefield.gameObject.AddComponent<RectTransform>();
+        }
 
         var dropZone = battlefield.gameObject.AddComponent<BattlefieldDropZone>();
         dropZone.acceptPlayer1Cards = player == GameManager.Instance.Player1;
@@ -64,15 +74,13 @@ public class BattlefieldUI : UIComponent {
         }
     }
 
-    private void OnGameInitialized() {
-        if (!isInitialized) return;
-        UpdateUI();
-    }
-
     public override void UpdateUI() {
         if (!isInitialized || player == null || battlefield == null) return;
 
-        // Clear existing cards but maintain the dictionary
+        UpdateBattlefieldCards();
+    }
+
+    private void UpdateBattlefieldCards() {
         foreach (var existingCard in creatureCards.Values) {
             if (existingCard != null) {
                 Destroy(existingCard.gameObject);
@@ -80,12 +88,10 @@ public class BattlefieldUI : UIComponent {
         }
         creatureCards.Clear();
 
-        // Create new cards for each creature
         foreach (var creature in player.Battlefield) {
             CreateCreatureCard(creature);
         }
 
-        // Let the container handle layout
         battlefield.UpdateUI();
     }
 
@@ -99,17 +105,19 @@ public class BattlefieldUI : UIComponent {
         var controller = cardObj.GetComponent<CardButtonController>();
 
         if (controller != null) {
-            // Setup the card data
             var creatureData = ScriptableObject.CreateInstance<CreatureData>();
             creatureData.cardName = creature.Name;
             creatureData.attack = creature.Attack;
             creatureData.health = creature.Health;
 
             controller.Setup(creatureData, player);
-
-            // Store reference in dictionary
             creatureCards[creature.TargetId] = controller;
         }
+    }
+
+    private void OnGameInitialized() {
+        if (!isInitialized) return;
+        UpdateUI();
     }
 
     private void OnCreatureDied(ICreature creature) {
@@ -117,21 +125,20 @@ public class BattlefieldUI : UIComponent {
 
         if (creatureCards.TryGetValue(creature.TargetId, out CardButtonController card)) {
             if (card != null) {
-                var container = card.transform.parent.GetComponent<CardContainer>();
-                if (container != null) {
-                    container.RemoveCard(card);
-                }
+                Destroy(card.gameObject);
             }
             creatureCards.Remove(creature.TargetId);
+            battlefield?.UpdateUI();
         }
-
-        battlefield?.UpdateUI();
     }
 
     private void OnDestroy() {
+        InitializationManager.Instance.OnSystemInitialized.RemoveListener(InitializeReferences);
         UnregisterEvents();
+        CleanupCards();
+    }
 
-        // Clean up any remaining cards
+    private void CleanupCards() {
         foreach (var card in creatureCards.Values) {
             if (card != null) {
                 Destroy(card.gameObject);

@@ -26,8 +26,6 @@ public class ContainerSettings {
 }
 
 public class CardContainer : UIComponent {
-    
-
     public List<CardButtonController> GetCards() => cards;
 
     [SerializeField] private ContainerSettings settings = new ContainerSettings();
@@ -46,8 +44,22 @@ public class CardContainer : UIComponent {
     private Vector2 containerSize;
 
     public void SetSettings(ContainerSettings newSettings) {
+        if (containerRect == null) {
+            Debug.LogError("ContainerRect is null in CardContainer.SetSettings");
+            containerRect = GetComponent<RectTransform>();
+            if (containerRect == null) {
+                containerRect = gameObject.AddComponent<RectTransform>();
+            }
+        }
         settings = newSettings;
         UpdateLayout();
+    }
+
+    private void Awake() {
+        containerRect = GetComponent<RectTransform>();
+        if (containerRect == null) {
+            containerRect = gameObject.AddComponent<RectTransform>();
+        }
     }
 
     private void Start() {
@@ -158,6 +170,11 @@ public class CardContainer : UIComponent {
     }
 
     private void UpdateLayout() {
+        if (containerRect == null) {
+            Debug.LogError("ContainerRect is null in CardContainer.UpdateLayout");
+            return;
+        }
+
         CalculateLayout();
         UpdateContainerSize();
         RepositionAllCards();
@@ -180,6 +197,11 @@ public class CardContainer : UIComponent {
     }
 
     private void CalculateHorizontalLayout() {
+        if (containerRect == null) {
+            Debug.LogError("ContainerRect is null in CardContainer.CalculateHorizontalLayout");
+            return;
+        }
+
         containerSize = new Vector2(
             settings.offset + (settings.spacing * cards.Count),
             containerRect.sizeDelta.y

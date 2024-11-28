@@ -1,97 +1,85 @@
 using UnityEngine;
-using UnityEngine.UI;
 
-public class GameManager : Singleton<GameManager>, IInitializable {
+public class GameManager : InitializableComponent {
+    private static GameManager instance;
+    public static GameManager Instance {
+        get {
+            if (instance == null) {
+                var go = new GameObject("GameManager");
+                instance = go.AddComponent<GameManager>();
+                DontDestroyOnLoad(go);
+            }
+            return instance;
+        }
+    }
+
     public IPlayer Player1 { get; private set; }
     public IPlayer Player2 { get; private set; }
     public GameContext GameContext { get; private set; }
-    public bool IsInitialized { get; private set; }
 
-    public IDeck Player1Deck => player1Deck;
-    public IDeck Player2Deck => player2Deck;
-
-    private IDeck player1Deck;
-    private IDeck player2Deck;
     private GameMediator gameMediator;
-    private Canvas mainCanvas;
     private GameReferences gameReferences;
-    private InitializationManager initManager;
+    private ICardDealingService cardDealingService;
 
     protected override void Awake() {
         base.Awake();
-        initManager = InitializationManager.Instance;
-        gameReferences = GameReferences.Instance;
-        gameMediator = GameMediator.Instance;
-
-        // Register for initialization
-        initManager.RegisterComponent(this);
-
-        // Listen for system initialization
-        initManager.OnSystemInitialized += OnSystemFullyInitialized;
+        if (instance != null && instance != this) {
+            Destroy(gameObject);
+            return;
+        }
+        instance = this;
+        DontDestroyOnLoad(gameObject);
     }
 
-    public void Initialize() {
+    public override void Initialize() {
         if (IsInitialized) return;
 
+        var initManager = InitializationManager.Instance;
+        if (!initManager.IsComponentInitialized<GameReferences>() ||
+            !initManager.IsComponentInitialized<GameMediator>()) {
+            throw new System.InvalidOperationException("Required dependencies not initialized");
+        }
+
+        gameMediator = GameMediator.Instance;
+        gameReferences = GameReferences.Instance;
+        cardDealingService = new CardDealingService(gameMediator);
+
+        InitializeGameSystem();
+
+        base.Initialize();  // This will set IsInitialized to true
+    }
+
+    private void InitializeGameSystem() {
         GameContext = new GameContext();
+        InitializePlayers();
+        InitializeCards();
+        SetupInitialGameState();
+    }
+
+    private void InitializePlayers() {
         Player1 = new Player();
         Player2 = new Player();
         Player1.Opponent = Player2;
         Player2.Opponent = Player1;
 
-        gameReferences.GetPlayer1UI().Initialize(Player1);
-        gameReferences.GetPlayer2UI().Initialize(Player2);
-        
-        InitializeDecks();
-
-        if (gameMediator != null && gameMediator.IsInitialized) {
-            gameMediator.RegisterPlayer(Player1);
-            gameMediator.RegisterPlayer(Player2);
-        }
-
-        IsInitialized = true;
-        initManager.MarkComponentInitialized(this);
+        gameMediator.RegisterPlayer(Player1);
+        gameMediator.RegisterPlayer(Player2);
     }
 
-    private void OnSystemFullyInitialized() {
-        // Start the game only when all systems are ready
-        StartGame();
-    }
-
-    private void InitializeDecks() {
-        var testSetup = gameObject.GetComponent<TestSetup>() ?? gameObject.AddComponent<TestSetup>();
+    private void InitializeCards() {
+        var testSetup = gameObject.AddComponent<TestSetup>();
         var testCards = testSetup.CreateTestCards();
-
-        player1Deck = new Deck();
-        player2Deck = new Deck();
-
-        player1Deck.Initialize(testCards);
-        player2Deck.Initialize(testCards);
+        cardDealingService.InitializeDecks(testCards, testCards);
     }
 
-    public void StartGame() {
-        if (!IsInitialized) {
-            Initialize();
-        }
-
-        gameMediator?.NotifyGameInitialized();
-        DealInitialHands();
-        LogGameState("Game Started");
-    }
-
-    private void DealInitialHands(int initialHandSize = 3) {
-        for (int i = 0; i < initialHandSize; i++) {
-            DrawCardForPlayer(Player1);
-            DrawCardForPlayer(Player2);
-        }
-
-        gameMediator?.NotifyGameStateChanged();
+    private void SetupInitialGameState() {
+        cardDealingService.DealInitialHands(Player1, Player2);
+        LogGameState("Game Initialized");
+        gameMediator.NotifyGameInitialized();
     }
 
     public bool CanDrawCard(IPlayer player) {
-        if (!IsInitialized) return false;
-        var deck = GetPlayerDeck(player);
-        return deck != null && deck.CardsRemaining > 0;
+        return IsInitialized && cardDealingService.CanDrawCard(player);
     }
 
     public void DrawCardForPlayer(IPlayer player) {
@@ -100,23 +88,7 @@ public class GameManager : Singleton<GameManager>, IInitializable {
             return;
         }
 
-        var deck = GetPlayerDeck(player);
-        if (deck == null) {
-            Debug.LogError("Could not find deck for player");
-            return;
-        }
-
-        var card = deck.DrawCard();
-        if (card != null) {
-            player.AddToHand(card);
-            gameMediator?.NotifyGameStateChanged();
-        }
-    }
-
-    private IDeck GetPlayerDeck(IPlayer player) {
-        if (player == Player1) return player1Deck;
-        if (player == Player2) return player2Deck;
-        return null;
+        cardDealingService.DrawCardForPlayer(player);
     }
 
     public void PlayCard(CardData cardData, IPlayer player) {
@@ -131,33 +103,32 @@ public class GameManager : Singleton<GameManager>, IInitializable {
         ICard card = CardFactory.CreateCard(cardData);
         card.Play(GameContext, player);
         GameContext.ResolveActions();
-        gameMediator?.NotifyGameStateChanged();
+        gameMediator.NotifyGameStateChanged();
 
         LogGameState($"Player {playerNumber} played {cardData.cardName}");
     }
 
-    public void LogGameState(string action = "") {
+    private void LogGameState(string action = "") {
         if (!IsInitialized) return;
 
-        var stateLog = new System.Text.StringBuilder();
-        stateLog.AppendLine($"=== Game State {(string.IsNullOrEmpty(action) ? "" : $"- {action}")} ===");
+        var state = $"=== Game State {(string.IsNullOrEmpty(action) ? "" : $"- {action}")} ===\n";
 
         if (Player1 != null) {
-            stateLog.AppendLine($"Player 1 - Health: {Player1.Health}, Hand: {Player1.Hand.Count}, Battlefield: {Player1.Battlefield.Count}");
+            state += $"Player 1 - Health: {Player1.Health}, Hand: {Player1.Hand.Count}, Battlefield: {Player1.Battlefield.Count}\n";
         }
 
         if (Player2 != null) {
-            stateLog.AppendLine($"Player 2 - Health: {Player2.Health}, Hand: {Player2.Hand.Count}, Battlefield: {Player2.Battlefield.Count}");
+            state += $"Player 2 - Health: {Player2.Health}, Hand: {Player2.Hand.Count}, Battlefield: {Player2.Battlefield.Count}\n";
         }
 
         if (GameContext != null) {
-            stateLog.AppendLine($"Pending Actions: {GameContext.GetPendingActionsCount()}");
+            state += $"Pending Actions: {GameContext.GetPendingActionsCount()}\n";
         }
 
-        Debug.Log(stateLog.ToString());
+        Debug.Log(state);
     }
 
-    protected override void OnDestroy() {
+    private void OnDestroy() {
         if (instance == this) {
             if (Player1 != null) {
                 gameMediator?.UnregisterPlayer(Player1);
@@ -167,10 +138,7 @@ public class GameManager : Singleton<GameManager>, IInitializable {
                 gameMediator?.UnregisterPlayer(Player2);
             }
 
-            initManager.OnSystemInitialized -= OnSystemFullyInitialized;
-
             instance = null;
         }
-        base.OnDestroy();
     }
 }
