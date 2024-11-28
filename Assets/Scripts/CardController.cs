@@ -6,9 +6,9 @@ using TMPro;
 using System;
 
 [Serializable]
-public class UnityEventCardButton : UnityEvent<CardButtonController> { }
+public class CardUnityEvent : UnityEvent<CardController> { }
 
-public class CardButtonController : UIComponent, IPointerEnterHandler, IPointerExitHandler,
+public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHandler,
     IDragHandler, IBeginDragHandler, IEndDragHandler {
     [SerializeField] private TextMeshProUGUI nameText;
     [SerializeField] private TextMeshProUGUI statsText;
@@ -23,9 +23,9 @@ public class CardButtonController : UIComponent, IPointerEnterHandler, IPointerE
     private CardData cardData;
     private IPlayer player;
 
-    public UnityEventCardButton OnBeginDragEvent = new UnityEventCardButton();
-    public UnityEventCardButton OnEndDragEvent = new UnityEventCardButton();
-    public UnityEventCardButton OnCardDropped = new UnityEventCardButton();
+    public CardUnityEvent OnBeginDragEvent = new CardUnityEvent();
+    public CardUnityEvent OnEndDragEvent = new CardUnityEvent();
+    public CardUnityEvent OnCardDropped = new CardUnityEvent();
     public Action OnPointerEnterHandler;
     public Action OnPointerExitHandler;
 

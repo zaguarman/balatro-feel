@@ -5,7 +5,7 @@ public class BattlefieldDropZone : CardDropZone {
         container = GetComponent<CardContainer>();
     }
 
-    public override void OnCardDropped(CardButtonController card) {
+    public override void OnCardDropped(CardController card) {
         if (!CanAcceptCard(card)) return;
 
         var gameManager = GameManager.Instance;

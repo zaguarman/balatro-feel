@@ -26,15 +26,15 @@ public class ContainerSettings {
 }
 
 public class CardContainer : UIComponent {
-    public List<CardButtonController> GetCards() => cards;
+    public List<CardController> GetCards() => cards;
 
     [SerializeField] private ContainerSettings settings = new ContainerSettings();
     [SerializeField] private bool autoInitialize = true;
 
     private RectTransform containerRect;
-    private List<CardButtonController> cards = new List<CardButtonController>();
-    private CardButtonController selectedCard;
-    private CardButtonController hoveredCard;
+    private List<CardController> cards = new List<CardController>();
+    private CardController selectedCard;
+    private CardController hoveredCard;
     private bool isSwapping = false;
     private IPlayer player;
     private GameMediator gameMediator;
@@ -120,14 +120,14 @@ public class CardContainer : UIComponent {
         var references = GameReferences.Instance;
         if (references == null) return;
 
-        Button cardPrefab = references.GetCardButtonPrefab();
+        Button cardPrefab = references.GetCardPrefab();
         if (cardPrefab == null) return;
 
         CreateCardButton(card, cardPrefab);
         UpdateLayout();
     }
 
-    public void RemoveCard(CardButtonController card) {
+    public void RemoveCard(CardController card) {
         if (card == null) return;
 
         cards.Remove(card);
@@ -139,7 +139,7 @@ public class CardContainer : UIComponent {
         if (player == null) return;
 
         var cardObj = Instantiate(prefab, transform);
-        var controller = cardObj.GetComponent<CardButtonController>();
+        var controller = cardObj.GetComponent<CardController>();
 
         if (controller != null) {
             var cardData = CreateCardData(card);
@@ -162,7 +162,7 @@ public class CardContainer : UIComponent {
         return cardData;
     }
 
-    private void SetupCardHandlers(CardButtonController card) {
+    private void SetupCardHandlers(CardController card) {
         card.OnBeginDragEvent.AddListener(OnCardBeginDrag);
         card.OnEndDragEvent.AddListener(OnCardEndDrag);
         card.OnPointerEnterHandler += () => OnCardHoverEnter(card);
@@ -272,7 +272,7 @@ public class CardContainer : UIComponent {
         }
     }
 
-    private void OnCardHoverEnter(CardButtonController card) {
+    private void OnCardHoverEnter(CardController card) {
         hoveredCard = card;
         if (selectedCard == null) {
             Vector2 hoverOffset = settings.layoutType == ContainerLayout.Vertical
@@ -289,7 +289,7 @@ public class CardContainer : UIComponent {
         }
     }
 
-    private void OnCardHoverExit(CardButtonController card) {
+    private void OnCardHoverExit(CardController card) {
         if (hoveredCard == card) {
             hoveredCard = null;
             if (selectedCard == null) {
@@ -304,13 +304,13 @@ public class CardContainer : UIComponent {
         }
     }
 
-    private void OnCardBeginDrag(CardButtonController card) {
+    private void OnCardBeginDrag(CardController card) {
         selectedCard = card;
         card.transform.SetAsLastSibling();
         card.transform.DOScale(settings.cardDragScale, settings.cardMoveDuration);
     }
 
-    private void OnCardEndDrag(CardButtonController card) {
+    private void OnCardEndDrag(CardController card) {
         if (selectedCard == null) return;
 
         card.transform.DOScale(1f, settings.cardMoveDuration);
@@ -335,7 +335,7 @@ public class CardContainer : UIComponent {
         }
     }
 
-    private bool ShouldSwap(CardButtonController card1, CardButtonController card2) {
+    private bool ShouldSwap(CardController card1, CardController card2) {
         int card1Index = cards.IndexOf(card1);
         int card2Index = cards.IndexOf(card2);
 
@@ -351,21 +351,21 @@ public class CardContainer : UIComponent {
         }
     }
 
-    private bool ShouldSwapHorizontal(CardButtonController card1, CardButtonController card2, int index1, int index2) {
+    private bool ShouldSwapHorizontal(CardController card1, CardController card2, int index1, int index2) {
         float card1X = card1.transform.position.x;
         float card2X = card2.transform.position.x;
         return (card1X > card2X && index1 < index2) ||
                (card1X < card2X && index1 > index2);
     }
 
-    private bool ShouldSwapVertical(CardButtonController card1, CardButtonController card2, int index1, int index2) {
+    private bool ShouldSwapVertical(CardController card1, CardController card2, int index1, int index2) {
         float card1Y = card1.transform.position.y;
         float card2Y = card2.transform.position.y;
         return (card1Y > card2Y && index1 < index2) ||
                (card1Y < card2Y && index1 > index2);
     }
 
-    private bool ShouldSwapGrid(CardButtonController card1, CardButtonController card2, int index1, int index2) {
+    private bool ShouldSwapGrid(CardController card1, CardController card2, int index1, int index2) {
         Vector2 card1Pos = card1.transform.position;
         Vector2 card2Pos = card2.transform.position;
         float distanceSqr = Vector2.SqrMagnitude(card1Pos - card2Pos);

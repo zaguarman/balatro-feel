@@ -41,7 +41,7 @@ public class GameReferences : InitializableComponent {
     [SerializeField] private HealthUI player2HealthUI;
 
     [Header("Card Components")]
-    [SerializeField] private Button cardButtonPrefab;
+    [SerializeField] private Button cardPrefab;
 
     [Header("Card Style")]
     [SerializeField] private Color player1CardColor = new Color(0.8f, 0.9f, 1f);
@@ -67,7 +67,7 @@ public class GameReferences : InitializableComponent {
         if (gameUI == null) Debug.LogError("GameUI reference missing!");
         if (player1UI == null) Debug.LogError("Player1UI reference missing!");
         if (player2UI == null) Debug.LogError("Player2UI reference missing!");
-        if (cardButtonPrefab == null) Debug.LogError("CardButtonPrefab reference missing!");
+        if (cardPrefab == null) Debug.LogError("CardPrefab reference missing!");
     }
 
     // Getters for all components
@@ -78,7 +78,7 @@ public class GameReferences : InitializableComponent {
     public CardContainer GetPlayer2Battlefield() => player2Battlefield;
     public CardContainer GetPlayer1Hand() => player1Hand;
     public CardContainer GetPlayer2Hand() => player2Hand;
-    public Button GetCardButtonPrefab() => cardButtonPrefab;
+    public Button GetCardPrefab() => cardPrefab;
     public Color GetPlayer1CardColor() => player1CardColor;
     public Color GetPlayer2CardColor() => player2CardColor;
     public Button GetResolveActionsButton() => resolveActionsButton;

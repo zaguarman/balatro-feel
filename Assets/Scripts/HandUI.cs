@@ -5,7 +5,7 @@ public class HandUI : UIComponent {
     [SerializeField] private float cardSpacing = 220f;
     [SerializeField] private float cardOffset = 50f;
 
-    private List<CardButtonController> handCards = new List<CardButtonController>();
+    private List<CardController> handCards = new List<CardController>();
     private IPlayer player;
     private GameManager gameManager;
     private GameReferences gameReferences;
@@ -91,18 +91,18 @@ public class HandUI : UIComponent {
     private void CreateCardInHand(ICard card, int index) {
         if (gameReferences == null) return;
 
-        var cardButtonPrefab = gameReferences.GetCardButtonPrefab();
+        var cardButtonPrefab = gameReferences.GetCardPrefab();
         if (cardButtonPrefab == null) return;
 
         var buttonObj = Instantiate(cardButtonPrefab, handContainer.transform);
-        var controller = buttonObj.GetComponent<CardButtonController>();
+        var controller = buttonObj.GetComponent<CardController>();
         if (controller == null) return;
 
         SetupCardController(controller, card, index);
         handCards.Add(controller);
     }
 
-    private void SetupCardController(CardButtonController controller, ICard card, int index) {
+    private void SetupCardController(CardController controller, ICard card, int index) {
         var cardData = CreateCardData(card);
         controller.Setup(cardData, player);
         SetupCardTransform(controller.GetComponent<RectTransform>(), index);
@@ -130,28 +130,28 @@ public class HandUI : UIComponent {
         rect.anchoredPosition = new Vector2(cardOffset + (cardSpacing * index), 0);
     }
 
-    private void SetupCardDragHandlers(CardButtonController controller) {
+    private void SetupCardDragHandlers(CardController controller) {
         controller.OnBeginDragEvent.AddListener(OnCardBeginDrag);
         controller.OnEndDragEvent.AddListener(OnCardEndDrag);
         controller.OnCardDropped.AddListener(OnCardDropped);
     }
 
-    private void OnCardBeginDrag(CardButtonController card) {
+    private void OnCardBeginDrag(CardController card) {
         card.transform.SetAsLastSibling();
     }
 
-    private void OnCardEndDrag(CardButtonController card) {
+    private void OnCardEndDrag(CardController card) {
         // Handle any end drag logic if needed
     }
 
-    private void OnCardDropped(CardButtonController card) {
+    private void OnCardDropped(CardController card) {
         if (gameManager != null && IsValidDropLocation(card)) {
             gameManager.PlayCard(card.GetCardData(), player);
             gameMediator?.NotifyGameStateChanged();
         }
     }
 
-    private bool IsValidDropLocation(CardButtonController card) {
+    private bool IsValidDropLocation(CardController card) {
         return CardDropZone.IsOverDropZone(card.transform.position, out _);
     }
 

@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using UnityEngine.EventSystems;
 
 public interface ICardDropZone {
-    bool CanAcceptCard(CardButtonController card);
-    void OnCardDropped(CardButtonController card);
+    bool CanAcceptCard(CardController card);
+    void OnCardDropped(CardController card);
     RectTransform GetRectTransform();
 }
 
@@ -29,18 +29,18 @@ public class CardDropZone : UIComponent, IDropHandler, ICardDropZone {
         // No events to unregister
     }
 
-    public virtual bool CanAcceptCard(CardButtonController card) {
+    public virtual bool CanAcceptCard(CardController card) {
         if (card == null) return false;
         return card.IsPlayer1Card() ? acceptPlayer1Cards : acceptPlayer2Cards;
     }
 
-    public virtual void OnCardDropped(CardButtonController card) {
+    public virtual void OnCardDropped(CardController card) {
         if (!CanAcceptCard(card)) return;
         gameMediator?.NotifyGameStateChanged();
     }
 
     public void OnDrop(PointerEventData eventData) {
-        var card = eventData.pointerDrag?.GetComponent<CardButtonController>();
+        var card = eventData.pointerDrag?.GetComponent<CardController>();
         if (card != null && CanAcceptCard(card)) {
             OnCardDropped(card);
         }

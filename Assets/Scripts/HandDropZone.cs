@@ -5,7 +5,7 @@ public class HandDropZone : CardDropZone {
         container = GetComponent<CardContainer>();
     }
 
-    public override void OnCardDropped(CardButtonController card) {
+    public override void OnCardDropped(CardController card) {
         if (!CanAcceptCard(card)) return;
 
         // Handle adding card to hand

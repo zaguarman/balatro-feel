@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class BattlefieldUI : UIComponent {
     private CardContainer battlefield;
-    private Dictionary<string, CardButtonController> creatureCards = new Dictionary<string, CardButtonController>();
+    private Dictionary<string, CardController> creatureCards = new Dictionary<string, CardController>();
     private GameMediator gameMediator;
     private IPlayer player;
     private bool isInitialized;
@@ -97,12 +97,12 @@ public class BattlefieldUI : UIComponent {
 
     private void CreateCreatureCard(ICreature creature) {
         var references = GameReferences.Instance;
-        var cardPrefab = references.GetCardButtonPrefab();
+        var cardPrefab = references.GetCardPrefab();
 
         if (cardPrefab == null) return;
 
         var cardObj = Instantiate(cardPrefab, battlefield.transform);
-        var controller = cardObj.GetComponent<CardButtonController>();
+        var controller = cardObj.GetComponent<CardController>();
 
         if (controller != null) {
             var creatureData = ScriptableObject.CreateInstance<CreatureData>();
@@ -123,7 +123,7 @@ public class BattlefieldUI : UIComponent {
     private void OnCreatureDied(ICreature creature) {
         if (!isInitialized) return;
 
-        if (creatureCards.TryGetValue(creature.TargetId, out CardButtonController card)) {
+        if (creatureCards.TryGetValue(creature.TargetId, out CardController card)) {
             if (card != null) {
                 Destroy(card.gameObject);
             }
