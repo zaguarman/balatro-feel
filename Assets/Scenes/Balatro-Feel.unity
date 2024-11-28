@@ -157,7 +157,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -572.7943, y: 85.92316}
+  m_AnchoredPosition: {x: -834, y: 24}
   m_SizeDelta: {x: 350, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &54383538
@@ -269,7 +269,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ffca7fb8b5efe6947a43353ee1d4dc03, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  healthText: {fileID: 0}
 --- !u!1 &150658577
 GameObject:
   m_ObjectHideFlags: 0
@@ -1557,10 +1556,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a04b367baec4a6a4e9b03763698cc0ba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  player1UI: {fileID: 0}
-  player2UI: {fileID: 0}
-  player1BattlefieldUI: {fileID: 0}
-  player2BattlefieldUI: {fileID: 0}
 --- !u!4 &1458677301
 Transform:
   m_ObjectHideFlags: 0
@@ -1612,7 +1607,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -572.7943, y: 85.92316}
+  m_AnchoredPosition: {x: -848, y: -100}
   m_SizeDelta: {x: 350, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1544506893
@@ -1724,7 +1719,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ffca7fb8b5efe6947a43353ee1d4dc03, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  healthText: {fileID: 0}
 --- !u!1 &1587845786
 GameObject:
   m_ObjectHideFlags: 0
@@ -1761,7 +1755,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0.000061035, y: -155}
+  m_AnchoredPosition: {x: 0.000061035, y: -100}
   m_SizeDelta: {x: 350, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1587845788
@@ -1771,7 +1765,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1587845786}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
@@ -1877,8 +1871,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   settings:
     layoutType: 0
-    spacing: 220
-    offset: 50
+    spacing: 500
+    offset: 200
     gridCellSize: {x: 220, y: 320}
     gridColumns: 3
     cardMoveDuration: 0.15
@@ -1898,8 +1892,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 363b628a9519fa8489a28e6c6223e373, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cardSpacing: 220
-  cardOffset: 50
+  cardSpacing: 500
+  cardOffset: 200
 --- !u!1 &1592228237
 GameObject:
   m_ObjectHideFlags: 0
@@ -2181,7 +2175,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0.000061035, y: 66}
+  m_AnchoredPosition: {x: 0.000061035, y: 77}
   m_SizeDelta: {x: 350, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1707401505
@@ -2214,7 +2208,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1707401503}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 

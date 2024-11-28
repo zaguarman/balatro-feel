@@ -1,10 +1,9 @@
 using TMPro;
-using UnityEngine;
 
 public class HealthUI : UIComponent {
-    [SerializeField] private TextMeshProUGUI healthText;
-    [SerializeField] private IPlayer player;
-    [SerializeField] private GameMediator gameMediator;
+    private TextMeshProUGUI healthText;
+    private IPlayer player;
+    private GameMediator gameMediator;
 
     public void Initialize(TextMeshProUGUI healthText, IPlayer player) {
         this.healthText = healthText;
