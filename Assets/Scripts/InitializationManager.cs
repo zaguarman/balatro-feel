@@ -47,7 +47,7 @@ public class InitializationManager : MonoBehaviour {
     public void RegisterComponent(IInitializable component) {
         if (!components.ContainsKey(component)) {
             components[component] = false;
-            Debug.Log($"Registered component: {component.GetType().Name}");
+            //Debug.Log($"Registered component: {component.GetType().Name}");
         }
     }
 
@@ -76,7 +76,7 @@ public class InitializationManager : MonoBehaviour {
             try {
                 component.Initialize();
                 components[component] = true;
-                Debug.Log($"Initialized component: {typeof(T).Name}");
+                //Debug.Log($"Initialized component: {typeof(T).Name}");
             } catch (System.Exception e) {
                 Debug.LogError($"Failed to initialize {typeof(T).Name}: {e}");
                 throw; // Rethrow to stop initialization sequence
@@ -88,7 +88,7 @@ public class InitializationManager : MonoBehaviour {
         if (!systemInitialized && components.All(kvp => kvp.Value)) {
             systemInitialized = true;
             OnSystemInitialized.Invoke();
-            Debug.Log("System initialization complete");
+            //Debug.Log("System initialization complete");
         }
     }
 

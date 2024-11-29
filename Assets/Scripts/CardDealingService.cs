@@ -34,7 +34,7 @@ public class CardDealingService : ICardDealingService {
         player2Deck.Initialize(player2Cards);
         playerDecks[gameManager.Player2] = player2Deck;
 
-        Debug.Log("Card dealing service initialized decks successfully");
+        //Debug.Log("Card dealing service initialized decks successfully");
     }
 
     public void DealInitialHands(IPlayer player1, IPlayer player2, int handSize = 7) {
@@ -42,7 +42,7 @@ public class CardDealingService : ICardDealingService {
             DrawCardForPlayer(player1);
             DrawCardForPlayer(player2);
         }
-        Debug.Log($"Dealt initial hands of {handSize} cards to both players");
+        //Debug.Log($"Dealt initial hands of {handSize} cards to both players");
     }
 
     public bool CanDrawCard(IPlayer player) {
@@ -70,7 +70,7 @@ public class CardDealingService : ICardDealingService {
         if (card != null) {
             player.AddToHand(card);
             gameMediator.NotifyGameStateChanged();
-            Debug.Log($"Drew card for {(player.IsPlayer1() ? "Player 1" : "Player 2")}: {card.Name}");
+            //Debug.Log($"Drew card for {(player.IsPlayer1() ? "Player 1" : "Player 2")}: {card.Name}");
         }
     }
 

@@ -77,20 +77,20 @@ public class GameMediator : Singleton<GameMediator> {
 
         if (registeredPlayers.Add(player)) {
             player.OnDamaged.AddListener((damage) => NotifyPlayerDamaged(player, damage));
-            Debug.Log($"Player registered with GameMediator: {(player.IsPlayer1() ? "Player 1" : "Player 2")}");
+            //Debug.Log($"Player registered with GameMediator: {(player.IsPlayer1() ? "Player 1" : "Player 2")}");
         }
     }
 
     public void UnregisterPlayer(IPlayer player) {
         if (player == null) return;
         if (registeredPlayers.Remove(player)) {
-            Debug.Log($"Player unregistered from GameMediator: {(player.IsPlayer1() ? "Player 1" : "Player 2")}");
+            //Debug.Log($"Player unregistered from GameMediator: {(player.IsPlayer1() ? "Player 1" : "Player 2")}");
         }
     }
 
     public void NotifyGameInitialized() {
         ValidateInitialization();
-        Debug.Log("Game initialization notification sent");
+        //Debug.Log("Game initialization notification sent");
         onGameInitialized.Invoke();
     }
 
