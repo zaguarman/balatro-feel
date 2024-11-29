@@ -2,19 +2,7 @@ using System.Collections.Generic;
 using UnityEngine.Events;
 using UnityEngine;
 
-public class GameMediator : InitializableComponent {
-    private static GameMediator instance;
-    public static GameMediator Instance {
-        get {
-            if (instance == null) {
-                var go = new GameObject("GameMediator");
-                instance = go.AddComponent<GameMediator>();
-                DontDestroyOnLoad(go);
-            }
-            return instance;
-        }
-    }
-
+public class GameMediator : Singleton<GameMediator> {
     private readonly UnityEvent<IPlayer, int> onPlayerDamaged = new UnityEvent<IPlayer, int>();
     private readonly UnityEvent<ICreature, int> onCreatureDamaged = new UnityEvent<ICreature, int>();
     private readonly UnityEvent<ICreature> onCreatureDied = new UnityEvent<ICreature>();
@@ -24,25 +12,8 @@ public class GameMediator : InitializableComponent {
 
     private readonly HashSet<IPlayer> registeredPlayers = new HashSet<IPlayer>();
 
-    protected override void Awake() {
-        base.Awake();
-        if (instance != null && instance != this) {
-            Destroy(gameObject);
-            return;
-        }
-        instance = this;
-        DontDestroyOnLoad(gameObject);
-    }
-
     public override void Initialize() {
         if (IsInitialized) return;
-
-        if (!InitializationManager.Instance.IsComponentInitialized<GameReferences>()) {
-            Debug.LogWarning("GameReferences must be initialized before GameMediator");
-            return;
-        }
-
-        ClearAllListeners();
         base.Initialize();
     }
 

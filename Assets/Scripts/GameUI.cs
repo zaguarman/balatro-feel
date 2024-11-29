@@ -18,7 +18,6 @@ public class GameUI : UIComponent {
     private PlayerUI player2UI;
     private BattlefieldUI player1BattlefieldUI;
     private BattlefieldUI player2BattlefieldUI;
-
     private GameManager gameManager;
 
     protected override void Awake() {
@@ -33,19 +32,11 @@ public class GameUI : UIComponent {
     public override void Initialize() {
         if (IsInitialized) return;
 
-        var initManager = InitializationManager.Instance;
-        if (!initManager.IsComponentInitialized<GameReferences>() ||
-            !initManager.IsComponentInitialized<GameMediator>() ||
-            !initManager.IsComponentInitialized<GameManager>()) {
-            Debug.LogWarning("Required dependencies not initialized yet");
-            return;
-        }
-
         gameManager = GameManager.Instance;
 
         GetReferences();
         InitializeUI();
-        base.Initialize();  // This will handle RegisterEvents() and UpdateUI()
+        base.Initialize();
     }
 
     private void GetReferences() {
@@ -93,7 +84,6 @@ public class GameUI : UIComponent {
     }
 
     private void OnDestroy() {
-        UnregisterEvents();
         if (instance == this) {
             instance = null;
         }

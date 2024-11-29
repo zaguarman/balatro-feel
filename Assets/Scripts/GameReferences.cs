@@ -2,26 +2,9 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class GameReferences : InitializableComponent {
-    private static GameReferences instance;
-    public static GameReferences Instance {
-        get {
-            if (instance == null) {
-                instance = FindObjectOfType<GameReferences>();
-                if (instance == null) {
-                    Debug.LogError("GameReferences not found in scene!");
-                }
-            }
-            return instance;
-        }
-    }
-
-    [Header("Main UI Components")]
-    [SerializeField] private GameUI gameUI;
-
+public class GameReferences : Singleton<GameReferences> {
     [Header("Damage Resolution")]
     [SerializeField] private Button resolveActionsButton;
-
     [Header("Player 1 UI")]
     [SerializeField] private PlayerUI player1UI;
     [SerializeField] private TextMeshProUGUI player1HealthText;
@@ -30,7 +13,6 @@ public class GameReferences : InitializableComponent {
     [SerializeField] private BattlefieldUI player1BattlefieldUI;
     [SerializeField] private HandUI player1HandUI;
     [SerializeField] private HealthUI player1HealthUI;
-
     [Header("Player 2 UI")]
     [SerializeField] private PlayerUI player2UI;
     [SerializeField] private TextMeshProUGUI player2HealthText;
@@ -39,22 +21,11 @@ public class GameReferences : InitializableComponent {
     [SerializeField] private BattlefieldUI player2BattlefieldUI;
     [SerializeField] private HandUI player2HandUI;
     [SerializeField] private HealthUI player2HealthUI;
-
     [Header("Card Components")]
     [SerializeField] private Button cardPrefab;
-
     [Header("Card Style")]
     [SerializeField] private Color player1CardColor = new Color(0.8f, 0.9f, 1f);
     [SerializeField] private Color player2CardColor = new Color(1f, 0.8f, 0.8f);
-
-    protected override void Awake() {
-        base.Awake();
-        if (instance != null && instance != this) {
-            Destroy(gameObject);
-            return;
-        }
-        instance = this;
-    }
 
     public override void Initialize() {
         if (IsInitialized) return;
@@ -64,14 +35,11 @@ public class GameReferences : InitializableComponent {
     }
 
     private void ValidateReferences() {
-        if (gameUI == null) Debug.LogError("GameUI reference missing!");
-        if (player1UI == null) Debug.LogError("Player1UI reference missing!");
-        if (player2UI == null) Debug.LogError("Player2UI reference missing!");
-        if (cardPrefab == null) Debug.LogError("CardPrefab reference missing!");
+        if (GetPlayer1UI() == null) Debug.LogError("Player1UI reference missing!");
+        if (GetPlayer2UI() == null) Debug.LogError("Player2UI reference missing!");
+        if (GetCardPrefab() == null) Debug.LogError("CardPrefab reference missing!");
     }
 
-    // Getters for all components
-    public GameUI GetGameUI() => gameUI;
     public PlayerUI GetPlayer1UI() => player1UI;
     public PlayerUI GetPlayer2UI() => player2UI;
     public CardContainer GetPlayer1Battlefield() => player1Battlefield;
@@ -90,10 +58,4 @@ public class GameReferences : InitializableComponent {
     public HandUI GetPlayer2HandUI() => player2HandUI;
     public HealthUI GetPlayer1HealthUI() => player1HealthUI;
     public HealthUI GetPlayer2HealthUI() => player2HealthUI;
-
-    private void OnDestroy() {
-        if (instance == this) {
-            instance = null;
-        }
-    }
 }
