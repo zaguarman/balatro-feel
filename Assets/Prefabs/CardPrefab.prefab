@@ -415,7 +415,6 @@ GameObject:
   - component: {fileID: 7117100706685536281}
   - component: {fileID: 5464925446207512663}
   - component: {fileID: 4247672974874967921}
-  - component: {fileID: 6413568432677908197}
   m_Layer: 5
   m_Name: CardPrefab
   m_TagString: Untagged
@@ -552,32 +551,3 @@ MonoBehaviour:
   OnCardDropped:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &6413568432677908197
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6960793175562600131}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a1e8642101929014eba39f78011caf2d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  visualRoot: {fileID: 0}
-  cardShadow: {fileID: 0}
-  shakeParent: {fileID: 0}
-  tiltParent: {fileID: 0}
-  followSpeed: 30
-  rotationAmount: 20
-  rotationSpeed: 20
-  autoTiltAmount: 30
-  manualTiltAmount: 20
-  tiltSpeed: 20
-  hoverScale: 1.15
-  dragScale: 1.25
-  scaleTransitionDuration: 0.15
-  scaleEase: 27
-  hoverRotationAngle: 5
-  swapRotationAngle: 30
-  shadowOffset: 20
