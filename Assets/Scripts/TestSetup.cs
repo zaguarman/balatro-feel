@@ -22,10 +22,8 @@ public class TestSetup : MonoBehaviour {
         var thornEffect = new CardEffect {
             effectType = EffectType.Triggered,
             trigger = EffectTrigger.OnDamage,
-            actions = new List<EffectAction>
-            {
-                new EffectAction
-                {
+            actions = new List<EffectAction> {
+                new EffectAction {
                     actionType = ActionType.Damage,
                     value = 1,
                     targetType = TargetType.Enemy
@@ -44,10 +42,8 @@ public class TestSetup : MonoBehaviour {
         var dragonEffect = new CardEffect {
             effectType = EffectType.Triggered,
             trigger = EffectTrigger.OnPlay,
-            actions = new List<EffectAction>
-            {
-                new EffectAction
-                {
+            actions = new List<EffectAction> {
+                new EffectAction {
                     actionType = ActionType.Damage,
                     value = 2,
                     targetType = TargetType.Enemy
@@ -67,10 +63,8 @@ public class TestSetup : MonoBehaviour {
         var guardianEffect = new CardEffect {
             effectType = EffectType.Triggered,
             trigger = EffectTrigger.StartOfTurn,
-            actions = new List<EffectAction>
-            {
-                new EffectAction
-                {
+            actions = new List<EffectAction> {
+                new EffectAction {
                     actionType = ActionType.Heal,
                     value = 1,
                     targetType = TargetType.FriendlyCreatures
@@ -90,10 +84,8 @@ public class TestSetup : MonoBehaviour {
         var berserkerEffect = new CardEffect {
             effectType = EffectType.Triggered,
             trigger = EffectTrigger.EndOfTurn,
-            actions = new List<EffectAction>
-            {
-                new EffectAction
-                {
+            actions = new List<EffectAction> {
+                new EffectAction {
                     actionType = ActionType.Damage,
                     value = 1,
                     targetType = TargetType.AllCreatures
@@ -113,10 +105,8 @@ public class TestSetup : MonoBehaviour {
         var soulCollectorEffect = new CardEffect {
             effectType = EffectType.Triggered,
             trigger = EffectTrigger.OnDeath,
-            actions = new List<EffectAction>
-            {
-                new EffectAction
-                {
+            actions = new List<EffectAction> {
+                new EffectAction {
                     actionType = ActionType.Draw,
                     value = 1,
                     targetType = TargetType.Player
@@ -136,10 +126,8 @@ public class TestSetup : MonoBehaviour {
         var warChiefEffect = new CardEffect {
             effectType = EffectType.Triggered,
             trigger = EffectTrigger.OnPlay,
-            actions = new List<EffectAction>
-            {
-                new EffectAction
-                {
+            actions = new List<EffectAction> {
+                new EffectAction {
                     actionType = ActionType.Damage,
                     value = 1,
                     targetType = TargetType.EnemyCreatures
