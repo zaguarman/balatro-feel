@@ -1,30 +1,38 @@
 using UnityEngine;
 
-public abstract class UIComponent : MonoBehaviour {
-    protected GameMediator Mediator => GameMediator.Instance;
-    protected GameReferences References => GameReferences.Instance;
-    protected GameMediator gameMediator;
-    protected bool isInitialized;
+public abstract class UIComponent : InitializableComponent {
+    protected GameMediator gameMediator => GameMediator.Instance;
+    protected GameReferences gameReferences => GameReferences.Instance;
+
+    protected override void Awake() {
+        base.Awake();
+        // Any additional Awake logic for UI components
+    }
+
+    public override void Initialize() {
+        if (IsInitialized) return;
+
+        // Ensure dependencies are initialized
+        if (!InitializationManager.Instance.IsComponentInitialized<GameMediator>()) {
+            Debug.LogWarning($"{GetType().Name}: GameMediator not initialized yet");
+            return;
+        }
+
+        RegisterEvents();
+        UpdateUI();
+        base.Initialize();
+    }
 
     protected virtual void OnEnable() {
-        if (InitializationManager.Instance.IsComponentInitialized<GameMediator>()) {
-            InitializeEvents();
+        if (IsInitialized) {
+            RegisterEvents();
             UpdateUI();
         }
     }
 
     protected virtual void OnDisable() {
-        UnregisterEvents();
-    }
-
-    protected virtual void OnDestroy() {
-        UnregisterEvents();
-    }
-
-    protected virtual void InitializeEvents() {
-        gameMediator = GameMediator.Instance;
-        if (gameMediator != null) {
-            RegisterEvents();
+        if (IsInitialized) {
+            UnregisterEvents();
         }
     }
 

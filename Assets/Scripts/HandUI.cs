@@ -8,8 +8,6 @@ public class HandUI : UIComponent {
     private List<CardController> handCards = new List<CardController>();
     private IPlayer player;
     private GameManager gameManager;
-    private GameReferences gameReferences;
-    private GameMediator gameMediator;
     private CardContainer handContainer;
 
     private void Start() {
@@ -27,8 +25,6 @@ public class HandUI : UIComponent {
         }
 
         gameManager = GameManager.Instance;
-        gameReferences = GameReferences.Instance;
-        gameMediator = GameMediator.Instance;
 
         if (player != null) {
             handContainer = player.IsPlayer1()
@@ -60,7 +56,6 @@ public class HandUI : UIComponent {
 
     public override void UpdateUI() {
         if (player == null || handContainer == null) return;
-
         ClearHand();
         UpdateHandLayout();
         CreateCards();
@@ -153,11 +148,5 @@ public class HandUI : UIComponent {
 
     private bool IsValidDropLocation(CardController card) {
         return CardDropZone.IsOverDropZone(card.transform.position, out _);
-    }
-
-    private void OnDestroy() {
-        InitializationManager.Instance.OnSystemInitialized.RemoveListener(InitializeReferences);
-        ClearHand();
-        UnregisterEvents();
     }
 }

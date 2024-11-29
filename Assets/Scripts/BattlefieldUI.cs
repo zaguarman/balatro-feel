@@ -5,11 +5,6 @@ public class BattlefieldUI : UIComponent {
     private CardContainer battlefield;
     private Dictionary<string, CardController> creatureCards = new Dictionary<string, CardController>();
     private IPlayer player;
-
-    private void InitializeReferences() {
-        InitializeEvents();
-    }
-
     public void Initialize(CardContainer battlefield, IPlayer player) {
         if (battlefield == null) {
             Debug.LogError("Battlefield container is null in BattlefieldUI.Initialize");
@@ -23,8 +18,29 @@ public class BattlefieldUI : UIComponent {
             InitializeContainer();
         }
 
-        isInitialized = true;
+        IsInitialized = true;
         UpdateUI();
+    }
+
+    protected override void RegisterEvents() {
+        if (gameMediator != null) {
+            gameMediator.AddGameStateChangedListener(UpdateUI);
+            gameMediator.AddCreatureDiedListener(OnCreatureDied);
+            gameMediator.AddGameInitializedListener(OnGameInitialized);
+        }
+    }
+
+    protected override void UnregisterEvents() {
+        if (gameMediator != null) {
+            gameMediator.RemoveGameStateChangedListener(UpdateUI);
+            gameMediator.RemoveCreatureDiedListener(OnCreatureDied);
+            gameMediator.RemoveGameInitializedListener(OnGameInitialized);
+        }
+    }
+
+    public override void UpdateUI() {
+        if (!IsInitialized || player == null || battlefield == null) return;
+        UpdateBattlefieldCards();
     }
 
     private void InitializeContainer() {
@@ -53,28 +69,6 @@ public class BattlefieldUI : UIComponent {
         var dropZone = battlefield.gameObject.AddComponent<BattlefieldDropZone>();
         dropZone.acceptPlayer1Cards = player == GameManager.Instance.Player1;
         dropZone.acceptPlayer2Cards = player == GameManager.Instance.Player2;
-    }
-
-    protected override void RegisterEvents() {
-        if (gameMediator != null) {
-            gameMediator.AddGameStateChangedListener(UpdateUI);
-            gameMediator.AddCreatureDiedListener(OnCreatureDied);
-            gameMediator.AddGameInitializedListener(OnGameInitialized);
-        }
-    }
-
-    protected override void UnregisterEvents() {
-        if (gameMediator != null) {
-            gameMediator.RemoveGameStateChangedListener(UpdateUI);
-            gameMediator.RemoveCreatureDiedListener(OnCreatureDied);
-            gameMediator.RemoveGameInitializedListener(OnGameInitialized);
-        }
-    }
-
-    public override void UpdateUI() {
-        if (!isInitialized || player == null || battlefield == null) return;
-
-        UpdateBattlefieldCards();
     }
 
     private void UpdateBattlefieldCards() {
@@ -113,12 +107,12 @@ public class BattlefieldUI : UIComponent {
     }
 
     private void OnGameInitialized() {
-        if (!isInitialized) return;
+        if (!IsInitialized) return;
         UpdateUI();
     }
 
     private void OnCreatureDied(ICreature creature) {
-        if (!isInitialized) return;
+        if (!IsInitialized) return;
 
         if (creatureCards.TryGetValue(creature.TargetId, out CardController card)) {
             if (card != null) {
@@ -127,12 +121,6 @@ public class BattlefieldUI : UIComponent {
             creatureCards.Remove(creature.TargetId);
             battlefield?.UpdateUI();
         }
-    }
-
-    private void OnDestroy() {
-        InitializationManager.Instance.OnSystemInitialized.RemoveListener(InitializeReferences);
-        UnregisterEvents();
-        CleanupCards();
     }
 
     private void CleanupCards() {

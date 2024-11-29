@@ -14,11 +14,9 @@ public class CardDropZone : UIComponent, IDropHandler, ICardDropZone {
     [SerializeField] public bool acceptPlayer2Cards = true;
 
     private RectTransform rectTransform;
-    private GameMediator gameMediator;
 
-    private void Awake() {
+    protected override void Awake() {
         rectTransform = GetComponent<RectTransform>();
-        gameMediator = GameMediator.Instance;
     }
 
     protected override void RegisterEvents() {

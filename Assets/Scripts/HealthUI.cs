@@ -3,12 +3,10 @@ using TMPro;
 public class HealthUI : UIComponent {
     private TextMeshProUGUI healthText;
     private IPlayer player;
-    private GameMediator gameMediator;
 
     public void Initialize(TextMeshProUGUI healthText, IPlayer player) {
         this.healthText = healthText;
         this.player = player;
-        this.gameMediator = GameMediator.Instance;
         UpdateUI();
     }
 

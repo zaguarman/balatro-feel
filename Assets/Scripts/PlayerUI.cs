@@ -1,17 +1,12 @@
 using UnityEngine;
 
-public class PlayerUI : MonoBehaviour {
+public class PlayerUI : UIComponent {
     private IPlayer player;
-    private GameMediator gameMediator;
-    private bool isInitialized;
-    private GameReferences gameReferences;
     private HandUI handUI;
     private HealthUI healthUI;
 
     public void Initialize(IPlayer player) {
         this.player = player;
-
-        InitializeDependencies();
 
         if (gameReferences == null) {
             Debug.LogError("GameReferences not found during PlayerUI initialization");
@@ -20,14 +15,28 @@ public class PlayerUI : MonoBehaviour {
 
         InitializeHealthUI();
         InitializeHandUI();
-        RegisterEvents();
 
-        isInitialized = true;
+        IsInitialized = true;
     }
 
-    private void InitializeDependencies() {
-        gameMediator = GameMediator.Instance;
-        gameReferences = GameReferences.Instance;
+    protected override void RegisterEvents() {
+        if (gameMediator != null) {
+            gameMediator.AddGameStateChangedListener(UpdateUI);
+            gameMediator.AddPlayerDamagedListener(HandlePlayerDamaged);
+        }
+    }
+
+    protected override void UnregisterEvents() {
+        if (gameMediator != null) {
+            gameMediator.RemoveGameStateChangedListener(UpdateUI);
+            gameMediator.RemovePlayerDamagedListener(HandlePlayerDamaged);
+        }
+    }
+
+    public override void UpdateUI() {
+        if (!IsInitialized || player == null) return;
+        healthUI?.UpdateUI();
+        handUI?.UpdateUI();
     }
 
     private void InitializeHealthUI() {
@@ -63,20 +72,6 @@ public class PlayerUI : MonoBehaviour {
         }
     }
 
-    private void RegisterEvents() {
-        if (gameMediator != null) {
-            gameMediator.AddGameStateChangedListener(UpdateUI);
-            gameMediator.AddPlayerDamagedListener(HandlePlayerDamaged);
-        }
-    }
-
-    private void UnregisterEvents() {
-        if (gameMediator != null) {
-            gameMediator.RemoveGameStateChangedListener(UpdateUI);
-            gameMediator.RemovePlayerDamagedListener(HandlePlayerDamaged);
-        }
-    }
-
     public void SetPlayer(IPlayer player) {
         this.player = player;
         if (handUI != null) {
@@ -85,23 +80,13 @@ public class PlayerUI : MonoBehaviour {
         if (healthUI != null) {
             healthUI.Initialize(gameReferences.GetPlayer1HealthText(), player);
         }
-        isInitialized = player != null;
+        IsInitialized = player != null;
         UpdateUI();
-    }
-
-    public void UpdateUI() {
-        if (!isInitialized || player == null) return;
-        healthUI?.UpdateUI();
-        handUI?.UpdateUI();
     }
 
     private void HandlePlayerDamaged(IPlayer damagedPlayer, int damage) {
         if (damagedPlayer == player) {
             healthUI?.UpdateUI();
         }
-    }
-
-    private void OnDestroy() {
-        UnregisterEvents();
     }
 }

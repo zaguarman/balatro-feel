@@ -15,7 +15,6 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
     [SerializeField] private TextMeshProUGUI descriptionText;
     [SerializeField] private Vector2 defaultSize = new Vector2(200f, 300f);
 
-    private GameMediator gameMediator;
     private RectTransform rectTransform;
     private Canvas parentCanvas;
     private CanvasGroup canvasGroup;
@@ -41,9 +40,7 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
         }
     }
 
-    private void Awake() {
-        gameMediator = GameMediator.Instance;
-
+    protected override void Awake() {
         rectTransform = GetComponent<RectTransform>();
         parentCanvas = GetComponentInParent<Canvas>();
         canvasGroup = gameObject.AddComponent<CanvasGroup>();
@@ -72,8 +69,8 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
 
         descriptionText.text = cardData.description ?? string.Empty;
         GetComponent<Image>().color = player.IsPlayer1()
-            ? References.GetPlayer1CardColor()
-            : References.GetPlayer2CardColor();
+            ? gameReferences.GetPlayer1CardColor()
+            : gameReferences.GetPlayer2CardColor();
     }
 
     public void OnBeginDrag(PointerEventData eventData) {

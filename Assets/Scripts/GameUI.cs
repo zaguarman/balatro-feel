@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class GameUI : InitializableComponent {
+public class GameUI : UIComponent {
     private static GameUI instance;
     public static GameUI Instance {
         get {
@@ -20,8 +20,6 @@ public class GameUI : InitializableComponent {
     private BattlefieldUI player2BattlefieldUI;
 
     private GameManager gameManager;
-    private GameMediator gameMediator;
-    private GameReferences gameReferences;
 
     protected override void Awake() {
         base.Awake();
@@ -44,13 +42,10 @@ public class GameUI : InitializableComponent {
         }
 
         gameManager = GameManager.Instance;
-        gameMediator = GameMediator.Instance;
-        gameReferences = GameReferences.Instance;
 
         GetReferences();
         InitializeUI();
-        RegisterEvents();
-        base.Initialize();
+        base.Initialize();  // This will handle RegisterEvents() and UpdateUI()
     }
 
     private void GetReferences() {
@@ -71,14 +66,14 @@ public class GameUI : InitializableComponent {
         }
     }
 
-    private void RegisterEvents() {
+    protected override void RegisterEvents() {
         if (gameMediator != null) {
             gameMediator.AddGameStateChangedListener(UpdateUI);
             gameMediator.AddGameInitializedListener(OnGameInitialized);
         }
     }
 
-    private void UnregisterEvents() {
+    protected override void UnregisterEvents() {
         if (gameMediator != null) {
             gameMediator.RemoveGameStateChangedListener(UpdateUI);
             gameMediator.RemoveGameInitializedListener(OnGameInitialized);
@@ -89,7 +84,7 @@ public class GameUI : InitializableComponent {
         UpdateUI();
     }
 
-    public void UpdateUI() {
+    public override void UpdateUI() {
         if (!IsInitialized) return;
         player1UI?.UpdateUI();
         player2UI?.UpdateUI();

@@ -28,7 +28,7 @@ public class ContainerSettings {
 public class CardContainer : UIComponent {
     public List<CardController> GetCards() => cards;
 
-    [SerializeField] private ContainerSettings settings = new ContainerSettings();
+    [SerializeField] private ContainerSettings cardContainerSettings = new ContainerSettings();
     [SerializeField] private bool autoInitialize = true;
 
     private RectTransform containerRect;
@@ -37,7 +37,6 @@ public class CardContainer : UIComponent {
     private CardController hoveredCard;
     private bool isSwapping = false;
     private IPlayer player;
-    private GameMediator gameMediator;
 
     // Cache for layout calculations
     private Vector2[] cardPositions;
@@ -51,11 +50,11 @@ public class CardContainer : UIComponent {
                 containerRect = gameObject.AddComponent<RectTransform>();
             }
         }
-        settings = newSettings;
+        cardContainerSettings = newSettings;
         UpdateLayout();
     }
 
-    private void Awake() {
+    protected override void Awake() {
         containerRect = GetComponent<RectTransform>();
         if (containerRect == null) {
             containerRect = gameObject.AddComponent<RectTransform>();
@@ -64,7 +63,6 @@ public class CardContainer : UIComponent {
 
     private void Start() {
         containerRect = GetComponent<RectTransform>();
-        gameMediator = GameMediator.Instance;
         if (autoInitialize) {
             InitializeContainer();
         }
@@ -183,7 +181,7 @@ public class CardContainer : UIComponent {
     private void CalculateLayout() {
         cardPositions = new Vector2[cards.Count];
 
-        switch (settings.layoutType) {
+        switch (cardContainerSettings.layoutType) {
             case ContainerLayout.Horizontal:
                 CalculateHorizontalLayout();
                 break;
@@ -203,13 +201,13 @@ public class CardContainer : UIComponent {
         }
 
         containerSize = new Vector2(
-            settings.offset + (settings.spacing * cards.Count),
+            cardContainerSettings.offset + (cardContainerSettings.spacing * cards.Count),
             containerRect.sizeDelta.y
         );
 
         for (int i = 0; i < cards.Count; i++) {
             cardPositions[i] = new Vector2(
-                settings.offset + (settings.spacing * i),
+                cardContainerSettings.offset + (cardContainerSettings.spacing * i),
                 0
             );
         }
@@ -218,32 +216,32 @@ public class CardContainer : UIComponent {
     private void CalculateVerticalLayout() {
         containerSize = new Vector2(
             containerRect.sizeDelta.x,
-            settings.offset + (settings.spacing * cards.Count)
+            cardContainerSettings.offset + (cardContainerSettings.spacing * cards.Count)
         );
 
         for (int i = 0; i < cards.Count; i++) {
             cardPositions[i] = new Vector2(
                 0,
-                -(settings.offset + (settings.spacing * i))
+                -(cardContainerSettings.offset + (cardContainerSettings.spacing * i))
             );
         }
     }
 
     private void CalculateGridLayout() {
-        int rows = Mathf.CeilToInt((float)cards.Count / settings.gridColumns);
+        int rows = Mathf.CeilToInt((float)cards.Count / cardContainerSettings.gridColumns);
 
         containerSize = new Vector2(
-            settings.offset + (settings.gridCellSize.x * settings.gridColumns),
-            settings.offset + (settings.gridCellSize.y * rows)
+            cardContainerSettings.offset + (cardContainerSettings.gridCellSize.x * cardContainerSettings.gridColumns),
+            cardContainerSettings.offset + (cardContainerSettings.gridCellSize.y * rows)
         );
 
         for (int i = 0; i < cards.Count; i++) {
-            int row = i / settings.gridColumns;
-            int col = i % settings.gridColumns;
+            int row = i / cardContainerSettings.gridColumns;
+            int col = i % cardContainerSettings.gridColumns;
 
             cardPositions[i] = new Vector2(
-                settings.offset + (settings.gridCellSize.x * col),
-                -(settings.offset + (settings.gridCellSize.y * row))
+                cardContainerSettings.offset + (cardContainerSettings.gridCellSize.x * col),
+                -(cardContainerSettings.offset + (cardContainerSettings.gridCellSize.y * row))
             );
         }
     }
@@ -266,7 +264,7 @@ public class CardContainer : UIComponent {
         Vector3 targetPosition = new Vector3(cardPositions[index].x, cardPositions[index].y, 0);
 
         if (animate) {
-            cardRect.DOLocalMove(targetPosition, settings.cardMoveDuration).SetEase(settings.cardMoveEase);
+            cardRect.DOLocalMove(targetPosition, cardContainerSettings.cardMoveDuration).SetEase(cardContainerSettings.cardMoveEase);
         } else {
             cardRect.localPosition = targetPosition;
         }
@@ -275,17 +273,17 @@ public class CardContainer : UIComponent {
     private void OnCardHoverEnter(CardController card) {
         hoveredCard = card;
         if (selectedCard == null) {
-            Vector2 hoverOffset = settings.layoutType == ContainerLayout.Vertical
-                ? Vector2.right * settings.cardHoverOffset
-                : Vector2.up * settings.cardHoverOffset;
+            Vector2 hoverOffset = cardContainerSettings.layoutType == ContainerLayout.Vertical
+                ? Vector2.right * cardContainerSettings.cardHoverOffset
+                : Vector2.up * cardContainerSettings.cardHoverOffset;
 
             Vector3 targetPosition = new Vector3(
                 cardPositions[cards.IndexOf(card)].x + hoverOffset.x,
                 cardPositions[cards.IndexOf(card)].y + hoverOffset.y,
                 0
             );
-            card.GetComponent<RectTransform>().DOLocalMove(targetPosition, settings.cardMoveDuration)
-                .SetEase(settings.cardMoveEase);
+            card.GetComponent<RectTransform>().DOLocalMove(targetPosition, cardContainerSettings.cardMoveDuration)
+                .SetEase(cardContainerSettings.cardMoveEase);
         }
     }
 
@@ -298,8 +296,8 @@ public class CardContainer : UIComponent {
                     cardPositions[cards.IndexOf(card)].y,
                     0
                 );
-                card.GetComponent<RectTransform>().DOLocalMove(targetPosition, settings.cardMoveDuration)
-                    .SetEase(settings.cardMoveEase);
+                card.GetComponent<RectTransform>().DOLocalMove(targetPosition, cardContainerSettings.cardMoveDuration)
+                    .SetEase(cardContainerSettings.cardMoveEase);
             }
         }
     }
@@ -307,13 +305,13 @@ public class CardContainer : UIComponent {
     private void OnCardBeginDrag(CardController card) {
         selectedCard = card;
         card.transform.SetAsLastSibling();
-        card.transform.DOScale(settings.cardDragScale, settings.cardMoveDuration);
+        card.transform.DOScale(cardContainerSettings.cardDragScale, cardContainerSettings.cardMoveDuration);
     }
 
     private void OnCardEndDrag(CardController card) {
         if (selectedCard == null) return;
 
-        card.transform.DOScale(1f, settings.cardMoveDuration);
+        card.transform.DOScale(1f, cardContainerSettings.cardMoveDuration);
         PositionCard(card.GetComponent<RectTransform>(), cards.IndexOf(card), true);
         selectedCard = null;
     }
@@ -339,7 +337,7 @@ public class CardContainer : UIComponent {
         int card1Index = cards.IndexOf(card1);
         int card2Index = cards.IndexOf(card2);
 
-        switch (settings.layoutType) {
+        switch (cardContainerSettings.layoutType) {
             case ContainerLayout.Horizontal:
                 return ShouldSwapHorizontal(card1, card2, card1Index, card2Index);
             case ContainerLayout.Vertical:
@@ -369,7 +367,7 @@ public class CardContainer : UIComponent {
         Vector2 card1Pos = card1.transform.position;
         Vector2 card2Pos = card2.transform.position;
         float distanceSqr = Vector2.SqrMagnitude(card1Pos - card2Pos);
-        return distanceSqr < (settings.gridCellSize.x * settings.gridCellSize.x);
+        return distanceSqr < (cardContainerSettings.gridCellSize.x * cardContainerSettings.gridCellSize.x);
     }
 
     private void SwapCards(int index1, int index2) {
