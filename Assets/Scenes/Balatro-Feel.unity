@@ -1234,7 +1234,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 12838ab5ce23b2542a55319749a637f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  settings:
+  cardContainerSettings:
     layoutType: 0
     spacing: 220
     offset: 50
@@ -1504,7 +1504,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 12838ab5ce23b2542a55319749a637f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  settings:
+  cardContainerSettings:
     layoutType: 0
     spacing: 220
     offset: 50
@@ -1869,10 +1869,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 12838ab5ce23b2542a55319749a637f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  settings:
+  cardContainerSettings:
     layoutType: 0
-    spacing: 500
-    offset: 200
+    spacing: 220
+    offset: 50
     gridCellSize: {x: 220, y: 320}
     gridColumns: 3
     cardMoveDuration: 0.15
@@ -2190,7 +2190,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 12838ab5ce23b2542a55319749a637f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  settings:
+  cardContainerSettings:
     layoutType: 0
     spacing: 220
     offset: 50
