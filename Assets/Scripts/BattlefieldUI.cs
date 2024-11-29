@@ -4,13 +4,10 @@ using UnityEngine;
 public class BattlefieldUI : UIComponent {
     private CardContainer battlefield;
     private Dictionary<string, CardController> creatureCards = new Dictionary<string, CardController>();
-    private GameMediator gameMediator;
     private IPlayer player;
-    private bool isInitialized;
 
     private void InitializeReferences() {
-        gameMediator = GameMediator.Instance;
-        RegisterEvents();
+        InitializeEvents();
     }
 
     public void Initialize(CardContainer battlefield, IPlayer player) {
