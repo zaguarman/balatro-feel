@@ -101,7 +101,7 @@ public class GameManager : InitializableComponent {
         Debug.Log($"Playing card: {cardData.cardName} for player {playerNumber}");
 
         ICard card = CardFactory.CreateCard(cardData);
-        card.Play(GameContext, player);
+        card.Play(player);
         GameContext.ResolveActions();
         gameMediator.NotifyGameStateChanged();
 

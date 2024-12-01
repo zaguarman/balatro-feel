@@ -1,7 +1,7 @@
 using UnityEngine;
 
 public interface IGameAction {
-    void Execute(GameContext context);
+    void Execute();
 }
 
 public class SummonCreatureAction : IGameAction {
@@ -14,7 +14,7 @@ public class SummonCreatureAction : IGameAction {
         Debug.Log($"SummonCreatureAction created - Creature: {creature}, Owner: {owner}");
     }
 
-    public void Execute(GameContext context) {
+    public void Execute() {
         owner.AddToBattlefield(creature);
         Debug.Log($"{creature} added to battlefield");
     }
@@ -30,7 +30,7 @@ public class DamagePlayerAction : IGameAction {
         Debug.Log($"DamagePlayerAction created - Target: {target}, Damage: {damage}");
     }
 
-    public void Execute(GameContext context) {
+    public void Execute() {
         target.TakeDamage(damage);
         Debug.Log($"{damage} damage dealt to {target}");
     }
@@ -46,8 +46,8 @@ public class DamageCreatureAction : IGameAction {
         Debug.Log($"Created DamageCreatureAction: {damage} damage to {target.Name}");
     }
 
-    public void Execute(GameContext context) {
-        target.TakeDamage(damage, context);
+    public void Execute() {
+        target.TakeDamage(damage);
         Debug.Log($"Executed DamageCreatureAction: {damage} damage to {target.Name}");
     }
 }
