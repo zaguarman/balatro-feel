@@ -44,9 +44,6 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
         rectTransform = GetComponent<RectTransform>();
         parentCanvas = GetComponentInParent<Canvas>();
         canvasGroup = gameObject.AddComponent<CanvasGroup>();
-
-        // Log initial size
-        Debug.Log($"Card size at Awake: {rectTransform.sizeDelta}");
     }
 
     public void Setup(CardData data, IPlayer player) {
@@ -72,9 +69,6 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
         GetComponent<Image>().color = player.IsPlayer1()
             ? gameReferences.GetPlayer1CardColor()
             : gameReferences.GetPlayer2CardColor();
-
-        // Log size after UI update
-        Debug.Log($"Card size after UpdateUI: {rectTransform.sizeDelta}");
     }
 
     public void OnBeginDrag(PointerEventData eventData) {
