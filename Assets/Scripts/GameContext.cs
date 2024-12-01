@@ -6,9 +6,18 @@ public class GameContext {
     private int maxIterationDepth = 3;
     private int currentIterationDepth = 0;
     public TargetingSystem TargetingSystem { get; private set; }
+    private Dictionary<ICard, IPlayer> cardOwners = new Dictionary<ICard, IPlayer>();
 
     public GameContext() {
         TargetingSystem = new TargetingSystem();
+    }
+
+    public void RegisterCardOwner(ICard card, IPlayer owner) {
+        cardOwners[card] = owner;
+    }
+
+    public IPlayer GetOwner(ICard card) {
+        return cardOwners.TryGetValue(card, out var owner) ? owner : null;
     }
 
     public void AddAction(IGameAction action) {
