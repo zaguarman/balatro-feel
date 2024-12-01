@@ -63,7 +63,7 @@ public class HandUI : UIComponent {
 
     private void UpdateHandLayout() {
         float totalWidth = cardOffset + (cardSpacing * player.Hand.Count);
-        handContainer.GetComponent<RectTransform>().sizeDelta = new Vector2(totalWidth, 320f);
+        handContainer.GetComponent<RectTransform>().sizeDelta = new Vector2(totalWidth, 220f);
     }
 
     private void CreateCards() {

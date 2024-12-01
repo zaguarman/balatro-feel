@@ -23,42 +23,6 @@ public static class CardFactory {
         return card;
     }
 
-    public static CardController CreateCardUI(
-        ICard card,
-        IPlayer owner,
-        Transform parent,
-        GameReferences gameReferences) {
-        if (gameReferences == null || card == null) {
-            Debug.LogError("Cannot create card UI - missing required references");
-            return null;
-        }
-
-        var cardPrefab = gameReferences.GetCardPrefab();
-        if (cardPrefab == null) return null;
-
-        var cardObj = GameObject.Instantiate(cardPrefab, parent);
-        var controller = cardObj.GetComponent<CardController>();
-
-        if (controller != null) {
-            var cardData = CreateCardData(card);
-            controller.Setup(cardData, owner);
-        }
-
-        return controller;
-    }
-
-    public static CardData CreateCardData(ICard card) {
-        var cardData = ScriptableObject.CreateInstance<CreatureData>();
-        cardData.cardName = card.Name;
-
-        if (card is ICreature creature) {
-            cardData.attack = creature.Attack;
-            cardData.health = creature.Health;
-        }
-
-        return cardData;
-    }
-
     // Helper method for setting up common card event handlers
     public static void SetupCardEventHandlers(
         CardController controller,

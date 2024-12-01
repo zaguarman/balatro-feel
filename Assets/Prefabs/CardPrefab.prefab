@@ -541,7 +541,6 @@ MonoBehaviour:
   nameText: {fileID: 490069831783095003}
   statsText: {fileID: 5846834777748443974}
   descriptionText: {fileID: 6573389053379178226}
-  defaultSize: {x: 200, y: 300}
   OnBeginDragEvent:
     m_PersistentCalls:
       m_Calls: []

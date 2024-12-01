@@ -13,7 +13,6 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
     [SerializeField] private TextMeshProUGUI nameText;
     [SerializeField] private TextMeshProUGUI statsText;
     [SerializeField] private TextMeshProUGUI descriptionText;
-    [SerializeField] private Vector2 defaultSize = new Vector2(200f, 300f);
 
     private RectTransform rectTransform;
     private Canvas parentCanvas;
@@ -41,17 +40,19 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
     }
 
     protected override void Awake() {
+        base.Awake();
         rectTransform = GetComponent<RectTransform>();
         parentCanvas = GetComponentInParent<Canvas>();
         canvasGroup = gameObject.AddComponent<CanvasGroup>();
-        rectTransform.sizeDelta = defaultSize;
 
-        RegisterEvents();
+        // Log initial size
+        Debug.Log($"Card size at Awake: {rectTransform.sizeDelta}");
     }
 
     public void Setup(CardData data, IPlayer player) {
         cardData = data;
         this.player = player;
+        
         UpdateUI();
     }
 
@@ -71,6 +72,9 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
         GetComponent<Image>().color = player.IsPlayer1()
             ? gameReferences.GetPlayer1CardColor()
             : gameReferences.GetPlayer2CardColor();
+
+        // Log size after UI update
+        Debug.Log($"Card size after UpdateUI: {rectTransform.sizeDelta}");
     }
 
     public void OnBeginDrag(PointerEventData eventData) {
