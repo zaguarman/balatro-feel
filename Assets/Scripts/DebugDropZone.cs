@@ -48,32 +48,30 @@ public class DebugDropZone : CardDropZone, IPointerEnterHandler, IPointerExitHan
 
         var cardData = card.GetCardData();
         if (cardData != null) {
-            Debug.Log("=== Card Data Dropped ===");
             Debug.Log($"Name: {cardData.cardName}");
-            Debug.Log($"Type: {cardData.cardType}");
-            Debug.Log($"Description: {cardData.description}");
+            //Debug.Log($"Type: {cardData.cardType}");
+            //Debug.Log($"Description: {cardData.description}");
 
-            if (cardData is CreatureData creatureData) {
-                Debug.Log($"Attack: {creatureData.attack}");
-                Debug.Log($"Health: {creatureData.health}");
-            }
+            //if (cardData is CreatureData creatureData) {
+            //    Debug.Log($"Attack: {creatureData.attack}");
+            //    Debug.Log($"Health: {creatureData.health}");
+            //}
 
-            if (cardData.effects != null && cardData.effects.Count > 0) {
-                Debug.Log("Effects:");
-                foreach (var effect in cardData.effects) {
-                    Debug.Log($"- Effect Type: {effect.effectType}");
-                    Debug.Log($"  Trigger: {effect.trigger}");
-                    Debug.Log("  Actions:");
-                    foreach (var action in effect.actions) {
-                        Debug.Log($"    * Action Type: {action.actionType}");
-                        Debug.Log($"      Value: {action.value}");
-                        Debug.Log($"      Target Type: {action.targetType}");
-                    }
-                }
-            } else {
-                Debug.Log("No effects on this card");
-            }
-            Debug.Log("=====================");
+            //if (cardData.effects != null && cardData.effects.Count > 0) {
+            //    Debug.Log("Effects:");
+            //    foreach (var effect in cardData.effects) {
+            //        Debug.Log($"- Effect Type: {effect.effectType}");
+            //        Debug.Log($"  Trigger: {effect.trigger}");
+            //        Debug.Log("  Actions:");
+            //        foreach (var action in effect.actions) {
+            //            Debug.Log($"    * Action Type: {action.actionType}");
+            //            Debug.Log($"      Value: {action.value}");
+            //            Debug.Log($"      Target Type: {action.targetType}");
+            //        }
+            //    }
+            //} else {
+            //    Debug.Log("No effects on this card");
+            //}
         } else {
             Debug.Log("Card dropped but CardData is null");
         }

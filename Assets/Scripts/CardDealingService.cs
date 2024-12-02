@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 public interface ICardDealingService {
     void InitializeDecks(List<CardData> player1Cards, List<CardData> player2Cards);
-    void DealInitialHands(IPlayer player1, IPlayer player2, int handSize = 7);
+    void DealInitialHands(IPlayer player1, IPlayer player2, int handSize = 6);
     bool CanDrawCard(IPlayer player);
     void DrawCardForPlayer(IPlayer player);
     void ShuffleDeck(IPlayer player);

@@ -55,7 +55,7 @@ public class TestSetup : MonoBehaviour {
 
         // New Card 1: Guardian Angel
         var guardian = ScriptableObject.CreateInstance<CreatureData>();
-        guardian.cardName = "Guardian Angel";
+        guardian.cardName = "Angel";
         guardian.description = "Heals friendly creatures at the start of your turn";
         guardian.attack = 2;
         guardian.health = 5;
@@ -96,25 +96,25 @@ public class TestSetup : MonoBehaviour {
         cards.Add(berserker);
 
         // New Card 3: Soul Collector
-        var soulCollector = ScriptableObject.CreateInstance<CreatureData>();
-        soulCollector.cardName = "Soul Collector";
-        soulCollector.description = "Draw a card when another creature dies";
-        soulCollector.attack = 2;
-        soulCollector.health = 4;
+        //var soulCollector = ScriptableObject.CreateInstance<CreatureData>();
+        //soulCollector.cardName = "Soul Collector";
+        //soulCollector.description = "Draw a card when another creature dies";
+        //soulCollector.attack = 2;
+        //soulCollector.health = 4;
 
-        var soulCollectorEffect = new CardEffect {
-            effectType = EffectType.Triggered,
-            trigger = EffectTrigger.OnDeath,
-            actions = new List<EffectAction> {
-                new EffectAction {
-                    actionType = ActionType.Draw,
-                    value = 1,
-                    targetType = TargetType.Player
-                }
-            }
-        };
-        soulCollector.effects.Add(soulCollectorEffect);
-        cards.Add(soulCollector);
+        //var soulCollectorEffect = new CardEffect {
+        //    effectType = EffectType.Triggered,
+        //    trigger = EffectTrigger.OnDeath,
+        //    actions = new List<EffectAction> {
+        //        new EffectAction {
+        //            actionType = ActionType.Draw,
+        //            value = 1,
+        //            targetType = TargetType.Player
+        //        }
+        //    }
+        //};
+        //soulCollector.effects.Add(soulCollectorEffect);
+        //cards.Add(soulCollector);
 
         // New Card 4: War Chief
         var warChief = ScriptableObject.CreateInstance<CreatureData>();
