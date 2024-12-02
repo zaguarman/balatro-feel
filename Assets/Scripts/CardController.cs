@@ -4,6 +4,7 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 using System;
+using DG.Tweening;
 
 [Serializable]
 public class CardUnityEvent : UnityEvent<CardController> { }
@@ -119,6 +120,12 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
     public bool IsPlayer1Card() => player.IsPlayer1();
 
     protected override void OnDestroy() {
+        // Kill any active tweens
+        if (transform != null) {
+            DOTween.Kill(transform);
+        }
+
+        // Clean up all event listeners before calling base
         OnBeginDragEvent.RemoveAllListeners();
         OnEndDragEvent.RemoveAllListeners();
         OnCardDropped.RemoveAllListeners();
