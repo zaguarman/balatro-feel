@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine.UI;
 
 public class BattlefieldUI : BaseCardContainer {
     private Dictionary<string, CardController> creatureCards = new Dictionary<string, CardController>();
@@ -45,6 +46,7 @@ public class BattlefieldUI : BaseCardContainer {
     }
 
     private void UpdateBattlefieldCards() {
+        // Clear existing cards
         foreach (var existingCard in creatureCards.Values) {
             if (existingCard != null) {
                 Destroy(existingCard.gameObject);
@@ -53,12 +55,22 @@ public class BattlefieldUI : BaseCardContainer {
         creatureCards.Clear();
         cards.Clear();
 
+        // Create new cards for each creature
         foreach (var creature in player.Battlefield) {
             CreateCreatureCard(creature);
         }
 
+        // Update container size and card positions
         UpdateContainerSize(player.Battlefield.Count);
-        container.UpdateUI();
+
+        // Make sure container layout is updated
+        if (container != null) {
+            container.UpdateUI();
+
+            // Force an immediate layout update
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(containerRect);
+        }
     }
 
     private void CreateCreatureCard(ICreature creature) {

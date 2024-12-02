@@ -1142,7 +1142,7 @@ MonoBehaviour:
   player1HealthUI: {fileID: 1544506895}
   player2UI: {fileID: 1592228239}
   player2HealthText: {fileID: 54383538}
-  player2Hand: {fileID: 1707401505}
+  player2Hand: {fileID: 0}
   player2Battlefield: {fileID: 1270125519}
   player2BattlefieldUI: {fileID: 1270125520}
   player2HandUI: {fileID: 1707401508}
@@ -1350,6 +1350,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 046776c3964b5394c974f3d601a346f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  cardSpacing: 220
+  cardOffset: 50
+  cardMoveDuration: 0.15
+  cardMoveEase: 27
+  cardHoverOffset: 30
+  cardDragScale: 1.1
 --- !u!222 &1270125522
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1439,6 +1445,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 046776c3964b5394c974f3d601a346f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  cardSpacing: 220
+  cardOffset: 50
+  cardMoveDuration: 0.15
+  cardMoveEase: 27
+  cardHoverOffset: 30
+  cardDragScale: 1.1
 --- !u!1 &1458677299
 GameObject:
   m_ObjectHideFlags: 0
@@ -1806,6 +1818,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cardSpacing: 500
   cardOffset: 200
+  cardMoveDuration: 0.15
+  cardMoveEase: 27
+  cardHoverOffset: 30
+  cardDragScale: 1.1
 --- !u!1 &1592228237
 GameObject:
   m_ObjectHideFlags: 0
@@ -2225,6 +2241,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cardSpacing: 220
   cardOffset: 50
+  cardMoveDuration: 0.15
+  cardMoveEase: 27
+  cardHoverOffset: 30
+  cardDragScale: 1.1
 --- !u!1 &1770875050
 GameObject:
   m_ObjectHideFlags: 0

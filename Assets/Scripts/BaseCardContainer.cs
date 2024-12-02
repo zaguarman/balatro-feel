@@ -47,8 +47,37 @@ public abstract class BaseCardContainer : UIComponent {
 
     protected virtual void UpdateContainerSize(int cardCount) {
         if (containerRect == null) return;
-        float totalWidth = cardOffset + (cardSpacing * cardCount);
+
+        // Calculate the total width needed for all cards
+        float totalWidth = cardOffset * 2 + (cardSpacing * (Mathf.Max(1, cardCount - 1)));
         containerRect.sizeDelta = new Vector2(totalWidth, containerRect.sizeDelta.y);
+
+        // Update card positions to be spread evenly
+        for (int i = 0; i < cards.Count; i++) {
+            UpdateCardPosition(cards[i], i, cards.Count);
+        }
+    }
+
+    protected virtual void UpdateCardPosition(CardController card, int index, int totalCards) {
+        if (card == null) return;
+        var rectTransform = card.GetComponent<RectTransform>();
+        if (rectTransform == null) return;
+
+        float xPosition;
+        if (totalCards <= 1) {
+            // If there's only one card, place it in the middle
+            xPosition = containerRect.rect.width / 2;
+        } else {
+            // Calculate position to spread cards evenly
+            float availableWidth = containerRect.rect.width - (2 * cardOffset);
+            float step = availableWidth / (totalCards - 1);
+            xPosition = cardOffset + (step * index);
+        }
+
+        rectTransform.anchorMin = new Vector2(0, 0.5f);
+        rectTransform.anchorMax = new Vector2(0, 0.5f);
+        rectTransform.pivot = new Vector2(0.5f, 0.5f);
+        rectTransform.anchoredPosition = new Vector2(xPosition, 0);
     }
 
     protected virtual void ClearCards() {
