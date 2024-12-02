@@ -45,20 +45,22 @@ public class BattlefieldUI : UIComponent {
 
     private void InitializeContainer() {
         if (battlefield == null) {
-            Debug.LogError("Battlefield is null in BattlefieldUI.InitializeContainer");
+            Debug.LogError("Battlefield container is null in BattlefieldUI.Initialize");
             return;
         }
 
+        // Match the spacing used in CardContainer
         var settings = new ContainerSettings {
             layoutType = ContainerLayout.Horizontal,
-            spacing = 220f,
-            offset = 50f,
+            spacing = 220f,        // This is the same spacing used in HandUI
+            offset = 50f,         // Same offset as HandUI
             cardMoveDuration = 0.15f,
             cardMoveEase = DG.Tweening.Ease.OutBack,
             cardHoverOffset = 30f
         };
 
         battlefield.SetSettings(settings);
+        battlefield.SetPlayer(player);
 
         // Ensure RectTransform exists
         var rectTransform = battlefield.GetComponent<RectTransform>();
@@ -66,9 +68,15 @@ public class BattlefieldUI : UIComponent {
             rectTransform = battlefield.gameObject.AddComponent<RectTransform>();
         }
 
-        var dropZone = battlefield.gameObject.AddComponent<BattlefieldDropZone>();
-        dropZone.acceptPlayer1Cards = player == GameManager.Instance.Player1;
-        dropZone.acceptPlayer2Cards = player == GameManager.Instance.Player2;
+        // Calculate the total width needed for 3 cards using the same formula as CardContainer
+        float totalWidth = settings.offset + (settings.spacing * 3);
+        rectTransform.sizeDelta = new Vector2(totalWidth, rectTransform.sizeDelta.y);
+
+        // Set up the debug drop zone
+        var dropZone = battlefield.gameObject.GetComponent<DebugDropZone>();
+        if (dropZone == null) {
+            dropZone = battlefield.gameObject.AddComponent<DebugDropZone>();
+        }
     }
 
     private void UpdateBattlefieldCards() {
