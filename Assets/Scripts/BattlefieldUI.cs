@@ -1,25 +1,16 @@
-using System.Collections.Generic;
 using UnityEngine;
+using System.Collections.Generic;
 
-public class BattlefieldUI : UIComponent {
-    private CardContainer battlefield;
+public class BattlefieldUI : BaseCardContainer {
     private Dictionary<string, CardController> creatureCards = new Dictionary<string, CardController>();
-    private IPlayer player;
-    public void Initialize(CardContainer battlefield, IPlayer player) {
+
+    public override void Initialize(CardContainer battlefield, IPlayer player) {
         if (battlefield == null) {
             Debug.LogError("Battlefield container is null in BattlefieldUI.Initialize");
             return;
         }
 
-        this.battlefield = battlefield;
-        this.player = player;
-
-        if (battlefield != null) {
-            InitializeContainer();
-        }
-
-        IsInitialized = true;
-        UpdateUI();
+        base.Initialize(battlefield, player);
     }
 
     protected override void RegisterEvents() {
@@ -39,43 +30,17 @@ public class BattlefieldUI : UIComponent {
     }
 
     public override void UpdateUI() {
-        if (!IsInitialized || player == null || battlefield == null) return;
+        if (!IsInitialized || player == null || container == null) return;
         UpdateBattlefieldCards();
     }
 
-    private void InitializeContainer() {
-        if (battlefield == null) {
-            Debug.LogError("Battlefield container is null in BattlefieldUI.Initialize");
-            return;
-        }
+    protected override void UpdateContainerSettings() {
+        base.UpdateContainerSettings();
 
-        // Match the spacing used in CardContainer
-        var settings = new ContainerSettings {
-            layoutType = ContainerLayout.Horizontal,
-            spacing = 220f,        // This is the same spacing used in HandUI
-            offset = 50f,         // Same offset as HandUI
-            cardMoveDuration = 0.15f,
-            cardMoveEase = DG.Tweening.Ease.OutBack,
-            cardHoverOffset = 30f
-        };
-
-        battlefield.SetSettings(settings);
-        battlefield.SetPlayer(player);
-
-        // Ensure RectTransform exists
-        var rectTransform = battlefield.GetComponent<RectTransform>();
-        if (rectTransform == null) {
-            rectTransform = battlefield.gameObject.AddComponent<RectTransform>();
-        }
-
-        // Calculate the total width needed for 3 cards using the same formula as CardContainer
-        float totalWidth = settings.offset + (settings.spacing * 3);
-        rectTransform.sizeDelta = new Vector2(totalWidth, rectTransform.sizeDelta.y);
-
-        // Set up the debug drop zone
-        var dropZone = battlefield.gameObject.GetComponent<DebugDropZone>();
+        // Configure the drop zone
+        var dropZone = container.gameObject.GetComponent<DebugDropZone>();
         if (dropZone == null) {
-            dropZone = battlefield.gameObject.AddComponent<DebugDropZone>();
+            dropZone = container.gameObject.AddComponent<DebugDropZone>();
         }
     }
 
@@ -86,31 +51,21 @@ public class BattlefieldUI : UIComponent {
             }
         }
         creatureCards.Clear();
+        cards.Clear();
 
         foreach (var creature in player.Battlefield) {
             CreateCreatureCard(creature);
         }
 
-        battlefield.UpdateUI();
+        UpdateContainerSize(player.Battlefield.Count);
+        container.UpdateUI();
     }
 
     private void CreateCreatureCard(ICreature creature) {
-        var references = GameReferences.Instance;
-        var cardPrefab = references.GetCardPrefab();
-
-        if (cardPrefab == null) return;
-
-        var cardObj = Instantiate(cardPrefab, battlefield.transform);
-        var controller = cardObj.GetComponent<CardController>();
-
+        var controller = CreateCard(creature, container.transform);
         if (controller != null) {
-            var creatureData = ScriptableObject.CreateInstance<CreatureData>();
-            creatureData.cardName = creature.Name;
-            creatureData.attack = creature.Attack;
-            creatureData.health = creature.Health;
-
-            controller.Setup(creatureData, player);
             creatureCards[creature.TargetId] = controller;
+            cards.Add(controller);
         }
     }
 
@@ -127,16 +82,18 @@ public class BattlefieldUI : UIComponent {
                 Destroy(card.gameObject);
             }
             creatureCards.Remove(creature.TargetId);
-            battlefield?.UpdateUI();
+            cards.Remove(card);
+            container?.UpdateUI();
         }
     }
 
-    private void CleanupCards() {
+    protected override void OnDestroy() {
         foreach (var card in creatureCards.Values) {
             if (card != null) {
                 Destroy(card.gameObject);
             }
         }
         creatureCards.Clear();
+        base.OnDestroy();
     }
 }

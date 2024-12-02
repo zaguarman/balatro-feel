@@ -3,6 +3,7 @@ using UnityEngine;
 public abstract class UIComponent : InitializableComponent {
     protected GameMediator gameMediator => GameMediator.Instance;
     protected GameReferences gameReferences => GameReferences.Instance;
+    private bool hasBeenDestroyed = false;
 
     protected override void Awake() {
         base.Awake();
@@ -24,7 +25,7 @@ public abstract class UIComponent : InitializableComponent {
     }
 
     protected virtual void OnEnable() {
-        if (IsInitialized) {
+        if (IsInitialized && !hasBeenDestroyed) {
             RegisterEvents();
             UpdateUI();
         }
@@ -34,6 +35,18 @@ public abstract class UIComponent : InitializableComponent {
         if (IsInitialized) {
             UnregisterEvents();
         }
+    }
+
+    protected virtual void OnDestroy() {
+        hasBeenDestroyed = true;
+        if (IsInitialized) {
+            UnregisterEvents();
+            CleanupComponent();
+        }
+    }
+
+    protected virtual void CleanupComponent() {
+        // Override in derived classes to perform specific cleanup
     }
 
     protected abstract void RegisterEvents();
