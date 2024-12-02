@@ -83,9 +83,11 @@ public class GameUI : UIComponent {
         player2BattlefieldUI?.UpdateUI();
     }
 
-    private void OnDestroy() {
+    protected override void OnDestroy() {
         if (instance == this) {
             instance = null;
         }
+
+        base.OnDestroy();
     }
 }

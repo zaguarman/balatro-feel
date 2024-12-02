@@ -118,13 +118,13 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
     public CardData GetCardData() => cardData;
     public bool IsPlayer1Card() => player.IsPlayer1();
 
-    private void OnDestroy() {
-        UnregisterEvents();
-
+    protected override void OnDestroy() {
         OnBeginDragEvent.RemoveAllListeners();
         OnEndDragEvent.RemoveAllListeners();
         OnCardDropped.RemoveAllListeners();
         OnPointerEnterHandler = null;
         OnPointerExitHandler = null;
+
+        base.OnDestroy();
     }
 }

@@ -403,8 +403,7 @@ public class CardContainer : UIComponent {
         }
     }
 
-    private void OnDestroy() {
-        // Clean up event listeners and card references
+    protected override void OnDestroy() {
         foreach (var card in cards) {
             if (card != null) {
                 card.OnBeginDragEvent.RemoveListener(OnCardBeginDrag);
@@ -413,7 +412,7 @@ public class CardContainer : UIComponent {
                 card.OnPointerExitHandler = null;
             }
         }
+
+        base.OnDestroy();
     }
-
-
 }

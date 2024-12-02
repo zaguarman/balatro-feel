@@ -1142,7 +1142,7 @@ MonoBehaviour:
   player1HealthUI: {fileID: 1544506895}
   player2UI: {fileID: 1592228239}
   player2HealthText: {fileID: 54383538}
-  player2Hand: {fileID: 0}
+  player2Hand: {fileID: 1707401505}
   player2Battlefield: {fileID: 1270125519}
   player2BattlefieldUI: {fileID: 1270125520}
   player2HandUI: {fileID: 1707401508}
