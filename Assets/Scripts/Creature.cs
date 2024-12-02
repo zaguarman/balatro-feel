@@ -14,11 +14,18 @@ public class Creature : Card, ICreature {
         Health = health;
     }
 
-    public override void Play(IPlayer owner) {
-        owner.AddToBattlefield(this);
+    public override void Play(IPlayer owner, ActionsContext context) {
+        context.AddAction(new SummonCreatureAction(this, owner));
     }
 
     public void TakeDamage(int damage) {
         Health -= damage;
+        var gameMediator = GameMediator.Instance;
+        if (gameMediator != null) {
+            gameMediator.NotifyCreatureDamaged(this, damage);
+            if (Health <= 0) {
+                gameMediator.NotifyCreatureDied(this);
+            }
+        }
     }
 }

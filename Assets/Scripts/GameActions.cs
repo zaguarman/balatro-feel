@@ -5,18 +5,22 @@ public interface IGameAction {
 }
 
 public class SummonCreatureAction : IGameAction {
-    private Creature creature;
-    private IPlayer owner;
+    private readonly ICard card;
+    private readonly IPlayer owner;
+    private readonly GameMediator gameMediator;
 
-    public SummonCreatureAction(Creature creature, IPlayer owner) {
-        this.creature = creature;
+    public SummonCreatureAction(ICard card, IPlayer owner) {
+        this.card = card;
         this.owner = owner;
-        Debug.Log($"SummonCreatureAction created - Creature: {creature}, Owner: {owner}");
+        this.gameMediator = GameMediator.Instance;
     }
 
     public void Execute() {
-        owner.AddToBattlefield(creature);
-        Debug.Log($"{creature} added to battlefield");
+        if (card is ICreature creature) {
+            gameMediator.NotifyCreaturePreSummon(creature);
+            owner.AddToBattlefield(creature);
+            gameMediator.NotifyCreatureSummoned(creature, owner);
+        }
     }
 }
 

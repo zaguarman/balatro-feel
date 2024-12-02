@@ -15,7 +15,7 @@ public class GameManager : InitializableComponent {
 
     public IPlayer Player1 { get; private set; }
     public IPlayer Player2 { get; private set; }
-    public GameContext GameContext { get; private set; }
+    public ActionsContext GameContext { get; private set; }
 
     private GameMediator gameMediator;
     private GameReferences gameReferences;
@@ -50,10 +50,11 @@ public class GameManager : InitializableComponent {
     }
 
     private void InitializeGameSystem() {
-        GameContext = new GameContext();
+        GameContext = new ActionsContext();
         InitializePlayers();
         InitializeCards();
         SetupInitialGameState();
+        SetupResolveButton();
     }
 
     private void InitializePlayers() {
@@ -78,18 +79,20 @@ public class GameManager : InitializableComponent {
         gameMediator.NotifyGameInitialized();
     }
 
-    public bool CanDrawCard(IPlayer player) {
-        return IsInitialized && cardDealingService.CanDrawCard(player);
-    }
-
-    public void DrawCardForPlayer(IPlayer player) {
-        if (!IsInitialized) {
-            Debug.LogError("Cannot draw card - GameManager not initialized");
-            return;
+    private void SetupResolveButton() {
+        var resolveButton = gameReferences.GetResolveActionsButton();
+        if (resolveButton != null) {
+            resolveButton.onClick.AddListener(OnResolveButtonClicked);
         }
-
-        cardDealingService.DrawCardForPlayer(player);
     }
+
+    private void OnResolveButtonClicked() {
+        if (GameContext != null) {
+            GameContext.ResolveActions();
+            gameMediator?.NotifyGameStateChanged();
+        }
+    }
+
 
     public void PlayCard(CardData cardData, IPlayer player) {
         if (!IsInitialized) {
@@ -97,15 +100,20 @@ public class GameManager : InitializableComponent {
             return;
         }
 
-        var playerNumber = player == Player1 ? "1" : "2";
-        Debug.Log($"Playing card: {cardData.cardName} for player {playerNumber}");
-
         ICard card = CardFactory.CreateCard(cardData);
-        card.Play(player);
+        card.Play(player, GameContext);
+        gameMediator.NotifyGameStateChanged();
+    }
+
+    public void ResolveActions() {
+        if (!IsInitialized) {
+            Debug.LogError("Cannot resolve actions - GameManager not initialized");
+            return;
+        }
+
         GameContext.ResolveActions();
         gameMediator.NotifyGameStateChanged();
-
-        LogGameState($"Player {playerNumber} played {cardData.cardName}");
+        LogGameState("Actions resolved");
     }
 
     private void LogGameState(string action = "") {
@@ -130,6 +138,11 @@ public class GameManager : InitializableComponent {
 
     private void OnDestroy() {
         if (instance == this) {
+            var resolveButton = gameReferences?.GetResolveActionsButton();
+            if (resolveButton != null) {
+                resolveButton.onClick.RemoveListener(OnResolveButtonClicked);
+            }
+
             if (Player1 != null) {
                 gameMediator?.UnregisterPlayer(Player1);
             }

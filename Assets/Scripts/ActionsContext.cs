@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GameContext {
+public class ActionsContext {
     private Queue<IGameAction> actionQueue = new Queue<IGameAction>();
     private int maxIterationDepth = 3;
     private int currentIterationDepth = 0;

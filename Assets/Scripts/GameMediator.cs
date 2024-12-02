@@ -9,6 +9,8 @@ public class GameMediator : Singleton<GameMediator> {
     private readonly UnityEvent<IPlayer> onGameOver = new UnityEvent<IPlayer>();
     private readonly UnityEvent onGameStateChanged = new UnityEvent();
     private readonly UnityEvent onGameInitialized = new UnityEvent();
+    private readonly UnityEvent<ICreature, IPlayer> onCreatureSummoned = new UnityEvent<ICreature, IPlayer>();
+    private readonly UnityEvent<ICreature> onCreaturePreSummon = new UnityEvent<ICreature>();
 
     private readonly HashSet<IPlayer> registeredPlayers = new HashSet<IPlayer>();
 
@@ -69,6 +71,24 @@ public class GameMediator : Singleton<GameMediator> {
 
     public void RemoveGameInitializedListener(UnityAction listener) {
         onGameInitialized.RemoveListener(listener);
+    }
+
+    public void AddCreatureSummonedListener(UnityAction<ICreature, IPlayer> listener) {
+        ValidateInitialization();
+        onCreatureSummoned.AddListener(listener);
+    }
+
+    public void RemoveCreatureSummonedListener(UnityAction<ICreature, IPlayer> listener) {
+        onCreatureSummoned.RemoveListener(listener);
+    }
+
+    public void AddCreaturePreSummonListener(UnityAction<ICreature> listener) {
+        ValidateInitialization();
+        onCreaturePreSummon.AddListener(listener);
+    }
+
+    public void RemoveCreaturePreSummonListener(UnityAction<ICreature> listener) {
+        onCreaturePreSummon.RemoveListener(listener);
     }
 
     public void RegisterPlayer(IPlayer player) {
@@ -141,6 +161,24 @@ public class GameMediator : Singleton<GameMediator> {
         onGameOver.Invoke(winner);
     }
 
+    public void NotifyCreaturePreSummon(ICreature creature) {
+        ValidateInitialization();
+        if (creature == null) throw new System.ArgumentNullException(nameof(creature));
+
+        onCreaturePreSummon.Invoke(creature);
+        Debug.Log($"Creature pre-summon notification: {creature.Name}");
+    }
+
+    public void NotifyCreatureSummoned(ICreature creature, IPlayer owner) {
+        ValidateInitialization();
+        if (creature == null) throw new System.ArgumentNullException(nameof(creature));
+        if (owner == null) throw new System.ArgumentNullException(nameof(owner));
+
+        onCreatureSummoned.Invoke(creature, owner);
+        Debug.Log($"Creature summoned notification: {creature.Name} by {(owner.IsPlayer1() ? "Player 1" : "Player 2")}");
+        NotifyGameStateChanged();
+    }
+
     private void ValidateInitialization() {
         if (!IsInitialized) {
             throw new System.InvalidOperationException("GameMediator is not initialized");
@@ -154,6 +192,8 @@ public class GameMediator : Singleton<GameMediator> {
         onGameOver.RemoveAllListeners();
         onGameStateChanged.RemoveAllListeners();
         onGameInitialized.RemoveAllListeners();
+        onCreatureSummoned.RemoveAllListeners();
+        onCreaturePreSummon.RemoveAllListeners();
         registeredPlayers.Clear();
     }
 }
