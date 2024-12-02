@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using DG.Tweening;
+using UnityEngine.UI;
 
 public abstract class BaseCardContainer : UIComponent {
     [SerializeField] protected float cardSpacing = 220f;
@@ -45,44 +46,37 @@ public abstract class BaseCardContainer : UIComponent {
         container.SetPlayer(player);
     }
 
-    protected virtual void UpdateContainerSize(int cardCount) {
-        if (containerRect == null) return;
-
-        // Calculate the total width needed for all cards
-        float totalWidth = cardOffset * 2 + (cardSpacing * (Mathf.Max(1, cardCount - 1)));
+    protected void UpdateLayout(int cardCount) {
+        float totalWidth = cardOffset + (cardSpacing * cardCount);
         containerRect.sizeDelta = new Vector2(totalWidth, containerRect.sizeDelta.y);
 
-        // Update card positions to be spread evenly
+        // Position each card
         for (int i = 0; i < cards.Count; i++) {
-            UpdateCardPosition(cards[i], i, cards.Count);
+            SetupCardPosition(cards[i].GetComponent<RectTransform>(), i);
+        }
+
+        // Ensure proper layout update
+        if (container != null) {
+            container.UpdateUI();
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(containerRect);
         }
     }
 
-    protected virtual void UpdateCardPosition(CardController card, int index, int totalCards) {
-        if (card == null) return;
-        var rectTransform = card.GetComponent<RectTransform>();
-        if (rectTransform == null) return;
+    protected void SetupCardPosition(RectTransform rect, int index) {
+        if (rect == null) return;
 
-        float xPosition;
-        if (totalCards <= 1) {
-            // If there's only one card, place it in the middle
-            xPosition = containerRect.rect.width / 2;
-        } else {
-            // Calculate position to spread cards evenly
-            float availableWidth = containerRect.rect.width - (2 * cardOffset);
-            float step = availableWidth / (totalCards - 1);
-            xPosition = cardOffset + (step * index);
-        }
-
-        rectTransform.anchorMin = new Vector2(0, 0.5f);
-        rectTransform.anchorMax = new Vector2(0, 0.5f);
-        rectTransform.pivot = new Vector2(0.5f, 0.5f);
-        rectTransform.anchoredPosition = new Vector2(xPosition, 0);
+        rect.anchorMin = new Vector2(0, 0.5f);
+        rect.anchorMax = new Vector2(0, 0.5f);
+        rect.pivot = new Vector2(0, 0.5f);
+        rect.anchoredPosition = new Vector2(cardOffset + (cardSpacing * index), 0);
     }
 
     protected virtual void ClearCards() {
         foreach (var card in cards) {
             if (card != null) {
+                // Kill any active tweens before destroying
+                DOTween.Kill(card.transform);
                 Destroy(card.gameObject);
             }
         }
@@ -128,11 +122,17 @@ public abstract class BaseCardContainer : UIComponent {
     }
 
     protected virtual void OnCardBeginDrag(CardController card) {
+        if (card == null || card.transform == null) return;
+
         card.transform.SetAsLastSibling();
+        DOTween.Kill(card.transform);
         card.transform.DOScale(cardDragScale, cardMoveDuration);
     }
 
     protected virtual void OnCardEndDrag(CardController card) {
+        if (card == null || card.transform == null) return;
+
+        DOTween.Kill(card.transform);
         card.transform.DOScale(1f, cardMoveDuration);
     }
 

@@ -49,8 +49,8 @@ public class HandUI : BaseCardContainer {
         if (player == null || container == null) return;
 
         ClearCards();
-        UpdateContainerSize(player.Hand.Count);
         CreateHandCards();
+        UpdateLayout(player.Hand.Count);
     }
 
     private void CreateHandCards() {
@@ -59,19 +59,9 @@ public class HandUI : BaseCardContainer {
         for (int i = 0; i < player.Hand.Count; i++) {
             var controller = CreateCard(player.Hand[i], container.transform);
             if (controller != null) {
-                SetupCardPosition(controller.GetComponent<RectTransform>(), i);
                 cards.Add(controller);
             }
         }
-    }
-
-    private void SetupCardPosition(RectTransform rect, int index) {
-        if (rect == null) return;
-
-        rect.anchorMin = new Vector2(0, 0.5f);
-        rect.anchorMax = new Vector2(0, 0.5f);
-        rect.pivot = new Vector2(0, 0.5f);
-        rect.anchoredPosition = new Vector2(cardOffset + (cardSpacing * index), 0);
     }
 
     protected override void OnCardDropped(CardController card) {
