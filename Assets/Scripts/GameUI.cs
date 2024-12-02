@@ -49,11 +49,12 @@ public class GameUI : UIComponent {
     private void InitializeUI() {
         if (player1UI != null) player1UI.Initialize(gameManager.Player1);
         if (player2UI != null) player2UI.Initialize(gameManager.Player2);
+
         if (player1BattlefieldUI != null) {
-            player1BattlefieldUI.Initialize(gameReferences.GetPlayer1Battlefield(), gameManager.Player1);
+            player1BattlefieldUI.Initialize(gameManager.Player1);
         }
         if (player2BattlefieldUI != null) {
-            player2BattlefieldUI.Initialize(gameReferences.GetPlayer2Battlefield(), gameManager.Player2);
+            player2BattlefieldUI.Initialize(gameManager.Player2);
         }
     }
 
@@ -87,7 +88,6 @@ public class GameUI : UIComponent {
         if (instance == this) {
             instance = null;
         }
-
         base.OnDestroy();
     }
 }

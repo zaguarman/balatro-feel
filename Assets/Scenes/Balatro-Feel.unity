@@ -1133,20 +1133,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   resolveActionsButton: {fileID: 776573425}
-  player1UI: {fileID: 500666786}
-  player1HealthText: {fileID: 1544506893}
-  player1Hand: {fileID: 1587845790}
-  player1Battlefield: {fileID: 1445917819}
-  player1BattlefieldUI: {fileID: 1445917820}
-  player1HandUI: {fileID: 1587845791}
-  player1HealthUI: {fileID: 1544506895}
-  player2UI: {fileID: 1592228239}
-  player2HealthText: {fileID: 54383538}
-  player2Hand: {fileID: 1707401505}
-  player2Battlefield: {fileID: 1270125519}
-  player2BattlefieldUI: {fileID: 1270125520}
-  player2HandUI: {fileID: 1707401508}
-  player2HealthUI: {fileID: 54383540}
+  player1References:
+    playerUI: {fileID: 500666786}
+    healthText: {fileID: 1544506893}
+    handUI: {fileID: 1587845791}
+    battlefieldUI: {fileID: 1445917820}
+    healthUI: {fileID: 1544506895}
+  player2References:
+    playerUI: {fileID: 1592228239}
+    healthText: {fileID: 54383538}
+    handUI: {fileID: 1707401508}
+    battlefieldUI: {fileID: 1270125520}
+    healthUI: {fileID: 54383540}
   cardPrefab: {fileID: 5464925446207512663, guid: 9164b01cda78bc545b913d180247e537, type: 3}
   player1CardColor: {r: 0.8, g: 0.9, b: 1, a: 1}
   player2CardColor: {r: 1, g: 0.8, b: 0.8, a: 1}
@@ -1288,7 +1286,8 @@ GameObject:
   - component: {fileID: 1270125518}
   - component: {fileID: 1270125522}
   - component: {fileID: 1270125520}
-  - component: {fileID: 1270125519}
+  - component: {fileID: 1270125524}
+  - component: {fileID: 1270125523}
   m_Layer: 5
   m_Name: PlayerBattlefield 2
   m_TagString: Untagged
@@ -1315,29 +1314,6 @@ RectTransform:
   m_AnchoredPosition: {x: -0.00000022897, y: -156}
   m_SizeDelta: {x: 900, y: 200}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1270125519
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1270125517}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 12838ab5ce23b2542a55319749a637f8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cardContainerSettings:
-    layoutType: 0
-    spacing: 220
-    offset: 50
-    gridCellSize: {x: 220, y: 320}
-    gridColumns: 3
-    cardMoveDuration: 0.15
-    cardMoveEase: 27
-    cardHoverOffset: 30
-    cardDragScale: 1.1
-  autoInitialize: 1
 --- !u!114 &1270125520
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1350,12 +1326,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 046776c3964b5394c974f3d601a346f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cardSpacing: 220
-  cardOffset: 50
-  cardMoveDuration: 0.15
-  cardMoveEase: 27
-  cardHoverOffset: 30
-  cardDragScale: 1.1
+  settings:
+    layoutType: 0
+    spacing: 220
+    offset: 50
+    gridCellSize: {x: 220, y: 320}
+    gridColumns: 3
+    cardHoverOffset: 30
 --- !u!222 &1270125522
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1364,6 +1341,55 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1270125517}
   m_CullTransparentMesh: 1
+--- !u!114 &1270125523
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1270125517}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e4c0ce5ee8baa84882be24e5f4e744a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  acceptPlayer1Cards: 1
+  acceptPlayer2Cards: 1
+  defaultColor: {r: 0.8, g: 0.8, b: 0.8, a: 0.5}
+  validDropColor: {r: 0, g: 1, b: 0, a: 0.5}
+  invalidDropColor: {r: 1, g: 0, b: 0, a: 0.5}
+  hoverColor: {r: 1, g: 1, b: 0, a: 0.5}
+  visualFeedbackDuration: 0.5
+--- !u!114 &1270125524
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1270125517}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 0}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
 --- !u!1 &1445917815
 GameObject:
   m_ObjectHideFlags: 0
@@ -1375,7 +1401,8 @@ GameObject:
   - component: {fileID: 1445917816}
   - component: {fileID: 1445917818}
   - component: {fileID: 1445917820}
-  - component: {fileID: 1445917819}
+  - component: {fileID: 1445917822}
+  - component: {fileID: 1445917821}
   m_Layer: 5
   m_Name: PlayerBattlefield 1
   m_TagString: Untagged
@@ -1410,29 +1437,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1445917815}
   m_CullTransparentMesh: 1
---- !u!114 &1445917819
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1445917815}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 12838ab5ce23b2542a55319749a637f8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cardContainerSettings:
-    layoutType: 0
-    spacing: 220
-    offset: 50
-    gridCellSize: {x: 220, y: 320}
-    gridColumns: 3
-    cardMoveDuration: 0.15
-    cardMoveEase: 27
-    cardHoverOffset: 30
-    cardDragScale: 1.1
-  autoInitialize: 1
 --- !u!114 &1445917820
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1445,12 +1449,62 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 046776c3964b5394c974f3d601a346f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cardSpacing: 220
-  cardOffset: 50
-  cardMoveDuration: 0.15
-  cardMoveEase: 27
-  cardHoverOffset: 30
-  cardDragScale: 1.1
+  settings:
+    layoutType: 0
+    spacing: 220
+    offset: 50
+    gridCellSize: {x: 220, y: 320}
+    gridColumns: 3
+    cardHoverOffset: 30
+--- !u!114 &1445917821
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1445917815}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e4c0ce5ee8baa84882be24e5f4e744a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  acceptPlayer1Cards: 1
+  acceptPlayer2Cards: 1
+  defaultColor: {r: 0.8, g: 0.8, b: 0.8, a: 0.5}
+  validDropColor: {r: 0, g: 1, b: 0, a: 0.5}
+  invalidDropColor: {r: 1, g: 0, b: 0, a: 0.5}
+  hoverColor: {r: 1, g: 1, b: 0, a: 0.5}
+  visualFeedbackDuration: 0.5
+--- !u!114 &1445917822
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1445917815}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 0}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
 --- !u!1 &1458677299
 GameObject:
   m_ObjectHideFlags: 0
@@ -1654,7 +1708,6 @@ GameObject:
   - component: {fileID: 1587845787}
   - component: {fileID: 1587845789}
   - component: {fileID: 1587845788}
-  - component: {fileID: 1587845790}
   - component: {fileID: 1587845791}
   m_Layer: 5
   m_Name: PlayerHand 1
@@ -1781,29 +1834,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1587845786}
   m_CullTransparentMesh: 1
---- !u!114 &1587845790
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1587845786}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 12838ab5ce23b2542a55319749a637f8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cardContainerSettings:
-    layoutType: 0
-    spacing: 220
-    offset: 50
-    gridCellSize: {x: 220, y: 320}
-    gridColumns: 3
-    cardMoveDuration: 0.15
-    cardMoveEase: 27
-    cardHoverOffset: 30
-    cardDragScale: 1.1
-  autoInitialize: 1
 --- !u!114 &1587845791
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1816,12 +1846,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 363b628a9519fa8489a28e6c6223e373, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cardSpacing: 500
-  cardOffset: 200
-  cardMoveDuration: 0.15
-  cardMoveEase: 27
-  cardHoverOffset: 30
-  cardDragScale: 1.1
+  settings:
+    layoutType: 0
+    spacing: 220
+    offset: 50
+    gridCellSize: {x: 220, y: 320}
+    gridColumns: 3
+    cardHoverOffset: 30
 --- !u!1 &1592228237
 GameObject:
   m_ObjectHideFlags: 0
@@ -2079,7 +2110,6 @@ GameObject:
   - component: {fileID: 1707401504}
   - component: {fileID: 1707401507}
   - component: {fileID: 1707401506}
-  - component: {fileID: 1707401505}
   - component: {fileID: 1707401508}
   m_Layer: 5
   m_Name: PlayerHand 2
@@ -2107,29 +2137,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0.000061035, y: 77}
   m_SizeDelta: {x: 350, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1707401505
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1707401503}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 12838ab5ce23b2542a55319749a637f8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cardContainerSettings:
-    layoutType: 0
-    spacing: 220
-    offset: 50
-    gridCellSize: {x: 220, y: 320}
-    gridColumns: 3
-    cardMoveDuration: 0.15
-    cardMoveEase: 27
-    cardHoverOffset: 30
-    cardDragScale: 1.1
-  autoInitialize: 1
 --- !u!114 &1707401506
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2239,12 +2246,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 363b628a9519fa8489a28e6c6223e373, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cardSpacing: 220
-  cardOffset: 50
-  cardMoveDuration: 0.15
-  cardMoveEase: 27
-  cardHoverOffset: 30
-  cardDragScale: 1.1
+  settings:
+    layoutType: 0
+    spacing: 220
+    offset: 50
+    gridCellSize: {x: 220, y: 320}
+    gridColumns: 3
+    cardHoverOffset: 30
 --- !u!1 &1770875050
 GameObject:
   m_ObjectHideFlags: 0

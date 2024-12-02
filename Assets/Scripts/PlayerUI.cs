@@ -63,12 +63,21 @@ public class PlayerUI : UIComponent {
 
     private void InitializeHandUI() {
         if (player == null) {
-            Debug.Log("Player is null on PlayerUI");
+            Debug.LogError("Player is null on PlayerUI");
+            return;
         }
 
-        if (handUI == null) {
-            handUI = gameObject.AddComponent<HandUI>();
+        handUI = gameReferences.GetPlayer1HandUI();
+        if (player.IsPlayer1()) {
+            handUI = gameReferences.GetPlayer1HandUI();
+        } else {
+            handUI = gameReferences.GetPlayer2HandUI();
+        }
+
+        if (handUI != null) {
             handUI.Initialize(player);
+        } else {
+            Debug.LogError($"HandUI reference missing for {(player.IsPlayer1() ? "Player 1" : "Player 2")}");
         }
     }
 

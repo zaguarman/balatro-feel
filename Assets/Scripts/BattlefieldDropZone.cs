@@ -1,8 +1,8 @@
 public class BattlefieldDropZone : CardDropZone {
-    private CardContainer container;
+    private BattlefieldUI battlefield;
 
     private void Start() {
-        container = GetComponent<CardContainer>();
+        battlefield = GetComponent<BattlefieldUI>();
     }
 
     public override void OnCardDropped(CardController card) {
