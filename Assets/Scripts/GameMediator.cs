@@ -166,7 +166,7 @@ public class GameMediator : Singleton<GameMediator> {
         if (creature == null) throw new System.ArgumentNullException(nameof(creature));
 
         onCreaturePreSummon.Invoke(creature);
-        Debug.Log($"Creature pre-summon notification: {creature.Name}");
+        //Debug.Log($"Creature pre-summon notification: {creature.Name}");
     }
 
     public void NotifyCreatureSummoned(ICreature creature, IPlayer owner) {
