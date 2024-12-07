@@ -67,31 +67,6 @@ public class HandUI : BaseCardContainer {
         UpdateLayout();
     }
 
-    protected virtual CardController CreateCard(ICard cardData) {
-        var cardPrefab = gameReferences.GetCardPrefab();
-        if (cardPrefab == null) return null;
-
-        var cardObj = Instantiate(cardPrefab, transform);
-        var controller = cardObj.GetComponent<CardController>();
-        if (controller != null) {
-            var data = CreateCardData(cardData);
-            controller.Setup(data, player);
-        }
-        return controller;
-    }
-
-    protected virtual CardData CreateCardData(ICard card) {
-        var cardData = ScriptableObject.CreateInstance<CreatureData>();
-        cardData.cardName = card.Name;
-
-        if (card is ICreature creature) {
-            cardData.attack = creature.Attack;
-            cardData.health = creature.Health;
-        }
-
-        return cardData;
-    }
-
     protected override void OnCardDropped(CardController card) {
         var gameManager = GameManager.Instance;
         if (gameManager != null && CardDropZone.IsOverDropZone(card.transform.position, out ICardDropZone targetDropZone)) {

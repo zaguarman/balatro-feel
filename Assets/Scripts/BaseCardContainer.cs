@@ -160,6 +160,10 @@ public abstract class BaseCardContainer : UIComponent {
         UpdateLayout();
     }
 
+    protected virtual CardController CreateCard(ICard cardData) {
+        return CardFactory.CreateCardController(cardData, player, transform, gameReferences);
+    }
+
     public virtual void AddCard(CardController card) {
         if (card == null) return;
         cards.Add(card);

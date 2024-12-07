@@ -1,6 +1,7 @@
-using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 public interface ICardDropZone {
     bool CanAcceptCard(CardController card);
@@ -8,43 +9,86 @@ public interface ICardDropZone {
     RectTransform GetRectTransform();
 }
 
-[RequireComponent(typeof(RectTransform))]
-public class CardDropZone : UIComponent, IDropHandler, ICardDropZone {
-    [SerializeField] public bool acceptPlayer1Cards = true;
-    [SerializeField] public bool acceptPlayer2Cards = true;
+public class CardDropZone : UIComponent, IDropHandler, ICardDropZone, IPointerEnterHandler, IPointerExitHandler {
+    [SerializeField] protected bool acceptPlayer1Cards = true;
+    [SerializeField] protected bool acceptPlayer2Cards = true;
+    [SerializeField] protected Color defaultColor = new Color(0.8f, 0.8f, 0.8f, 0.5f);
+    [SerializeField] protected Color validDropColor = new Color(0f, 1f, 0f, 0.5f);
+    [SerializeField] protected Color invalidDropColor = new Color(1f, 0f, 0f, 0.5f);
+    [SerializeField] protected Color hoverColor = new Color(1f, 1f, 0f, 0.5f);
 
-    private RectTransform rectTransform;
+    protected Image dropZoneImage;
+    protected RectTransform rectTransform;
+    protected bool isDraggingOverZone;
 
     protected override void Awake() {
+        base.Awake();
         rectTransform = GetComponent<RectTransform>();
+        SetupVisuals();
     }
 
-    protected override void RegisterEvents() {
-        // No events to register for basic drop zone
-    }
-
-    protected override void UnregisterEvents() {
-        // No events to unregister
+    protected virtual void SetupVisuals() {
+        dropZoneImage = GetComponent<Image>();
+        if (dropZoneImage == null) {
+            dropZoneImage = gameObject.AddComponent<Image>();
+        }
+        dropZoneImage.color = defaultColor;
     }
 
     public virtual bool CanAcceptCard(CardController card) {
         if (card == null) return false;
-        return card.IsPlayer1Card() ? acceptPlayer1Cards : acceptPlayer2Cards;
+        bool canAccept = card.IsPlayer1Card() ? acceptPlayer1Cards : acceptPlayer2Cards;
+        if (isDraggingOverZone) {
+            UpdateVisualFeedback(canAccept);
+        }
+        return canAccept;
     }
 
-    public virtual void OnCardDropped(CardController card) {
-        if (!CanAcceptCard(card)) return;
-        gameMediator?.NotifyGameStateChanged();
-    }
-
-    public void OnDrop(PointerEventData eventData) {
-        var card = eventData.pointerDrag?.GetComponent<CardController>();
-        if (card != null && CanAcceptCard(card)) {
-            OnCardDropped(card);
+    protected virtual void UpdateVisualFeedback(bool isValid) {
+        if (dropZoneImage != null) {
+            dropZoneImage.color = isValid ? validDropColor : invalidDropColor;
         }
     }
 
-    public RectTransform GetRectTransform() => rectTransform;
+    public void OnPointerEnter(PointerEventData eventData) {
+        isDraggingOverZone = true;
+        if (eventData.pointerDrag != null) {
+            var card = eventData.pointerDrag.GetComponent<CardController>();
+            if (card != null) {
+                UpdateVisualFeedback(CanAcceptCard(card));
+            }
+        } else {
+            dropZoneImage.color = hoverColor;
+        }
+    }
+
+    public void OnPointerExit(PointerEventData eventData) {
+        isDraggingOverZone = false;
+        dropZoneImage.color = defaultColor;
+    }
+
+    public virtual void OnCardDropped(CardController card) {
+        if (!CanAcceptCard(card)) {
+            dropZoneImage.color = invalidDropColor;
+            return;
+        }
+        HandleCardDrop(card);
+        gameMediator?.NotifyGameStateChanged();
+        dropZoneImage.color = defaultColor;
+    }
+
+    protected virtual void HandleCardDrop(CardController card) {
+        // Base implementation
+    }
+
+    // Implementing abstract methods from UIComponent
+    protected override void RegisterEvents() {
+        // No events to register in base drop zone
+    }
+
+    protected override void UnregisterEvents() {
+        // No events to unregister in base drop zone
+    }
 
     public override void UpdateUI() {
         // Base drop zone doesn't need UI updates
@@ -68,4 +112,15 @@ public class CardDropZone : UIComponent, IDropHandler, ICardDropZone {
 
         return false;
     }
+
+    // Implementing IDropHandler
+    public void OnDrop(PointerEventData eventData) {
+        var card = eventData.pointerDrag?.GetComponent<CardController>();
+        if (card != null) {
+            OnCardDropped(card);
+        }
+    }
+
+    // Implementing ICardDropZone
+    public RectTransform GetRectTransform() => rectTransform;
 }
