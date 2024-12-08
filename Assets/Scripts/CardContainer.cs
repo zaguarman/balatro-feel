@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
-public abstract class BaseCardContainer : UIComponent, IDropHandler, IPointerEnterHandler, IPointerExitHandler {
+public abstract class CardContainer : UIComponent, IDropHandler, IPointerEnterHandler, IPointerExitHandler {
     [SerializeField] protected ContainerSettings settings = new ContainerSettings();
     [SerializeField] protected bool acceptPlayer1Cards = true;
     [SerializeField] protected bool acceptPlayer2Cards = true;
@@ -16,7 +16,7 @@ public abstract class BaseCardContainer : UIComponent, IDropHandler, IPointerEnt
     protected List<CardController> cards = new List<CardController>();
     protected IPlayer player;
     protected RectTransform containerRect;
-    protected CardDropZoneHandler dropZoneHandler;
+    protected CardDropZone dropZoneHandler;
 
     protected virtual void SetupDropZone() {
         var dropZoneImage = GetComponent<Image>();
@@ -24,7 +24,7 @@ public abstract class BaseCardContainer : UIComponent, IDropHandler, IPointerEnt
             dropZoneImage = gameObject.AddComponent<Image>();
         }
 
-        dropZoneHandler = new CardDropZoneHandler(
+        dropZoneHandler = new CardDropZone(
             dropZoneImage,
             defaultColor,
             validDropColor,
@@ -34,36 +34,27 @@ public abstract class BaseCardContainer : UIComponent, IDropHandler, IPointerEnt
             acceptPlayer2Cards
         );
 
-        // Setup drop zone events
         dropZoneHandler.OnCardDropped.AddListener(HandleCardDropped);
         dropZoneHandler.OnPointerEnterEvent.AddListener(HandlePointerEnter);
         dropZoneHandler.OnPointerExitEvent.AddListener(HandlePointerExit);
     }
 
-    public virtual void Initialize(IPlayer player) {
-        this.player = player;
-        containerRect = GetComponent<RectTransform>();
-        if (containerRect == null) {
-            containerRect = gameObject.AddComponent<RectTransform>();
-        }
-
-        SetupDropZone();
-        UpdateLayout();
-        IsInitialized = true;
-        UpdateUI();
+    public virtual bool CanAcceptCard(CardController card) {
+        return dropZoneHandler?.CanAcceptCard(card) ?? false;
     }
 
-    // IDropHandler implementation
+    // Consolidated drop handling
     public void OnDrop(PointerEventData eventData) {
-        dropZoneHandler?.HandleDrop(eventData);
+        var card = eventData.pointerDrag?.GetComponent<CardController>();
+        if (card != null && CanAcceptCard(card)) {
+            HandleCardDropped(card);
+        }
     }
 
-    // IPointerEnterHandler implementation
     public void OnPointerEnter(PointerEventData eventData) {
         dropZoneHandler?.OnPointerEnter(eventData);
     }
 
-    // IPointerExitHandler implementation
     public void OnPointerExit(PointerEventData eventData) {
         dropZoneHandler?.OnPointerExit(eventData);
     }
@@ -78,6 +69,19 @@ public abstract class BaseCardContainer : UIComponent, IDropHandler, IPointerEnt
 
     protected virtual void HandlePointerExit(PointerEventData eventData) {
         // Override in derived classes if needed
+    }
+
+    public virtual void Initialize(IPlayer player) {
+        this.player = player;
+        containerRect = GetComponent<RectTransform>();
+        if (containerRect == null) {
+            containerRect = gameObject.AddComponent<RectTransform>();
+        }
+
+        SetupDropZone();
+        UpdateLayout();
+        IsInitialized = true;
+        UpdateUI();
     }
 
     protected void UpdateLayout() {
@@ -211,6 +215,27 @@ public abstract class BaseCardContainer : UIComponent, IDropHandler, IPointerEnt
 
     protected virtual CardController CreateCard(ICard cardData) {
         return CardFactory.CreateCardController(cardData, player, transform, gameReferences);
+    }
+
+    protected virtual CardController CreateCreatureCard(ICreature creature) {
+        var cardPrefab = gameReferences.GetCardPrefab();
+        if (cardPrefab == null) return null;
+
+        var cardObj = Object.Instantiate(cardPrefab, transform);
+        var controller = cardObj.GetComponent<CardController>();
+        if (controller != null) {
+            var data = CreateCardData(creature);
+            controller.Setup(data, player);
+        }
+        return controller;
+    }
+
+    protected virtual CardData CreateCardData(ICreature creature) {
+        var cardData = ScriptableObject.CreateInstance<CreatureData>();
+        cardData.cardName = creature.Name;
+        cardData.attack = creature.Attack;
+        cardData.health = creature.Health;
+        return cardData;
     }
 
     public virtual void AddCard(CardController card) {

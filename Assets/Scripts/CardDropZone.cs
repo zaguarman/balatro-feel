@@ -1,82 +1,103 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using UnityEngine.Events;
 
-public class CardDropZone : UIComponent, IDropHandler, IPointerEnterHandler, IPointerExitHandler {
-    [SerializeField] protected bool acceptPlayer1Cards = true;
-    [SerializeField] protected bool acceptPlayer2Cards = true;
-    [SerializeField] protected Color defaultColor = new Color(0.8f, 0.8f, 0.8f, 0.5f);
-    [SerializeField] protected Color validDropColor = new Color(0f, 1f, 0f, 0.5f);
-    [SerializeField] protected Color invalidDropColor = new Color(1f, 0f, 0f, 0.5f);
-    [SerializeField] protected Color hoverColor = new Color(1f, 1f, 0f, 0.5f);
+public class CardDropZone {
+    private readonly Image dropZoneImage;
+    private bool isDraggingOverZone;
+    private readonly Color defaultColor;
+    private readonly Color validDropColor;
+    private readonly Color invalidDropColor;
+    private readonly Color hoverColor;
+    private readonly bool acceptPlayer1Cards;
+    private readonly bool acceptPlayer2Cards;
 
-    protected CardDropZoneHandler dropZoneHandler;
+    public UnityEvent<CardController> OnCardDropped { get; } = new UnityEvent<CardController>();
+    public UnityEvent<PointerEventData> OnPointerEnterEvent { get; } = new UnityEvent<PointerEventData>();
+    public UnityEvent<PointerEventData> OnPointerExitEvent { get; } = new UnityEvent<PointerEventData>();
 
-    protected override void Awake() {
-        base.Awake();
-        SetupDropZone();
-    }
+    public CardDropZone(
+        Image dropZoneImage,
+        Color defaultColor,
+        Color validDropColor,
+        Color invalidDropColor,
+        Color hoverColor,
+        bool acceptPlayer1Cards = true,
+        bool acceptPlayer2Cards = true) {
+        this.dropZoneImage = dropZoneImage;
+        this.defaultColor = defaultColor;
+        this.validDropColor = validDropColor;
+        this.invalidDropColor = invalidDropColor;
+        this.hoverColor = hoverColor;
+        this.acceptPlayer1Cards = acceptPlayer1Cards;
+        this.acceptPlayer2Cards = acceptPlayer2Cards;
 
-    protected virtual void SetupDropZone() {
-        var dropZoneImage = GetComponent<Image>();
-        if (dropZoneImage == null) {
-            dropZoneImage = gameObject.AddComponent<Image>();
+        if (dropZoneImage != null) {
+            dropZoneImage.color = defaultColor;
         }
-
-        dropZoneHandler = new CardDropZoneHandler(
-            dropZoneImage,
-            defaultColor,
-            validDropColor,
-            invalidDropColor,
-            hoverColor,
-            acceptPlayer1Cards,
-            acceptPlayer2Cards
-        );
     }
 
     public virtual bool CanAcceptCard(CardController card) {
-        return dropZoneHandler.CanAcceptCard(card);
+        if (card == null) return false;
+        bool canAccept = ValidateCardType(card) &&
+            (card.IsPlayer1Card() ? acceptPlayer1Cards : acceptPlayer2Cards);
+        UpdateVisualFeedback(canAccept);
+        return canAccept;
     }
 
-    protected virtual void HandleCardDrop(CardController card) {
-        // Base implementation does nothing
-        // Derived classes should implement their specific card handling logic
+    protected virtual bool ValidateCardType(CardController card) {
+        return card?.GetCardData() != null;
     }
 
-    public void OnDrop(PointerEventData eventData) {
+    public void HandleDrop(PointerEventData eventData) {
         var card = eventData.pointerDrag?.GetComponent<CardController>();
         if (card != null && CanAcceptCard(card)) {
-            HandleCardDrop(card);
+            OnCardDropped?.Invoke(card);
         }
     }
 
     public void OnPointerEnter(PointerEventData eventData) {
-        dropZoneHandler.OnPointerEnter(eventData);
+        if (eventData == null || dropZoneImage == null) return;
+
+        isDraggingOverZone = true;
+        if (eventData.pointerDrag != null) {
+            var card = eventData.pointerDrag.GetComponent<CardController>();
+            if (card != null) {
+                CanAcceptCard(card);
+            }
+        } else {
+            dropZoneImage.color = hoverColor;
+        }
+        OnPointerEnterEvent?.Invoke(eventData);
     }
 
     public void OnPointerExit(PointerEventData eventData) {
-        dropZoneHandler.OnPointerExit(eventData);
+        if (eventData == null || dropZoneImage == null) return;
+
+        isDraggingOverZone = false;
+        UpdateVisualFeedback(false);
+        OnPointerExitEvent?.Invoke(eventData);
     }
 
-    // Required implementation for UIComponent
-    protected override void RegisterEvents() {
-        if (gameMediator != null) {
-            gameMediator.AddGameStateChangedListener(UpdateUI);
+    public void UpdateVisualFeedback(bool isValid) {
+        if (dropZoneImage != null) {
+            dropZoneImage.color = isDraggingOverZone ?
+                (isValid ? validDropColor : invalidDropColor) :
+                defaultColor;
         }
     }
 
-    protected override void UnregisterEvents() {
-        if (gameMediator != null) {
-            gameMediator.RemoveGameStateChangedListener(UpdateUI);
+    public void ResetVisualFeedback() {
+        isDraggingOverZone = false;
+        if (dropZoneImage != null) {
+            dropZoneImage.color = defaultColor;
         }
     }
 
-    public override void UpdateUI() {
-        dropZoneHandler.ResetVisualFeedback();
-    }
-
-    protected override void OnDestroy() {
-        dropZoneHandler = null;
-        base.OnDestroy();
+    public void Cleanup() {
+        OnCardDropped.RemoveAllListeners();
+        OnPointerEnterEvent.RemoveAllListeners();
+        OnPointerExitEvent.RemoveAllListeners();
     }
 }

@@ -1,7 +1,7 @@
 using System.Linq;
 using UnityEngine;
 
-public class HandUI : BaseCardContainer {
+public class HandUI : CardContainer {
     private void Start() {
         if (InitializationManager.Instance.IsComponentInitialized<GameMediator>()) {
             InitializeReferences();
@@ -45,12 +45,12 @@ public class HandUI : BaseCardContainer {
     }
 
     public override void UpdateUI() {
-        if (player == null) return;
+        if (!IsInitialized || player == null) return;
 
         // Clear existing cards
         foreach (var card in cards.ToList()) {
+            RemoveCard(card);
             if (card != null) {
-                CleanupCardEventHandlers(card);
                 Destroy(card.gameObject);
             }
         }
@@ -77,18 +77,11 @@ public class HandUI : BaseCardContainer {
         UpdateLayout();
     }
 
-    // We don't need OnCardDropped anymore as the receiving container (BattlefieldUI) 
-    // handles the drop through its OnDrop method
     protected override void OnCardDropped(CardController card) {
         UpdateLayout();
     }
 
-    // Hover methods (empty as before)
-    protected override void OnCardHoverEnter(CardController card) {
-        // Do nothing on hover
-    }
-
-    protected override void OnCardHoverExit(CardController card) {
-        // Do nothing on hover exit
-    }
+    // Empty implementations since we don't want hover effects in hand
+    protected override void OnCardHoverEnter(CardController card) { }
+    protected override void OnCardHoverExit(CardController card) { }
 }
