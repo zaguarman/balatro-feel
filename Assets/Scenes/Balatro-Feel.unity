@@ -133,7 +133,6 @@ GameObject:
   - component: {fileID: 54383537}
   - component: {fileID: 54383539}
   - component: {fileID: 54383538}
-  - component: {fileID: 54383540}
   m_Layer: 5
   m_Name: PlayerHealth 2
   m_TagString: Untagged
@@ -257,18 +256,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 54383536}
   m_CullTransparentMesh: 1
---- !u!114 &54383540
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 54383536}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ffca7fb8b5efe6947a43353ee1d4dc03, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &150658577
 GameObject:
   m_ObjectHideFlags: 0
@@ -576,101 +563,6 @@ MonoBehaviour:
   m_CameraActivatedEvent:
     m_PersistentCalls:
       m_Calls: []
---- !u!1 &591111798
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 591111799}
-  - component: {fileID: 591111802}
-  - component: {fileID: 591111801}
-  - component: {fileID: 591111800}
-  m_Layer: 0
-  m_Name: DropZone
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!224 &591111799
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 591111798}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1620705591}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -8.47, y: 0}
-  m_SizeDelta: {x: 5, y: 3}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &591111800
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 591111798}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1e4c0ce5ee8baa84882be24e5f4e744a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  acceptPlayer1Cards: 1
-  acceptPlayer2Cards: 1
-  defaultColor: {r: 0.8, g: 0.8, b: 0.8, a: 0.5}
-  validDropColor: {r: 0, g: 1, b: 0, a: 0.5}
-  invalidDropColor: {r: 1, g: 0, b: 0, a: 0.5}
-  hoverColor: {r: 1, g: 1, b: 0, a: 0.5}
-  visualFeedbackDuration: 0.5
---- !u!114 &591111801
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 591111798}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_Sprite: {fileID: 0}
-  m_Type: 0
-  m_PreserveAspect: 0
-  m_FillCenter: 1
-  m_FillMethod: 4
-  m_FillAmount: 1
-  m_FillClockwise: 1
-  m_FillOrigin: 0
-  m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
---- !u!222 &591111802
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 591111798}
-  m_CullTransparentMesh: 1
 --- !u!1 &619394800
 GameObject:
   m_ObjectHideFlags: 0
@@ -1138,13 +1030,11 @@ MonoBehaviour:
     healthText: {fileID: 1544506893}
     handUI: {fileID: 1587845791}
     battlefieldUI: {fileID: 1445917820}
-    healthUI: {fileID: 1544506895}
   player2References:
     playerUI: {fileID: 1592228239}
     healthText: {fileID: 54383538}
     handUI: {fileID: 1707401508}
     battlefieldUI: {fileID: 1270125520}
-    healthUI: {fileID: 54383540}
   cardPrefab: {fileID: 5464925446207512663, guid: 9164b01cda78bc545b913d180247e537, type: 3}
   player1CardColor: {r: 0.8, g: 0.9, b: 1, a: 1}
   player2CardColor: {r: 1, g: 0.8, b: 0.8, a: 1}
@@ -1287,7 +1177,6 @@ GameObject:
   - component: {fileID: 1270125522}
   - component: {fileID: 1270125520}
   - component: {fileID: 1270125524}
-  - component: {fileID: 1270125523}
   m_Layer: 5
   m_Name: PlayerBattlefield 2
   m_TagString: Untagged
@@ -1327,12 +1216,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   settings:
-    layoutType: 0
     spacing: 220
     offset: 50
     gridCellSize: {x: 220, y: 320}
     gridColumns: 3
     cardHoverOffset: 30
+  acceptPlayer1Cards: 1
+  acceptPlayer2Cards: 1
+  defaultColor: {r: 0.8, g: 0.8, b: 0.8, a: 0.5}
+  validDropColor: {r: 0, g: 1, b: 0, a: 0.5}
+  invalidDropColor: {r: 1, g: 0, b: 0, a: 0.5}
+  hoverColor: {r: 1, g: 1, b: 0, a: 0.5}
 --- !u!222 &1270125522
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1341,25 +1235,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1270125517}
   m_CullTransparentMesh: 1
---- !u!114 &1270125523
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1270125517}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1e4c0ce5ee8baa84882be24e5f4e744a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  acceptPlayer1Cards: 1
-  acceptPlayer2Cards: 1
-  defaultColor: {r: 0.8, g: 0.8, b: 0.8, a: 0.5}
-  validDropColor: {r: 0, g: 1, b: 0, a: 0.5}
-  invalidDropColor: {r: 1, g: 0, b: 0, a: 0.5}
-  hoverColor: {r: 1, g: 1, b: 0, a: 0.5}
-  visualFeedbackDuration: 0.5
 --- !u!114 &1270125524
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1373,7 +1248,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.8, g: 0.8, b: 0.8, a: 0.5}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1402,7 +1277,6 @@ GameObject:
   - component: {fileID: 1445917818}
   - component: {fileID: 1445917820}
   - component: {fileID: 1445917822}
-  - component: {fileID: 1445917821}
   m_Layer: 5
   m_Name: PlayerBattlefield 1
   m_TagString: Untagged
@@ -1450,31 +1324,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   settings:
-    layoutType: 0
     spacing: 220
     offset: 50
     gridCellSize: {x: 220, y: 320}
     gridColumns: 3
     cardHoverOffset: 30
---- !u!114 &1445917821
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1445917815}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1e4c0ce5ee8baa84882be24e5f4e744a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
   acceptPlayer1Cards: 1
   acceptPlayer2Cards: 1
   defaultColor: {r: 0.8, g: 0.8, b: 0.8, a: 0.5}
   validDropColor: {r: 0, g: 1, b: 0, a: 0.5}
   invalidDropColor: {r: 1, g: 0, b: 0, a: 0.5}
   hoverColor: {r: 1, g: 1, b: 0, a: 0.5}
-  visualFeedbackDuration: 0.5
 --- !u!114 &1445917822
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1488,7 +1348,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.8, g: 0.8, b: 0.8, a: 0.5}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1561,7 +1421,6 @@ GameObject:
   - component: {fileID: 1544506892}
   - component: {fileID: 1544506894}
   - component: {fileID: 1544506893}
-  - component: {fileID: 1544506895}
   m_Layer: 5
   m_Name: PlayerHealth 1
   m_TagString: Untagged
@@ -1685,18 +1544,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1544506891}
   m_CullTransparentMesh: 1
---- !u!114 &1544506895
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1544506891}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ffca7fb8b5efe6947a43353ee1d4dc03, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1587845786
 GameObject:
   m_ObjectHideFlags: 0
@@ -1707,7 +1554,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1587845787}
   - component: {fileID: 1587845789}
-  - component: {fileID: 1587845788}
   - component: {fileID: 1587845791}
   m_Layer: 5
   m_Name: PlayerHand 1
@@ -1735,97 +1581,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0.000061035, y: -100}
   m_SizeDelta: {x: 350, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1587845788
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1587845786}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_text: 'H1
-
-'
-  m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_fontSharedMaterials: []
-  m_fontMaterial: {fileID: 0}
-  m_fontMaterials: []
-  m_fontColor32:
-    serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
-  m_enableVertexGradient: 0
-  m_colorMode: 3
-  m_fontColorGradient:
-    topLeft: {r: 1, g: 1, b: 1, a: 1}
-    topRight: {r: 1, g: 1, b: 1, a: 1}
-    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
-    bottomRight: {r: 1, g: 1, b: 1, a: 1}
-  m_fontColorGradientPreset: {fileID: 0}
-  m_spriteAsset: {fileID: 0}
-  m_tintAllSprites: 0
-  m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: -1183493901
-  m_overrideHtmlColors: 0
-  m_faceColor:
-    serializedVersion: 2
-    rgba: 4294967295
-  m_fontSize: 36
-  m_fontSizeBase: 36
-  m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
-  m_fontStyle: 0
-  m_HorizontalAlignment: 1
-  m_VerticalAlignment: 256
-  m_textAlignment: 65535
-  m_characterSpacing: 0
-  m_wordSpacing: 0
-  m_lineSpacing: 0
-  m_lineSpacingMax: 0
-  m_paragraphSpacing: 0
-  m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 1
-  m_wordWrappingRatios: 0.4
-  m_overflowMode: 0
-  m_linkedTextComponent: {fileID: 0}
-  parentLinkedComponent: {fileID: 0}
-  m_enableKerning: 1
-  m_enableExtraPadding: 0
-  checkPaddingRequired: 0
-  m_isRichText: 1
-  m_parseCtrlCharacters: 1
-  m_isOrthographic: 1
-  m_isCullingEnabled: 0
-  m_horizontalMapping: 0
-  m_verticalMapping: 0
-  m_uvLineOffset: 0
-  m_geometrySortingOrder: 0
-  m_IsTextObjectScaleStatic: 0
-  m_VertexBufferAutoSizeReduction: 0
-  m_useMaxVisibleDescender: 1
-  m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: 0, w: 0}
-  m_isUsingLegacyAnimationComponent: 0
-  m_isVolumetricText: 0
-  m_hasFontAssetChanged: 0
-  m_baseMaterial: {fileID: 0}
-  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
 --- !u!222 &1587845789
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1847,12 +1602,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   settings:
-    layoutType: 0
     spacing: 220
     offset: 50
     gridCellSize: {x: 220, y: 320}
     gridColumns: 3
     cardHoverOffset: 30
+  acceptPlayer1Cards: 1
+  acceptPlayer2Cards: 1
+  defaultColor: {r: 0.8, g: 0.8, b: 0.8, a: 0.5}
+  validDropColor: {r: 0, g: 1, b: 0, a: 0.5}
+  invalidDropColor: {r: 1, g: 0, b: 0, a: 0.5}
+  hoverColor: {r: 1, g: 1, b: 0, a: 0.5}
 --- !u!1 &1592228237
 GameObject:
   m_ObjectHideFlags: 0
@@ -2091,7 +1851,6 @@ RectTransform:
   - {fileID: 1592228238}
   - {fileID: 500666785}
   - {fileID: 776573424}
-  - {fileID: 591111799}
   m_Father: {fileID: 1458677301}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -2109,7 +1868,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1707401504}
   - component: {fileID: 1707401507}
-  - component: {fileID: 1707401506}
   - component: {fileID: 1707401508}
   m_Layer: 5
   m_Name: PlayerHand 2
@@ -2137,95 +1895,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0.000061035, y: 77}
   m_SizeDelta: {x: 350, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1707401506
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1707401503}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_text: H2
-  m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_fontSharedMaterials: []
-  m_fontMaterial: {fileID: 0}
-  m_fontMaterials: []
-  m_fontColor32:
-    serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
-  m_enableVertexGradient: 0
-  m_colorMode: 3
-  m_fontColorGradient:
-    topLeft: {r: 1, g: 1, b: 1, a: 1}
-    topRight: {r: 1, g: 1, b: 1, a: 1}
-    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
-    bottomRight: {r: 1, g: 1, b: 1, a: 1}
-  m_fontColorGradientPreset: {fileID: 0}
-  m_spriteAsset: {fileID: 0}
-  m_tintAllSprites: 0
-  m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: -1183493901
-  m_overrideHtmlColors: 0
-  m_faceColor:
-    serializedVersion: 2
-    rgba: 4294967295
-  m_fontSize: 36
-  m_fontSizeBase: 36
-  m_fontWeight: 400
-  m_enableAutoSizing: 0
-  m_fontSizeMin: 18
-  m_fontSizeMax: 72
-  m_fontStyle: 0
-  m_HorizontalAlignment: 1
-  m_VerticalAlignment: 256
-  m_textAlignment: 65535
-  m_characterSpacing: 0
-  m_wordSpacing: 0
-  m_lineSpacing: 0
-  m_lineSpacingMax: 0
-  m_paragraphSpacing: 0
-  m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 1
-  m_wordWrappingRatios: 0.4
-  m_overflowMode: 0
-  m_linkedTextComponent: {fileID: 0}
-  parentLinkedComponent: {fileID: 0}
-  m_enableKerning: 1
-  m_enableExtraPadding: 0
-  checkPaddingRequired: 0
-  m_isRichText: 1
-  m_parseCtrlCharacters: 1
-  m_isOrthographic: 1
-  m_isCullingEnabled: 0
-  m_horizontalMapping: 0
-  m_verticalMapping: 0
-  m_uvLineOffset: 0
-  m_geometrySortingOrder: 0
-  m_IsTextObjectScaleStatic: 0
-  m_VertexBufferAutoSizeReduction: 0
-  m_useMaxVisibleDescender: 1
-  m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: 0, w: 0}
-  m_isUsingLegacyAnimationComponent: 0
-  m_isVolumetricText: 0
-  m_hasFontAssetChanged: 0
-  m_baseMaterial: {fileID: 0}
-  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
 --- !u!222 &1707401507
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -2247,12 +1916,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   settings:
-    layoutType: 0
     spacing: 220
     offset: 50
     gridCellSize: {x: 220, y: 320}
     gridColumns: 3
     cardHoverOffset: 30
+  acceptPlayer1Cards: 1
+  acceptPlayer2Cards: 1
+  defaultColor: {r: 0.8, g: 0.8, b: 0.8, a: 0.5}
+  validDropColor: {r: 0, g: 1, b: 0, a: 0.5}
+  invalidDropColor: {r: 1, g: 0, b: 0, a: 0.5}
+  hoverColor: {r: 1, g: 1, b: 0, a: 0.5}
 --- !u!1 &1770875050
 GameObject:
   m_ObjectHideFlags: 0
