@@ -104,8 +104,15 @@ public abstract class CardContainer : UIComponent, IDropHandler, IPointerEnterHa
     }
 
     private void CalculatePositions(Vector2[] positions) {
+        if (cards.Count == 0) return;
+
+        // Calculate total width of all cards including spacing
+        float totalWidth = (cards.Count - 1) * settings.spacing;
+        // Calculate the starting X position to center the group
+        float startX = -totalWidth / 2;
+
         for (int i = 0; i < cards.Count; i++) {
-            float position = settings.offset + (settings.spacing * i);
+            float position = startX + (settings.spacing * i);
             positions[i] = new Vector2(position, 0);
         }
     }
