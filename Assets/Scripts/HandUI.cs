@@ -67,14 +67,7 @@ public class HandUI : BaseCardContainer {
         UpdateLayout();
     }
 
-    protected override void OnCardDropped(CardController card) {
-        var gameManager = GameManager.Instance;
-        if (gameManager != null && CardDropZone.IsOverDropZone(card.transform.position, out ICardDropZone targetDropZone)) {
-            gameManager.PlayCard(card.GetCardData(), player);
-            gameMediator?.NotifyGameStateChanged();
-        }
-    }
-
+    // Dragging methods
     protected override void OnCardBeginDrag(CardController card) {
         if (card == null) return;
         card.transform.SetAsLastSibling();
@@ -84,7 +77,13 @@ public class HandUI : BaseCardContainer {
         UpdateLayout();
     }
 
-    // Override hover methods to do nothing
+    // We don't need OnCardDropped anymore as the receiving container (BattlefieldUI) 
+    // handles the drop through its OnDrop method
+    protected override void OnCardDropped(CardController card) {
+        UpdateLayout();
+    }
+
+    // Hover methods (empty as before)
     protected override void OnCardHoverEnter(CardController card) {
         // Do nothing on hover
     }
