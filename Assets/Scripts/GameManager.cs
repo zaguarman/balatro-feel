@@ -15,7 +15,7 @@ public class GameManager : InitializableComponent {
 
     public IPlayer Player1 { get; private set; }
     public IPlayer Player2 { get; private set; }
-    public ActionsContext GameContext { get; private set; }
+    public ActionsQueue ActionsQueue { get; private set; }
 
     private GameMediator gameMediator;
     private GameReferences gameReferences;
@@ -50,7 +50,7 @@ public class GameManager : InitializableComponent {
     }
 
     private void InitializeGameSystem() {
-        GameContext = new ActionsContext();
+        ActionsQueue = new ActionsQueue();
         InitializePlayers();
         InitializeCards();
         SetupInitialGameState();
@@ -87,8 +87,8 @@ public class GameManager : InitializableComponent {
     }
 
     private void OnResolveButtonClicked() {
-        if (GameContext != null) {
-            GameContext.ResolveActions();
+        if (ActionsQueue != null) {
+            ActionsQueue.ResolveActions();
             gameMediator?.NotifyGameStateChanged();
         }
     }
@@ -101,7 +101,7 @@ public class GameManager : InitializableComponent {
         }
 
         ICard card = CardFactory.CreateCard(cardData);
-        card.Play(player, GameContext);
+        card.Play(player, ActionsQueue);
         gameMediator.NotifyGameStateChanged();
     }
 
@@ -111,7 +111,7 @@ public class GameManager : InitializableComponent {
             return;
         }
 
-        GameContext.ResolveActions();
+        ActionsQueue.ResolveActions();
         gameMediator.NotifyGameStateChanged();
         LogGameState("Actions resolved");
     }
@@ -129,8 +129,8 @@ public class GameManager : InitializableComponent {
             state += $"Player 2 - Health: {Player2.Health}, Hand: {Player2.Hand.Count}, Battlefield: {Player2.Battlefield.Count}\n";
         }
 
-        if (GameContext != null) {
-            state += $"Pending Actions: {GameContext.GetPendingActionsCount()}\n";
+        if (ActionsQueue != null) {
+            state += $"Pending Actions: {ActionsQueue.GetPendingActionsCount()}\n";
         }
 
         Debug.Log(state);

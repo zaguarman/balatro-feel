@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 public interface ICard : IEntity {
     List<CardEffect> Effects { get; }
-    void Play(IPlayer owner, ActionsContext context);
+    void Play(IPlayer owner, ActionsQueue context);
 }
 
 public class Card : Entity, ICard {
@@ -12,7 +12,7 @@ public class Card : Entity, ICard {
         Effects = new List<CardEffect>();
     }
 
-    public virtual void Play(IPlayer owner, ActionsContext context) {
+    public virtual void Play(IPlayer owner, ActionsQueue context) {
         // Base implementation does nothing
     }
 }

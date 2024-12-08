@@ -1,6 +1,7 @@
 using UnityEngine.Events;
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 [Serializable]
 public class PlayerDamagedUnityEvent : UnityEvent<int> { }
@@ -44,18 +45,22 @@ public class Player : Entity, IPlayer {
     public void AddToHand(ICard card) {
         if (card == null) return;
         Hand.Add(card);
-        gameMediator.NotifyGameStateChanged();
+        gameMediator?.NotifyGameStateChanged();
     }
 
     public void AddToBattlefield(ICreature creature) {
         if (creature == null) return;
         Battlefield.Add(creature);
-        gameMediator.NotifyGameStateChanged();
+        Debug.Log($"[Player] Added creature to battlefield: {creature.Name}");
+        gameMediator?.NotifyGameStateChanged();
     }
 
     public void RemoveFromBattlefield(ICreature creature) {
         if (creature == null) return;
-        Battlefield.Remove(creature);
-        gameMediator.NotifyGameStateChanged();
+
+        if (Battlefield.Remove(creature)) {
+            Debug.Log($"[Player] Removed creature from battlefield: {creature.Name}");
+            gameMediator?.NotifyGameStateChanged();
+        }
     }
 }
