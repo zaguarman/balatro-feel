@@ -36,11 +36,13 @@ public class BattlefieldUI : CardContainer {
         }
     }
 
+    // File: BattlefieldUI.cs
+
     private void HandleCreatureCombat(CardController attackingCard) {
         Debug.Log($"[Combat] Starting combat with attacker: {attackingCard.GetCardData().cardName}");
 
         var pointerEventData = new PointerEventData(EventSystem.current);
-        pointerEventData.position = UnityEngine.Input.mousePosition;
+        pointerEventData.position = Input.mousePosition;
         var raycastResults = new List<RaycastResult>();
         EventSystem.current.RaycastAll(pointerEventData, raycastResults);
 
@@ -66,8 +68,10 @@ public class BattlefieldUI : CardContainer {
                     if (attackerCreature != null && targetCreature != null) {
                         Debug.Log($"[Combat] Creating DamageCreatureAction - Attacker: {attackerCreature.Name}, Attack: {attackerCreature.Attack}, Target: {targetCreature.Name}, Current Health: {targetCreature.Health}");
 
+                        // Create damage action for the target creature only
                         var damageAction = new DamageCreatureAction(targetCreature, attackerCreature.Attack);
                         gameManager.ActionsQueue.AddAction(damageAction);
+
                         Debug.Log($"[Combat] Added damage action to queue. Queue size: {gameManager.ActionsQueue.GetPendingActionsCount()}");
 
                         gameMediator?.NotifyGameStateChanged();
