@@ -6,6 +6,7 @@ using UnityEngine.UI;
 
 public class BattlefieldUI : BaseCardContainer, IDropHandler, IPointerEnterHandler, IPointerExitHandler {
     private Dictionary<string, CardController> creatureCards = new Dictionary<string, CardController>();
+    private CardDropZoneHandler dropZoneHandler;
 
     [SerializeField] protected bool acceptPlayer1Cards = true;
     [SerializeField] protected bool acceptPlayer2Cards = true;
@@ -14,20 +15,26 @@ public class BattlefieldUI : BaseCardContainer, IDropHandler, IPointerEnterHandl
     [SerializeField] protected Color invalidDropColor = new Color(1f, 0f, 0f, 0.5f);
     [SerializeField] protected Color hoverColor = new Color(1f, 1f, 0f, 0.5f);
 
-    protected Image dropZoneImage;
-    protected bool isDraggingOverZone;
-
     protected override void Awake() {
         base.Awake();
-        SetupVisuals();
+        SetupDropZone();
     }
 
-    protected virtual void SetupVisuals() {
-        dropZoneImage = GetComponent<Image>();
+    protected virtual void SetupDropZone() {
+        var dropZoneImage = GetComponent<Image>();
         if (dropZoneImage == null) {
             dropZoneImage = gameObject.AddComponent<Image>();
         }
-        dropZoneImage.color = defaultColor;
+
+        dropZoneHandler = new CardDropZoneHandler(
+            dropZoneImage,
+            defaultColor,
+            validDropColor,
+            invalidDropColor,
+            hoverColor,
+            acceptPlayer1Cards,
+            acceptPlayer2Cards
+        );
     }
 
     protected override void RegisterEvents() {
@@ -78,7 +85,7 @@ public class BattlefieldUI : BaseCardContainer, IDropHandler, IPointerEnterHandl
             }
         }
 
-        UpdateVisualFeedback(false);
+        dropZoneHandler.ResetVisualFeedback();
     }
 
     protected virtual CardController CreateCard(ICreature creature) {
@@ -104,22 +111,7 @@ public class BattlefieldUI : BaseCardContainer, IDropHandler, IPointerEnterHandl
 
     // Drop zone functionality
     public virtual bool CanAcceptCard(CardController card) {
-        if (card == null) return false;
-        bool canAccept = ValidateCardType(card) && (card.IsPlayer1Card() ? acceptPlayer1Cards : acceptPlayer2Cards);
-        UpdateVisualFeedback(canAccept);
-        return canAccept;
-    }
-
-    protected virtual bool ValidateCardType(CardController card) {
-        return card != null && card.GetCardData() is CreatureData;
-    }
-
-    protected virtual void UpdateVisualFeedback(bool isValid) {
-        if (dropZoneImage != null) {
-            dropZoneImage.color = isDraggingOverZone ?
-                (isValid ? validDropColor : invalidDropColor) :
-                defaultColor;
-        }
+        return dropZoneHandler.CanAcceptCard(card);
     }
 
     // Drop handlers
@@ -135,20 +127,11 @@ public class BattlefieldUI : BaseCardContainer, IDropHandler, IPointerEnterHandl
     }
 
     public void OnPointerEnter(PointerEventData eventData) {
-        isDraggingOverZone = true;
-        if (eventData.pointerDrag != null) {
-            var card = eventData.pointerDrag.GetComponent<CardController>();
-            if (card != null) {
-                CanAcceptCard(card);
-            }
-        } else {
-            dropZoneImage.color = hoverColor;
-        }
+        dropZoneHandler.OnPointerEnter(eventData);
     }
 
     public void OnPointerExit(PointerEventData eventData) {
-        isDraggingOverZone = false;
-        UpdateVisualFeedback(false);
+        dropZoneHandler.OnPointerExit(eventData);
     }
 
     // Override card interaction methods
@@ -170,5 +153,10 @@ public class BattlefieldUI : BaseCardContainer, IDropHandler, IPointerEnterHandl
 
     protected override void OnCardHoverExit(CardController card) {
         // Hide targeting UI or creature details
+    }
+
+    protected override void OnDestroy() {
+        dropZoneHandler = null;
+        base.OnDestroy();
     }
 }

@@ -1,7 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
-public class CardDropZone : UIComponent {
+public class CardDropZone : UIComponent, IDropHandler, IPointerEnterHandler, IPointerExitHandler {
     [SerializeField] protected bool acceptPlayer1Cards = true;
     [SerializeField] protected bool acceptPlayer2Cards = true;
     [SerializeField] protected Color defaultColor = new Color(0.8f, 0.8f, 0.8f, 0.5f);
@@ -9,31 +10,32 @@ public class CardDropZone : UIComponent {
     [SerializeField] protected Color invalidDropColor = new Color(1f, 0f, 0f, 0.5f);
     [SerializeField] protected Color hoverColor = new Color(1f, 1f, 0f, 0.5f);
 
-    protected Image dropZoneImage;
-    protected bool isDraggingOverZone;
+    protected CardDropZoneHandler dropZoneHandler;
 
     protected override void Awake() {
         base.Awake();
-        SetupVisuals();
+        SetupDropZone();
     }
 
-    protected virtual void SetupVisuals() {
-        dropZoneImage = GetComponent<Image>();
+    protected virtual void SetupDropZone() {
+        var dropZoneImage = GetComponent<Image>();
         if (dropZoneImage == null) {
             dropZoneImage = gameObject.AddComponent<Image>();
         }
-        dropZoneImage.color = defaultColor;
+
+        dropZoneHandler = new CardDropZoneHandler(
+            dropZoneImage,
+            defaultColor,
+            validDropColor,
+            invalidDropColor,
+            hoverColor,
+            acceptPlayer1Cards,
+            acceptPlayer2Cards
+        );
     }
 
     public virtual bool CanAcceptCard(CardController card) {
-        if (card == null) return false;
-        bool canAccept = ValidateCardType(card) && (card.IsPlayer1Card() ? acceptPlayer1Cards : acceptPlayer2Cards);
-        UpdateVisualFeedback(canAccept);
-        return canAccept;
-    }
-
-    protected virtual bool ValidateCardType(CardController card) {
-        return true; // Base class accepts all card types
+        return dropZoneHandler.CanAcceptCard(card);
     }
 
     protected virtual void HandleCardDrop(CardController card) {
@@ -41,12 +43,19 @@ public class CardDropZone : UIComponent {
         // Derived classes should implement their specific card handling logic
     }
 
-    protected virtual void UpdateVisualFeedback(bool isValid) {
-        if (dropZoneImage != null) {
-            dropZoneImage.color = isDraggingOverZone ?
-                (isValid ? validDropColor : invalidDropColor) :
-                defaultColor;
+    public void OnDrop(PointerEventData eventData) {
+        var card = eventData.pointerDrag?.GetComponent<CardController>();
+        if (card != null && CanAcceptCard(card)) {
+            HandleCardDrop(card);
         }
+    }
+
+    public void OnPointerEnter(PointerEventData eventData) {
+        dropZoneHandler.OnPointerEnter(eventData);
+    }
+
+    public void OnPointerExit(PointerEventData eventData) {
+        dropZoneHandler.OnPointerExit(eventData);
     }
 
     // Required implementation for UIComponent
@@ -63,6 +72,11 @@ public class CardDropZone : UIComponent {
     }
 
     public override void UpdateUI() {
-        UpdateVisualFeedback(false);
+        dropZoneHandler.ResetVisualFeedback();
+    }
+
+    protected override void OnDestroy() {
+        dropZoneHandler = null;
+        base.OnDestroy();
     }
 }
