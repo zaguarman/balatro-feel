@@ -31,18 +31,31 @@ public abstract class BaseCardContainer : UIComponent {
         LayoutRebuilder.ForceRebuildLayoutImmediate(containerRect);
     }
 
-    protected virtual Vector2[] CalculateCardPositions() {
+    protected Vector2[] CalculateCardPositions() {
         Vector2[] positions = new Vector2[cards.Count];
         if (cards.Count == 0) return positions;
 
-        float totalWidth = settings.spacing * (cards.Count - 1);
-        float startX = -totalWidth / 2;
-
-        for (int i = 0; i < cards.Count; i++) {
-            positions[i] = new Vector2(startX + (settings.spacing * i), 0);
+        switch (settings.layoutType) {
+            case ContainerLayout.Horizontal:
+                CalculatePositions(positions, true);
+                break;
+            case ContainerLayout.Vertical:
+                CalculatePositions(positions, false);
+                break;
+            case ContainerLayout.Grid:
+                CalculateGridPositions(positions);
+                break;
         }
-
         return positions;
+    }
+
+    private void CalculatePositions(Vector2[] positions, bool isHorizontal) {
+        for (int i = 0; i < cards.Count; i++) {
+            float position = settings.offset + (settings.spacing * i);
+            positions[i] = isHorizontal ?
+                new Vector2(position, 0) :
+                new Vector2(0, -position);
+        }
     }
 
     protected virtual void SetupCardTransform(CardController card, Vector2 position) {
