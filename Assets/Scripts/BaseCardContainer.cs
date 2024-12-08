@@ -94,26 +94,15 @@ public abstract class BaseCardContainer : UIComponent, IDropHandler, IPointerEnt
         Vector2[] positions = new Vector2[cards.Count];
         if (cards.Count == 0) return positions;
 
-        switch (settings.layoutType) {
-            case ContainerLayout.Horizontal:
-                CalculatePositions(positions, true);
-                break;
-            case ContainerLayout.Vertical:
-                CalculatePositions(positions, false);
-                break;
-            case ContainerLayout.Grid:
-                CalculateGridPositions(positions);
-                break;
-        }
+        CalculatePositions(positions);
+
         return positions;
     }
 
-    private void CalculatePositions(Vector2[] positions, bool isHorizontal) {
+    private void CalculatePositions(Vector2[] positions) {
         for (int i = 0; i < cards.Count; i++) {
             float position = settings.offset + (settings.spacing * i);
-            positions[i] = isHorizontal ?
-                new Vector2(position, 0) :
-                new Vector2(0, -position);
+            positions[i] = new Vector2(position, 0);
         }
     }
 
@@ -135,16 +124,6 @@ public abstract class BaseCardContainer : UIComponent, IDropHandler, IPointerEnt
                 SetupCardTransform(cards[i], positions[i]);
             }
         }
-    }
-
-
-    protected virtual Vector2 CalculateContainerSize() {
-        return settings.layoutType switch {
-            ContainerLayout.Horizontal => new Vector2(settings.offset + (settings.spacing * cards.Count), containerRect.sizeDelta.y),
-            ContainerLayout.Vertical => new Vector2(containerRect.sizeDelta.x, settings.offset + (settings.spacing * cards.Count)),
-            ContainerLayout.Grid => CalculateGridSize(),
-            _ => containerRect.sizeDelta
-        };
     }
 
     protected virtual void CalculateHorizontalPositions(Vector2[] positions) {
@@ -222,9 +201,7 @@ public abstract class BaseCardContainer : UIComponent, IDropHandler, IPointerEnt
         var rectTransform = card.GetComponent<RectTransform>();
         if (rectTransform != null) {
             var currentPos = rectTransform.anchoredPosition;
-            rectTransform.anchoredPosition = settings.layoutType == ContainerLayout.Vertical
-                ? new Vector2(currentPos.x + settings.cardHoverOffset, currentPos.y)
-                : new Vector2(currentPos.x, currentPos.y + settings.cardHoverOffset);
+            rectTransform.anchoredPosition = new Vector2(currentPos.x, currentPos.y + settings.cardHoverOffset);
         }
     }
 

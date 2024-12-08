@@ -11,9 +11,6 @@ public class PlayerUIReferences {
     [Header("Card Containers")]
     public HandUI handUI;
     public BattlefieldUI battlefieldUI;
-
-    [Header("Health")]
-    public HealthUI healthUI;
 }
 
 public class GameReferences : Singleton<GameReferences> {
@@ -51,7 +48,6 @@ public class GameReferences : Singleton<GameReferences> {
     private void ValidatePlayerReferences(PlayerUIReferences refs, string playerName) {
         if (refs.handUI == null) Debug.LogError($"{playerName} HandUI reference missing!");
         if (refs.battlefieldUI == null) Debug.LogError($"{playerName} BattlefieldUI reference missing!");
-        if (refs.healthUI == null) Debug.LogError($"{playerName} HealthUI reference missing!");
         if (refs.healthText == null) Debug.LogError($"{playerName} HealthText reference missing!");
     }
 
@@ -64,12 +60,6 @@ public class GameReferences : Singleton<GameReferences> {
     public HandUI GetPlayer2HandUI() => player2References.handUI;
     public BattlefieldUI GetPlayer1BattlefieldUI() => player1References.battlefieldUI;
     public BattlefieldUI GetPlayer2BattlefieldUI() => player2References.battlefieldUI;
-
-    // Health getters
-    public HealthUI GetPlayer1HealthUI() => player1References.healthUI;
-    public HealthUI GetPlayer2HealthUI() => player2References.healthUI;
-    public TextMeshProUGUI GetPlayer1HealthText() => player1References.healthText;
-    public TextMeshProUGUI GetPlayer2HealthText() => player2References.healthText;
 
     // Shared components getters
     public Button GetCardPrefab() => cardPrefab;

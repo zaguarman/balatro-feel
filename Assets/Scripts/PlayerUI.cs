@@ -2,7 +2,6 @@ using UnityEngine;
 
 public class PlayerUI : UIComponent {
     private IPlayer player;
-    private HealthUI healthUI;
     private HandUI handUI;
 
     public void Initialize(IPlayer player) {
@@ -13,7 +12,6 @@ public class PlayerUI : UIComponent {
             return;
         }
 
-        InitializeHealthUI();
         InitializeHandUI();
 
         IsInitialized = true;
@@ -33,31 +31,9 @@ public class PlayerUI : UIComponent {
 
     public override void UpdateUI() {
         if (!IsInitialized || player == null) return;
-        healthUI?.UpdateUI();
         handUI?.UpdateUI();
     }
 
-    private void InitializeHealthUI() {
-        if (player == null) {
-            Debug.LogError("Player is null on PlayerUI");
-            return;
-        }
-
-        if (healthUI == null) {
-            healthUI = gameObject.AddComponent<HealthUI>();
-            var healthText = player.IsPlayer1() ?
-                gameReferences.GetPlayer1HealthText() :
-                gameReferences.GetPlayer2HealthText();
-
-            if (healthText == null) {
-                Debug.LogError("Health text reference missing for " +
-                    (player.IsPlayer1() ? "Player 1" : "Player 2"));
-                return;
-            }
-
-            healthUI.Initialize(healthText, player);
-        }
-    }
 
     private void InitializeHandUI() {
         if (player == null) {
@@ -81,20 +57,11 @@ public class PlayerUI : UIComponent {
         if (handUI != null) {
             handUI.Initialize(player);
         }
-        if (healthUI != null) {
-            healthUI.Initialize(
-                gameReferences.GetPlayer1HealthText(),
-                player
-            );
-        }
         IsInitialized = player != null;
         UpdateUI();
     }
 
     protected override void OnDestroy() {
-        if (healthUI != null) {
-            Destroy(healthUI);
-        }
         base.OnDestroy();
     }
 }

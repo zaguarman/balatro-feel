@@ -1,15 +1,8 @@
 using UnityEngine;
 
-public enum ContainerLayout {
-    Horizontal,
-    Vertical,
-    Grid
-}
-
 [System.Serializable]
 public class ContainerSettings {
     [Header("Layout")]
-    public ContainerLayout layoutType = ContainerLayout.Horizontal;
     public float spacing = 220f;
     public float offset = 50f;
     public Vector2 gridCellSize = new Vector2(220f, 320f);
