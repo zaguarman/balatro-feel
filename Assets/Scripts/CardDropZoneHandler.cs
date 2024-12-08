@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using UnityEngine.Events;
 
 public class CardDropZoneHandler {
     private readonly Image dropZoneImage;
@@ -11,6 +12,10 @@ public class CardDropZoneHandler {
     private readonly Color hoverColor;
     private readonly bool acceptPlayer1Cards;
     private readonly bool acceptPlayer2Cards;
+
+    public UnityEvent<CardController> OnCardDropped { get; } = new UnityEvent<CardController>();
+    public UnityEvent<PointerEventData> OnPointerEnterEvent { get; } = new UnityEvent<PointerEventData>();
+    public UnityEvent<PointerEventData> OnPointerExitEvent { get; } = new UnityEvent<PointerEventData>();
 
     public CardDropZoneHandler(
         Image dropZoneImage,
@@ -28,7 +33,6 @@ public class CardDropZoneHandler {
         this.acceptPlayer1Cards = acceptPlayer1Cards;
         this.acceptPlayer2Cards = acceptPlayer2Cards;
 
-        // Set initial color
         if (dropZoneImage != null) {
             dropZoneImage.color = defaultColor;
         }
@@ -36,13 +40,44 @@ public class CardDropZoneHandler {
 
     public virtual bool CanAcceptCard(CardController card) {
         if (card == null) return false;
-        bool canAccept = ValidateCardType(card) && (card.IsPlayer1Card() ? acceptPlayer1Cards : acceptPlayer2Cards);
+        bool canAccept = ValidateCardType(card) &&
+            (card.IsPlayer1Card() ? acceptPlayer1Cards : acceptPlayer2Cards);
         UpdateVisualFeedback(canAccept);
         return canAccept;
     }
 
     protected virtual bool ValidateCardType(CardController card) {
-        return true;
+        return card?.GetCardData() != null;
+    }
+
+    public void HandleDrop(PointerEventData eventData) {
+        var card = eventData.pointerDrag?.GetComponent<CardController>();
+        if (card != null && CanAcceptCard(card)) {
+            OnCardDropped?.Invoke(card);
+        }
+    }
+
+    public void OnPointerEnter(PointerEventData eventData) {
+        if (eventData == null || dropZoneImage == null) return;
+
+        isDraggingOverZone = true;
+        if (eventData.pointerDrag != null) {
+            var card = eventData.pointerDrag.GetComponent<CardController>();
+            if (card != null) {
+                CanAcceptCard(card);
+            }
+        } else {
+            dropZoneImage.color = hoverColor;
+        }
+        OnPointerEnterEvent?.Invoke(eventData);
+    }
+
+    public void OnPointerExit(PointerEventData eventData) {
+        if (eventData == null || dropZoneImage == null) return;
+
+        isDraggingOverZone = false;
+        UpdateVisualFeedback(false);
+        OnPointerExitEvent?.Invoke(eventData);
     }
 
     public void UpdateVisualFeedback(bool isValid) {
@@ -53,27 +88,16 @@ public class CardDropZoneHandler {
         }
     }
 
-    public void OnPointerEnter(PointerEventData eventData) {
-        isDraggingOverZone = true;
-        if (eventData.pointerDrag != null) {
-            var card = eventData.pointerDrag.GetComponent<CardController>();
-            if (card != null) {
-                CanAcceptCard(card);
-            }
-        } else {
-            dropZoneImage.color = hoverColor;
-        }
-    }
-
-    public void OnPointerExit(PointerEventData eventData) {
-        isDraggingOverZone = false;
-        UpdateVisualFeedback(false);
-    }
-
     public void ResetVisualFeedback() {
         isDraggingOverZone = false;
         if (dropZoneImage != null) {
             dropZoneImage.color = defaultColor;
         }
+    }
+
+    public void Cleanup() {
+        OnCardDropped.RemoveAllListeners();
+        OnPointerEnterEvent.RemoveAllListeners();
+        OnPointerExitEvent.RemoveAllListeners();
     }
 }

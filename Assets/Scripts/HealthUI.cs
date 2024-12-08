@@ -1,38 +1,28 @@
 using TMPro;
 
 public class HealthUI : UIComponent {
-    private TextMeshProUGUI healthText;
-    private IPlayer player;
+    private HealthHandler healthHandler;
 
     public void Initialize(TextMeshProUGUI healthText, IPlayer player) {
-        this.healthText = healthText;
-        this.player = player;
+        healthHandler = new HealthHandler(healthText, player, gameMediator);
         UpdateUI();
     }
 
     protected override void RegisterEvents() {
-        if (gameMediator != null) {
-            gameMediator.AddGameStateChangedListener(UpdateUI);
-            gameMediator.AddPlayerDamagedListener(HandlePlayerDamaged);
-        }
+        // Events are handled by HealthHandler
     }
 
     protected override void UnregisterEvents() {
-        if (gameMediator != null) {
-            gameMediator.RemoveGameStateChangedListener(UpdateUI);
-            gameMediator.RemovePlayerDamagedListener(HandlePlayerDamaged);
-        }
+        // Events are handled by HealthHandler
     }
 
     public override void UpdateUI() {
-        if (healthText != null && player != null) {
-            healthText.text = $"Health: {player.Health}";
-        }
+        healthHandler?.UpdateUI();
     }
 
-    private void HandlePlayerDamaged(IPlayer damagedPlayer, int damage) {
-        if (damagedPlayer == player) {
-            UpdateUI();
-        }
+    protected override void OnDestroy() {
+        healthHandler?.Cleanup();
+        healthHandler = null;
+        base.OnDestroy();
     }
 }

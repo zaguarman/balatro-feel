@@ -2,8 +2,8 @@ using UnityEngine;
 
 public class PlayerUI : UIComponent {
     private IPlayer player;
-    private HandUI handUI;
     private HealthUI healthUI;
+    private HandUI handUI;
 
     public void Initialize(IPlayer player) {
         this.player = player;
@@ -22,14 +22,12 @@ public class PlayerUI : UIComponent {
     protected override void RegisterEvents() {
         if (gameMediator != null) {
             gameMediator.AddGameStateChangedListener(UpdateUI);
-            gameMediator.AddPlayerDamagedListener(HandlePlayerDamaged);
         }
     }
 
     protected override void UnregisterEvents() {
         if (gameMediator != null) {
             gameMediator.RemoveGameStateChangedListener(UpdateUI);
-            gameMediator.RemovePlayerDamagedListener(HandlePlayerDamaged);
         }
     }
 
@@ -67,12 +65,9 @@ public class PlayerUI : UIComponent {
             return;
         }
 
-        handUI = gameReferences.GetPlayer1HandUI();
-        if (player.IsPlayer1()) {
-            handUI = gameReferences.GetPlayer1HandUI();
-        } else {
-            handUI = gameReferences.GetPlayer2HandUI();
-        }
+        handUI = player.IsPlayer1() ?
+            gameReferences.GetPlayer1HandUI() :
+            gameReferences.GetPlayer2HandUI();
 
         if (handUI != null) {
             handUI.Initialize(player);
@@ -87,15 +82,19 @@ public class PlayerUI : UIComponent {
             handUI.Initialize(player);
         }
         if (healthUI != null) {
-            healthUI.Initialize(gameReferences.GetPlayer1HealthText(), player);
+            healthUI.Initialize(
+                gameReferences.GetPlayer1HealthText(),
+                player
+            );
         }
         IsInitialized = player != null;
         UpdateUI();
     }
 
-    private void HandlePlayerDamaged(IPlayer damagedPlayer, int damage) {
-        if (damagedPlayer == player) {
-            healthUI?.UpdateUI();
+    protected override void OnDestroy() {
+        if (healthUI != null) {
+            Destroy(healthUI);
         }
+        base.OnDestroy();
     }
 }

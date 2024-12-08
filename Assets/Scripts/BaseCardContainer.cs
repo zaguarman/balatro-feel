@@ -2,12 +2,43 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
-public abstract class BaseCardContainer : UIComponent {
+public abstract class BaseCardContainer : UIComponent, IDropHandler, IPointerEnterHandler, IPointerExitHandler {
     [SerializeField] protected ContainerSettings settings = new ContainerSettings();
+    [SerializeField] protected bool acceptPlayer1Cards = true;
+    [SerializeField] protected bool acceptPlayer2Cards = true;
+    [SerializeField] protected Color defaultColor = new Color(0.8f, 0.8f, 0.8f, 0.5f);
+    [SerializeField] protected Color validDropColor = new Color(0f, 1f, 0f, 0.5f);
+    [SerializeField] protected Color invalidDropColor = new Color(1f, 0f, 0f, 0.5f);
+    [SerializeField] protected Color hoverColor = new Color(1f, 1f, 0f, 0.5f);
+
     protected List<CardController> cards = new List<CardController>();
     protected IPlayer player;
     protected RectTransform containerRect;
+    protected CardDropZoneHandler dropZoneHandler;
+
+    protected virtual void SetupDropZone() {
+        var dropZoneImage = GetComponent<Image>();
+        if (dropZoneImage == null) {
+            dropZoneImage = gameObject.AddComponent<Image>();
+        }
+
+        dropZoneHandler = new CardDropZoneHandler(
+            dropZoneImage,
+            defaultColor,
+            validDropColor,
+            invalidDropColor,
+            hoverColor,
+            acceptPlayer1Cards,
+            acceptPlayer2Cards
+        );
+
+        // Setup drop zone events
+        dropZoneHandler.OnCardDropped.AddListener(HandleCardDropped);
+        dropZoneHandler.OnPointerEnterEvent.AddListener(HandlePointerEnter);
+        dropZoneHandler.OnPointerExitEvent.AddListener(HandlePointerExit);
+    }
 
     public virtual void Initialize(IPlayer player) {
         this.player = player;
@@ -16,9 +47,37 @@ public abstract class BaseCardContainer : UIComponent {
             containerRect = gameObject.AddComponent<RectTransform>();
         }
 
+        SetupDropZone();
         UpdateLayout();
         IsInitialized = true;
         UpdateUI();
+    }
+
+    // IDropHandler implementation
+    public void OnDrop(PointerEventData eventData) {
+        dropZoneHandler?.HandleDrop(eventData);
+    }
+
+    // IPointerEnterHandler implementation
+    public void OnPointerEnter(PointerEventData eventData) {
+        dropZoneHandler?.OnPointerEnter(eventData);
+    }
+
+    // IPointerExitHandler implementation
+    public void OnPointerExit(PointerEventData eventData) {
+        dropZoneHandler?.OnPointerExit(eventData);
+    }
+
+    protected virtual void HandleCardDropped(CardController card) {
+        // Override in derived classes to handle specific drop behavior
+    }
+
+    protected virtual void HandlePointerEnter(PointerEventData eventData) {
+        // Override in derived classes if needed
+    }
+
+    protected virtual void HandlePointerExit(PointerEventData eventData) {
+        // Override in derived classes if needed
     }
 
     protected void UpdateLayout() {
@@ -192,6 +251,8 @@ public abstract class BaseCardContainer : UIComponent {
     }
 
     protected override void OnDestroy() {
+        dropZoneHandler?.Cleanup();
+        dropZoneHandler = null;
         foreach (var card in cards.ToList()) {
             if (card != null) {
                 CleanupCardEventHandlers(card);
