@@ -224,7 +224,7 @@ public abstract class CardContainer : UIComponent, IDropHandler, IPointerEnterHa
         return CardFactory.CreateCardController(cardData, player, transform, gameReferences);
     }
 
-    protected virtual CardController CreateCreatureCard(ICreature creature) {
+    protected CardController CreateCreatureCard(ICreature creature) {
         var cardPrefab = gameReferences.GetCardPrefab();
         if (cardPrefab == null) return null;
 
@@ -232,7 +232,7 @@ public abstract class CardContainer : UIComponent, IDropHandler, IPointerEnterHa
         var controller = cardObj.GetComponent<CardController>();
         if (controller != null) {
             var data = CreateCardData(creature);
-            controller.Setup(data, player);
+            controller.Setup(data, player, creature.TargetId);
         }
         return controller;
     }

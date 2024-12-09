@@ -36,9 +36,7 @@ public class BattlefieldUI : CardContainer {
         }
     }
 
-    // File: BattlefieldUI.cs
-
-    private void HandleCreatureCombat(CardController attackingCard) {
+    protected void HandleCreatureCombat(CardController attackingCard) {
         Debug.Log($"[Combat] Starting combat with attacker: {attackingCard.GetCardData().cardName}");
 
         var pointerEventData = new PointerEventData(EventSystem.current);
@@ -46,37 +44,22 @@ public class BattlefieldUI : CardContainer {
         var raycastResults = new List<RaycastResult>();
         EventSystem.current.RaycastAll(pointerEventData, raycastResults);
 
-        Debug.Log($"[Combat] Found {raycastResults.Count} potential targets under mouse position");
-
         foreach (var result in raycastResults) {
             var targetCardController = result.gameObject.GetComponent<CardController>();
             if (targetCardController != null && targetCardController != attackingCard) {
-                Debug.Log($"[Combat] Found target card: {targetCardController.GetCardData().cardName}");
-
                 // Ensure the target is an enemy creature
                 bool isEnemyCreature = targetCardController.IsPlayer1Card() != attackingCard.IsPlayer1Card();
-                Debug.Log($"[Combat] Is enemy creature? {isEnemyCreature}");
 
                 if (isEnemyCreature) {
-                    // Get the actual creatures from the battlefield
                     var attackerCreature = FindCreatureByTargetId(attackingCard);
                     var targetCreature = FindCreatureByTargetId(targetCardController);
 
-                    Debug.Log($"[Combat] Found attacker creature: {(attackerCreature != null ? attackerCreature.Name : "null")}");
-                    Debug.Log($"[Combat] Found target creature: {(targetCreature != null ? targetCreature.Name : "null")}");
-
                     if (attackerCreature != null && targetCreature != null) {
-                        Debug.Log($"[Combat] Creating DamageCreatureAction - Attacker: {attackerCreature.Name}, Attack: {attackerCreature.Attack}, Target: {targetCreature.Name}, Current Health: {targetCreature.Health}");
+                        Debug.Log($"[Combat] Creating DamageCreatureAction - Attacker: {attackerCreature.Name} ({attackerCreature.TargetId}), Target: {targetCreature.Name} ({targetCreature.TargetId})");
 
-                        // Create damage action for the target creature only
                         var damageAction = new DamageCreatureAction(targetCreature, attackerCreature.Attack);
                         gameManager.ActionsQueue.AddAction(damageAction);
-
-                        Debug.Log($"[Combat] Added damage action to queue. Queue size: {gameManager.ActionsQueue.GetPendingActionsCount()}");
-
                         gameMediator?.NotifyGameStateChanged();
-                    } else {
-                        Debug.LogWarning("[Combat] Failed to find either attacker or target creature in battlefield");
                     }
                     break;
                 }
@@ -90,22 +73,26 @@ public class BattlefieldUI : CardContainer {
             return null;
         }
 
-        var cardName = cardController.GetComponent<CardController>().GetCardData().cardName;
-        Debug.Log($"[FindCreature] Looking for creature with name: {cardName}");
+        string creatureId = cardController.GetLinkedCreatureId();
+        if (string.IsNullOrEmpty(creatureId)) {
+            Debug.LogWarning("[FindCreature] No linked creature ID found");
+            return null;
+        }
 
-        var player1Creature = gameManager.Player1.Battlefield.FirstOrDefault(c => c.Name == cardName);
+        // Look for the creature in both battlefields using the TargetId
+        var player1Creature = gameManager.Player1.Battlefield.Find(c => c.TargetId == creatureId);
         if (player1Creature != null) {
-            Debug.Log($"[FindCreature] Found creature in Player1's battlefield. Name: {player1Creature.Name}, Health: {player1Creature.Health}, Attack: {player1Creature.Attack}");
+            Debug.Log($"[FindCreature] Found creature in Player1's battlefield. ID: {creatureId}, Name: {player1Creature.Name}");
             return player1Creature;
         }
 
-        var player2Creature = gameManager.Player2.Battlefield.FirstOrDefault(c => c.Name == cardName);
+        var player2Creature = gameManager.Player2.Battlefield.Find(c => c.TargetId == creatureId);
         if (player2Creature != null) {
-            Debug.Log($"[FindCreature] Found creature in Player2's battlefield. Name: {player2Creature.Name}, Health: {player2Creature.Health}, Attack: {player2Creature.Attack}");
+            Debug.Log($"[FindCreature] Found creature in Player2's battlefield. ID: {creatureId}, Name: {player2Creature.Name}");
             return player2Creature;
         }
 
-        Debug.LogWarning($"[FindCreature] Could not find creature with name {cardName} in either battlefield");
+        Debug.LogWarning($"[FindCreature] Could not find creature with ID {creatureId} in either battlefield");
         return null;
     }
 
@@ -126,9 +113,9 @@ public class BattlefieldUI : CardContainer {
     private void OnCreatureDied(ICreature creature) {
         if (!IsInitialized) return;
 
-        Debug.Log($"[BattlefieldUI] Handling creature death: {creature.Name}");
+        Debug.Log($"[BattlefieldUI] Handling creature death: {creature.Name} (ID: {creature.TargetId})");
         if (creatureCards.TryGetValue(creature.TargetId, out CardController card)) {
-            Debug.Log($"[BattlefieldUI] Removing card for dead creature: {creature.Name}");
+            Debug.Log($"[BattlefieldUI] Removing card for dead creature: {creature.Name} (ID: {creature.TargetId})");
             RemoveCard(card);
             if (card != null) {
                 Destroy(card.gameObject);
@@ -136,7 +123,6 @@ public class BattlefieldUI : CardContainer {
             creatureCards.Remove(creature.TargetId);
         }
 
-        // Force layout update
         UpdateLayout();
     }
 
@@ -145,7 +131,6 @@ public class BattlefieldUI : CardContainer {
             Debug.LogWarning("[BattlefieldUI] UpdateUI called but not initialized or player is null");
             return;
         }
-        Debug.Log($"[BattlefieldUI] Updating UI for {(player.IsPlayer1() ? "Player 1" : "Player 2")}'s battlefield");
 
         // Update existing cards first
         foreach (var creatureCard in creatureCards) {
@@ -154,7 +139,7 @@ public class BattlefieldUI : CardContainer {
             }
         }
 
-        // Then handle any changes to the battlefield
+        // Handle changes to the battlefield
         var currentCreatureIds = new HashSet<string>(player.Battlefield.Select(c => c.TargetId));
         var cardsToRemove = creatureCards.Keys.Where(id => !currentCreatureIds.Contains(id)).ToList();
 

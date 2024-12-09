@@ -5,7 +5,6 @@ using UnityEngine.EventSystems;
 using TMPro;
 using System;
 using DG.Tweening;
-using System.Linq;
 
 [Serializable]
 public class CardUnityEvent : UnityEvent<CardController> { }
@@ -25,6 +24,7 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
     private CardData cardData;
     private IPlayer player;
     private ICreature linkedCreature;
+    private string linkedCreatureId; // Store the TargetId of the linked creature
 
     public CardUnityEvent OnBeginDragEvent = new CardUnityEvent();
     public CardUnityEvent OnEndDragEvent = new CardUnityEvent();
@@ -43,20 +43,20 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
         canvasGroup = GetComponent<CanvasGroup>();
         if (canvasGroup == null) {
             canvasGroup = gameObject.AddComponent<CanvasGroup>();
-            Debug.Log("[CardController] Added CanvasGroup component");
         }
         cardImage = GetComponent<Image>();
     }
 
-    public void Setup(CardData data, IPlayer owner) {
-        Debug.Log($"[CardController] Setting up card: {data.cardName} for {(owner.IsPlayer1() ? "Player 1" : "Player 2")}");
+    public void Setup(CardData data, IPlayer owner, string creatureId = null) {
         cardData = data;
         player = owner;
+        linkedCreatureId = creatureId;
 
         if (cardData is CreatureData) {
             linkedCreature = FindLinkedCreature();
             if (linkedCreature != null) {
-                Debug.Log($"[CardController] Linked to creature: {linkedCreature.Name} with health: {linkedCreature.Health}");
+                linkedCreatureId = linkedCreature.TargetId;
+                Debug.Log($"[CardController] Linked to creature: {linkedCreature.Name} with ID: {linkedCreatureId}");
             }
         }
 
@@ -65,8 +65,17 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
 
     private ICreature FindLinkedCreature() {
         if (cardData == null || player == null) return null;
-        return player.Battlefield.FirstOrDefault(c => c.Name == cardData.cardName);
+
+        // If we have a linkedCreatureId, use it to find the creature
+        if (!string.IsNullOrEmpty(linkedCreatureId)) {
+            return player.Battlefield.Find(c => c.TargetId == linkedCreatureId) ??
+                   player.Opponent.Battlefield.Find(c => c.TargetId == linkedCreatureId);
+        }
+
+        return null;
     }
+
+    public string GetLinkedCreatureId() => linkedCreatureId;
 
     protected override void RegisterEvents() {
         if (gameMediator != null) {
@@ -122,7 +131,7 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
                     Debug.Log($"[CardController] Creature {linkedCreature.Name} is dead, should be removed");
                     statsText.text = $"{creatureData.attack}/{creatureData.health}";
                 } else {
-                    Debug.Log($"[CardController] Updating stats for {linkedCreature.Name}: {linkedCreature.Attack}/{linkedCreature.Health}");
+                    //Debug.Log($"[CardController] Updating stats for {linkedCreature.Name}: {linkedCreature.Attack}/{linkedCreature.Health}");
                     statsText.text = $"{linkedCreature.Attack}/{linkedCreature.Health}";
                 }
             } else {
@@ -155,7 +164,7 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
         transform.SetAsLastSibling();
 
         OnBeginDragEvent.Invoke(this);
-        Debug.Log($"[CardController] Started dragging {cardData.cardName}");
+        //Debug.Log($"[CardController] Started dragging {cardData.cardName}");
     }
 
     public void OnDrag(PointerEventData eventData) {
@@ -179,7 +188,7 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
         OnEndDragEvent.Invoke(this);
         OnCardDropped.Invoke(this);
 
-        Debug.Log($"[CardController] Ended dragging {cardData.cardName}");
+        //Debug.Log($"[CardController] Ended dragging {cardData.cardName}");
         gameMediator?.NotifyGameStateChanged();
     }
 

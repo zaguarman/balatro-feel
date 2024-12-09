@@ -175,7 +175,7 @@ public class GameMediator : Singleton<GameMediator> {
         if (owner == null) throw new System.ArgumentNullException(nameof(owner));
 
         onCreatureSummoned.Invoke(creature, owner);
-        Debug.Log($"Creature summoned notification: {creature.Name} by {(owner.IsPlayer1() ? "Player 1" : "Player 2")}");
+        //Debug.Log($"Creature summoned notification: {creature.Name} by {(owner.IsPlayer1() ? "Player 1" : "Player 2")}");
         NotifyGameStateChanged();
     }
 

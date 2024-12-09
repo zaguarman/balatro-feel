@@ -51,7 +51,7 @@ public class Player : Entity, IPlayer {
     public void AddToBattlefield(ICreature creature) {
         if (creature == null) return;
         Battlefield.Add(creature);
-        Debug.Log($"[Player] Added creature to battlefield: {creature.Name}");
+        //Debug.Log($"[Player] Added creature to battlefield: {creature.Name}");
         gameMediator?.NotifyGameStateChanged();
     }
 
