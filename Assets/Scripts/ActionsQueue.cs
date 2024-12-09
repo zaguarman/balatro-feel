@@ -5,6 +5,7 @@ public class ActionsQueue {
     private Queue<IGameAction> actionQueue = new Queue<IGameAction>();
     private int maxIterationDepth = 3;
     private int currentIterationDepth = 0;
+
     public void AddAction(IGameAction action) {
         if (currentIterationDepth < maxIterationDepth) {
             actionQueue.Enqueue(action);
@@ -24,5 +25,10 @@ public class ActionsQueue {
 
     public int GetPendingActionsCount() {
         return actionQueue.Count;
+    }
+
+    // New method to expose pending actions
+    public IReadOnlyCollection<IGameAction> GetPendingActions() {
+        return actionQueue.ToArray();
     }
 }

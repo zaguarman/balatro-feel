@@ -43,15 +43,29 @@ public class DamagePlayerAction : IGameAction {
 public class DamageCreatureAction : IGameAction {
     private ICreature target;
     private int damage;
+    private ICreature attacker;
 
-    public DamageCreatureAction(ICreature target, int damage) {
+    public DamageCreatureAction(ICreature target, int damage, ICreature attacker = null) {
         this.target = target;
         this.damage = damage;
-        Debug.Log($"Created DamageCreatureAction: {damage} damage to {target.Name}");
+        this.attacker = attacker;
+        Debug.Log($"[DamageCreatureAction] Created with Target: {target?.Name}, Damage: {damage}, Attacker: {attacker?.Name}");
     }
 
     public void Execute() {
+        Debug.Log($"[DamageCreatureAction] Executing - Target: {target?.Name}, Damage: {damage}, Attacker: {attacker?.Name}");
         target.TakeDamage(damage);
-        Debug.Log($"Executed DamageCreatureAction: {damage} damage to {target.Name}");
     }
+
+    public ICreature GetTarget() {
+        Debug.Log($"[DamageCreatureAction] Getting target: {target?.Name}");
+        return target;
+    }
+
+    public ICreature GetAttacker() {
+        Debug.Log($"[DamageCreatureAction] Getting attacker: {attacker?.Name}");
+        return attacker;
+    }
+
+    public int GetDamage() => damage;
 }
