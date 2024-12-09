@@ -128,37 +128,35 @@ public class BattlefieldUI : CardContainer {
         if (creature == null) return null;
         Debug.Log($"[FindCardController] Looking for creature with TargetId: {creature.TargetId}");
 
-        // Look in all creature cards
-        foreach (var cardEntry in creatureCards) {
-            var card = cardEntry.Value;
-            if (card != null) {
-                var linkedCreature = card.GetLinkedCreature();
-                if (linkedCreature != null && linkedCreature.TargetId == creature.TargetId) {
-                    Debug.Log($"[FindCardController] Found matching card for creature {creature.Name}");
-                    return card;
-                }
-            }
+        // First look in current battlefield
+        var cardInCurrentBattlefield = creatureCards.Values.FirstOrDefault(card => {
+            var linkedCreature = card.GetLinkedCreature();
+            return linkedCreature != null && linkedCreature.TargetId == creature.TargetId;
+        });
+
+        if (cardInCurrentBattlefield != null) {
+            Debug.Log($"[FindCardController] Found creature in current battlefield with TargetId: {creature.TargetId}");
+            return cardInCurrentBattlefield;
         }
 
-        // If not found in this battlefield, try the opponent's battlefield through GameManager
+        // If not found, look in opponent's battlefield
         var otherBattlefield = player.IsPlayer1() ?
             gameReferences.GetPlayer2BattlefieldUI() :
             gameReferences.GetPlayer1BattlefieldUI();
 
         if (otherBattlefield != null) {
-            foreach (var cardEntry in otherBattlefield.creatureCards) {
-                var card = cardEntry.Value;
-                if (card != null) {
-                    var linkedCreature = card.GetLinkedCreature();
-                    if (linkedCreature != null && linkedCreature.TargetId == creature.TargetId) {
-                        Debug.Log($"[FindCardController] Found matching card in opponent's battlefield for creature {creature.Name}");
-                        return card;
-                    }
-                }
+            var cardInOtherBattlefield = otherBattlefield.creatureCards.Values.FirstOrDefault(card => {
+                var linkedCreature = card.GetLinkedCreature();
+                return linkedCreature != null && linkedCreature.TargetId == creature.TargetId;
+            });
+
+            if (cardInOtherBattlefield != null) {
+                Debug.Log($"[FindCardController] Found creature in opponent battlefield with TargetId: {creature.TargetId}");
+                return cardInOtherBattlefield;
             }
         }
 
-        Debug.LogWarning($"[FindCardController] Could not find card controller for creature {creature.Name}");
+        Debug.LogWarning($"[FindCardController] Could not find card controller for creature with TargetId: {creature.TargetId}");
         return null;
     }
 
@@ -284,75 +282,75 @@ public class BattlefieldUI : CardContainer {
     }
 
     private void OnCreatureDied(ICreature creature) {
-        if (!IsInitialized) return;
+    if (!IsInitialized) return;
 
-        Debug.Log($"[BattlefieldUI] Handling creature death: {creature.Name}");
-        if (creatureCards.TryGetValue(creature.TargetId, out CardController card)) {
-            Debug.Log($"[BattlefieldUI] Removing card for dead creature: {creature.Name}");
-            RemoveCard(card);
-            if (card != null) {
-                Destroy(card.gameObject);
-            }
-            creatureCards.Remove(creature.TargetId);
+    Debug.Log($"[BattlefieldUI] Handling creature death: {creature.Name}");
+    if (creatureCards.TryGetValue(creature.TargetId, out CardController card)) {
+        Debug.Log($"[BattlefieldUI] Removing card for dead creature: {creature.Name}");
+        RemoveCard(card);
+        if (card != null) {
+            Destroy(card.gameObject);
         }
-
-        // Force layout update
-        UpdateLayout();
+        creatureCards.Remove(creature.TargetId);
     }
 
-    // Dragging functionality
-    protected override void OnCardBeginDrag(CardController card) {
-        if (card == null) return;
+    // Force layout update
+    UpdateLayout();
+}
 
-        attackingCard = card;
-        Vector3 startPos = card.transform.position;
-        startPos.z = 0;
-        dragArrowIndicator.Show(startPos, startPos);
-        card.transform.SetAsLastSibling();
+// Dragging functionality
+protected override void OnCardBeginDrag(CardController card) {
+    if (card == null) return;
 
-        Debug.Log($"Started dragging card at position: {startPos}");
+    attackingCard = card;
+    Vector3 startPos = card.transform.position;
+    startPos.z = 0;
+    dragArrowIndicator.Show(startPos, startPos);
+    card.transform.SetAsLastSibling();
+
+    Debug.Log($"Started dragging card at position: {startPos}");
+}
+
+public void OnCardDrag(PointerEventData eventData) {
+    if (dragArrowIndicator != null && dragArrowIndicator.IsVisible()) {
+        // Convert screen position to world position
+        Vector3 worldPos = Camera.main.ScreenToWorldPoint(eventData.position);
+        worldPos.z = 0; // Keep it on the same Z plane as the cards
+        dragArrowIndicator.UpdateEndPosition(worldPos);
+
+        Debug.Log($"Dragging arrow to position: {worldPos}");
+    }
+}
+
+protected override void OnCardEndDrag(CardController card) {
+    if (dragArrowIndicator != null) {
+        dragArrowIndicator.Hide(); // Only hide the drag indicator
     }
 
-    public void OnCardDrag(PointerEventData eventData) {
-        if (dragArrowIndicator != null && dragArrowIndicator.IsVisible()) {
-            // Convert screen position to world position
-            Vector3 worldPos = Camera.main.ScreenToWorldPoint(eventData.position);
-            worldPos.z = 0; // Keep it on the same Z plane as the cards
-            dragArrowIndicator.UpdateEndPosition(worldPos);
+    // Don't need to clear activeArrows here since they're managed by UpdateArrowsFromActionsQueue
+    attackingCard = null;
+    UpdateLayout();
 
-            Debug.Log($"Dragging arrow to position: {worldPos}");
+    // Update the arrows based on the current state of the ActionsQueue
+    UpdateArrowsFromActionsQueue();
+}
+
+// Empty implementations - no hover effects
+protected override void OnCardHoverEnter(CardController card) { }
+protected override void OnCardHoverExit(CardController card) { }
+
+protected override void OnDestroy() {
+    foreach (var arrow in activeArrows.Values) {
+        if (arrow != null) {
+            Destroy(arrow.gameObject);
         }
     }
+    activeArrows.Clear();
 
-    protected override void OnCardEndDrag(CardController card) {
-        if (dragArrowIndicator != null) {
-            dragArrowIndicator.Hide(); // Only hide the drag indicator
-        }
-
-        // Don't need to clear activeArrows here since they're managed by UpdateArrowsFromActionsQueue
-        attackingCard = null;
-        UpdateLayout();
-
-        // Update the arrows based on the current state of the ActionsQueue
-        UpdateArrowsFromActionsQueue();
+    if (dragArrowIndicator != null) {
+        Destroy(dragArrowIndicator.gameObject);
     }
 
-    // Empty implementations - no hover effects
-    protected override void OnCardHoverEnter(CardController card) { }
-    protected override void OnCardHoverExit(CardController card) { }
-
-    protected override void OnDestroy() {
-        foreach (var arrow in activeArrows.Values) {
-            if (arrow != null) {
-                Destroy(arrow.gameObject);
-            }
-        }
-        activeArrows.Clear();
-
-        if (dragArrowIndicator != null) {
-            Destroy(dragArrowIndicator.gameObject);
-        }
-
-        base.OnDestroy();
-    }
+    base.OnDestroy();
+}
 }

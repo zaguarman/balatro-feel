@@ -41,29 +41,31 @@ public class DamagePlayerAction : IGameAction {
 }
 
 public class DamageCreatureAction : IGameAction {
-    private ICreature target;
-    private int damage;
-    private ICreature attacker;
+    private readonly ICreature target;
+    private readonly int damage;
+    private readonly ICreature attacker;
 
     public DamageCreatureAction(ICreature target, int damage, ICreature attacker = null) {
         this.target = target;
         this.damage = damage;
         this.attacker = attacker;
-        Debug.Log($"[DamageCreatureAction] Created with Target: {target?.Name}, Damage: {damage}, Attacker: {attacker?.Name}");
+        Debug.Log($"[DamageCreatureAction] Created - Target: {target?.Name} (TargetId: {target?.TargetId}), " +
+                 $"Damage: {damage}, Attacker: {attacker?.Name} (TargetId: {attacker?.TargetId})");
     }
 
     public void Execute() {
-        Debug.Log($"[DamageCreatureAction] Executing - Target: {target?.Name}, Damage: {damage}, Attacker: {attacker?.Name}");
-        target.TakeDamage(damage);
+        Debug.Log($"[DamageCreatureAction] Executing - Target: {target?.Name} (TargetId: {target?.TargetId}), " +
+                 $"Damage: {damage}, Attacker: {attacker?.Name} (TargetId: {attacker?.TargetId})");
+        target?.TakeDamage(damage);
     }
 
     public ICreature GetTarget() {
-        Debug.Log($"[DamageCreatureAction] Getting target: {target?.Name}");
+        Debug.Log($"[DamageCreatureAction] Getting target: {target?.Name} (TargetId: {target?.TargetId})");
         return target;
     }
 
     public ICreature GetAttacker() {
-        Debug.Log($"[DamageCreatureAction] Getting attacker: {attacker?.Name}");
+        Debug.Log($"[DamageCreatureAction] Getting attacker: {attacker?.Name} (TargetId: {attacker?.TargetId})");
         return attacker;
     }
 
