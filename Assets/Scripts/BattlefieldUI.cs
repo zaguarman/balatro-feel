@@ -105,22 +105,27 @@ public class BattlefieldUI : CardContainer {
             return null;
         }
 
-        var cardName = cardController.GetComponent<CardController>().GetCardData().cardName;
-        Debug.Log($"[FindCreature] Looking for creature with name: {cardName}");
+        string targetId = cardController.GetLinkedCreatureId();
+        if (string.IsNullOrEmpty(targetId)) {
+            Debug.LogWarning("[FindCreature] No linked creature ID found");
+            return null;
+        }
 
-        var player1Creature = gameManager.Player1.Battlefield.FirstOrDefault(c => c.Name == cardName);
+        Debug.Log($"[FindCreature] Looking for creature with TargetId: {targetId}");
+
+        var player1Creature = gameManager.Player1.Battlefield.FirstOrDefault(c => c.TargetId == targetId);
         if (player1Creature != null) {
-            Debug.Log($"[FindCreature] Found creature in Player1's battlefield. Name: {player1Creature.Name}, Health: {player1Creature.Health}, Attack: {player1Creature.Attack}");
+            Debug.Log($"[FindCreature] Found creature in Player1's battlefield. TargetId: {player1Creature.TargetId}, Name: {player1Creature.Name}, Health: {player1Creature.Health}, Attack: {player1Creature.Attack}");
             return player1Creature;
         }
 
-        var player2Creature = gameManager.Player2.Battlefield.FirstOrDefault(c => c.Name == cardName);
+        var player2Creature = gameManager.Player2.Battlefield.FirstOrDefault(c => c.TargetId == targetId);
         if (player2Creature != null) {
-            Debug.Log($"[FindCreature] Found creature in Player2's battlefield. Name: {player2Creature.Name}, Health: {player2Creature.Health}, Attack: {player2Creature.Attack}");
+            Debug.Log($"[FindCreature] Found creature in Player2's battlefield. TargetId: {player2Creature.TargetId}, Name: {player2Creature.Name}, Health: {player2Creature.Health}, Attack: {player2Creature.Attack}");
             return player2Creature;
         }
 
-        Debug.LogWarning($"[FindCreature] Could not find creature with name {cardName} in either battlefield");
+        Debug.LogWarning($"[FindCreature] Could not find creature with TargetId {targetId} in either battlefield");
         return null;
     }
 

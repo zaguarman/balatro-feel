@@ -1,3 +1,4 @@
+using System.Linq;
 using UnityEngine;
 
 public class GameManager : InitializableComponent {
@@ -20,6 +21,7 @@ public class GameManager : InitializableComponent {
     private GameMediator gameMediator;
     private GameReferences gameReferences;
     private ICardDealingService cardDealingService;
+    private System.Random random = new System.Random();
 
     protected override void Awake() {
         base.Awake();
@@ -53,6 +55,7 @@ public class GameManager : InitializableComponent {
         ActionsQueue = new ActionsQueue();
         InitializePlayers();
         InitializeCards();
+        PlaceInitialCreatures();
         SetupInitialGameState();
         SetupResolveButton();
     }
@@ -71,6 +74,34 @@ public class GameManager : InitializableComponent {
         var testSetup = gameObject.AddComponent<TestSetup>();
         var testCards = testSetup.CreateTestCards();
         cardDealingService.InitializeDecks(testCards, testCards);
+    }
+
+    private void PlaceInitialCreatures() {
+        var testSetup = gameObject.AddComponent<TestSetup>();
+        var availableCreatures = testSetup.CreateTestCards()
+            .Where(card => card is CreatureData)
+            .Cast<CreatureData>()
+            .ToList();
+
+        // Place 2 random creatures for Player 1
+        for (int i = 0; i < 2; i++) {
+            int randomIndex = random.Next(availableCreatures.Count);
+            var creatureData = availableCreatures[randomIndex];
+            var creature = new Creature(creatureData.cardName, creatureData.attack, creatureData.health, Player1);
+            creature.SetOwner(Player1);  // Explicitly set the owner
+            Player1.AddToBattlefield(creature);
+            Debug.Log($"Added {creature.Name} to Player 1's battlefield with proper owner reference");
+        }
+
+        // Place 2 random creatures for Player 2
+        for (int i = 0; i < 2; i++) {
+            int randomIndex = random.Next(availableCreatures.Count);
+            var creatureData = availableCreatures[randomIndex];
+            var creature = new Creature(creatureData.cardName, creatureData.attack, creatureData.health, Player2);
+            creature.SetOwner(Player2);  // Explicitly set the owner
+            Player2.AddToBattlefield(creature);
+            Debug.Log($"Added {creature.Name} to Player 2's battlefield with proper owner reference");
+        }
     }
 
     private void SetupInitialGameState() {
@@ -92,7 +123,6 @@ public class GameManager : InitializableComponent {
             gameMediator?.NotifyGameStateChanged();
         }
     }
-
 
     public void PlayCard(CardData cardData, IPlayer player) {
         if (!IsInitialized) {

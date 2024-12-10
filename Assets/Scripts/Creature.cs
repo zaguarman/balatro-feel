@@ -1,5 +1,4 @@
 
-using System;
 using UnityEngine;
 
 public interface ICreature : ICard {
@@ -14,9 +13,10 @@ public class Creature : Card, ICreature {
     private bool isDead = false;
     private IPlayer owner;
 
-    public Creature(string name, int attack, int health) : base(name) {
+    public Creature(string name, int attack, int health, IPlayer owner = null) : base(name) {
         Attack = attack;
         Health = health;
+        this.owner = owner;
     }
 
     public override void Play(IPlayer owner, ActionsQueue context) {
@@ -24,10 +24,14 @@ public class Creature : Card, ICreature {
         context.AddAction(new SummonCreatureAction(this, owner));
     }
 
+    public void SetOwner(IPlayer newOwner) {
+        this.owner = newOwner;
+    }
+
     public void TakeDamage(int damage) {
         if (isDead) return; // Prevent multiple death triggers
 
-        Health = Math.Max(0, Health - damage);
+        Health = System.Math.Max(0, Health - damage);
         Debug.Log($"[Creature] {Name} took {damage} damage, health now: {Health}");
 
         var gameMediator = GameMediator.Instance;
@@ -41,6 +45,9 @@ public class Creature : Card, ICreature {
                 // Remove from owner's battlefield
                 if (owner != null) {
                     owner.RemoveFromBattlefield(this);
+                    Debug.Log($"[Creature] Successfully removed {Name} from {(owner.IsPlayer1() ? "Player 1's" : "Player 2's")} battlefield");
+                } else {
+                    Debug.LogError($"[Creature] Cannot remove {Name} from battlefield - owner is null!");
                 }
 
                 gameMediator.NotifyCreatureDied(this);
