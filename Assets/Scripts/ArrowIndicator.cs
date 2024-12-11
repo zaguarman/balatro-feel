@@ -11,7 +11,7 @@ public class ArrowIndicator : MonoBehaviour {
     private Vector3 endPosition;
     private float arrowWidth = 0.2f;
     private float headLength = 0.5f;
-    private float headAngle = 30f;
+    private float headAngle = 25f; // Reduced angle for pointier shape
 
     private void Awake() {
         SetupArrow();
@@ -24,7 +24,7 @@ public class ArrowIndicator : MonoBehaviour {
         mainLine.startWidth = arrowWidth;
         mainLine.endWidth = arrowWidth;
 
-        // Create separate GameObjects for the arrowheads to avoid component conflicts
+        // Create separate GameObjects for the arrowheads
         headObject1 = new GameObject("ArrowHead1");
         headObject2 = new GameObject("ArrowHead2");
         headObject1.transform.SetParent(transform);
@@ -52,8 +52,8 @@ public class ArrowIndicator : MonoBehaviour {
 
     private void SetupHeadLine(LineRenderer line) {
         line.positionCount = 2;
-        line.startWidth = arrowWidth;
-        line.endWidth = 0; // Make the head pointy
+        line.startWidth = arrowWidth * 1.2f; // Slightly wider at base
+        line.endWidth = 0f; // Sharp point at tip
     }
 
     private void SetupLineMaterial(LineRenderer line, Color color) {
@@ -92,21 +92,24 @@ public class ArrowIndicator : MonoBehaviour {
         Vector3 direction = (endPosition - startPosition).normalized;
         Vector3 right = Quaternion.Euler(0, 0, 90) * direction;
 
+        // Calculate points for the arrowhead
         Vector3 arrowTip = endPosition;
-        Vector3 arrowBase = arrowTip - direction * headLength;
-
-        // Calculate the two points of the arrowhead
-        Vector3 headPoint1 = arrowBase + right * headLength * Mathf.Tan(headAngle * Mathf.Deg2Rad);
-        Vector3 headPoint2 = arrowBase - right * headLength * Mathf.Tan(headAngle * Mathf.Deg2Rad);
+        Vector3 arrowBase = arrowTip - (direction * headLength);
+        float baseWidth = headLength * Mathf.Tan(headAngle * Mathf.Deg2Rad);
+        Vector3 arrowBaseLeft = arrowBase + (right * baseWidth);
+        Vector3 arrowBaseRight = arrowBase - (right * baseWidth);
 
         // Set the positions for the arrowhead lines
-        headLine1.SetPosition(0, arrowTip);
-        headLine1.SetPosition(1, headPoint1);
+        headLine1.SetPosition(0, arrowBaseLeft);
+        headLine1.SetPosition(1, arrowTip);
         headLine1.enabled = true;
 
-        headLine2.SetPosition(0, arrowTip);
-        headLine2.SetPosition(1, headPoint2);
+        headLine2.SetPosition(0, arrowBaseRight);
+        headLine2.SetPosition(1, arrowTip);
         headLine2.enabled = true;
+
+        // Update main line to connect with arrowhead base
+        mainLine.SetPosition(1, arrowBase);
     }
 
     public void Hide() {
