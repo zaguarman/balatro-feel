@@ -6,23 +6,39 @@ using static DebugLogger;
 
 public class BattlefieldCombatHandler {
     private readonly GameManager gameManager;
+    private HashSet<string> attackingCreatureIds = new HashSet<string>();
 
     public BattlefieldCombatHandler(GameManager gameManager) {
         this.gameManager = gameManager;
     }
 
     public void HandleCreatureCombat(CardController attackingCard) {
-        var targetCard = FindTargetCard(attackingCard);
-        
-        if (targetCard == null) {
-            LogWarning("Target card is null", LogTag.Creatures | LogTag.Actions);
+        var attackerCreature = FindCreatureByTargetId(attackingCard);
+
+        if (attackerCreature == null) {
+            LogWarning("Attacker creature is null", LogTag.Creatures | LogTag.Actions);
+            return;
         }
 
+        // Check if creature has already attacked
+        if (attackingCreatureIds.Contains(attackerCreature.TargetId)) {
+            LogWarning($"Creature {attackerCreature.Name} has already attacked this turn",
+                LogTag.Creatures | LogTag.Combat);
+            return;
+        }
 
-        var attackerCreature = FindCreatureByTargetId(attackingCard);
+        var targetCard = FindTargetCard(attackingCard);
+
+        if (targetCard == null) {
+            LogWarning("Target card is null", LogTag.Creatures | LogTag.Actions);
+            return;
+        }
+
         var targetCreature = FindCreatureByTargetId(targetCard);
 
-        if (attackerCreature != null && targetCreature != null) {
+        if (targetCreature != null) {
+            // Mark creature as having attacked
+            attackingCreatureIds.Add(attackerCreature.TargetId);
             CreateAndQueueDamageAction(attackerCreature, targetCreature);
         }
     }
@@ -62,10 +78,19 @@ public class BattlefieldCombatHandler {
     }
 
     private void CreateAndQueueDamageAction(ICreature attacker, ICreature target) {
-        DebugLogger.Log($"Creating DamageCreatureAction - Attacker: {attacker.Name}, Target: {target.Name}",
+        Log($"Creating DamageCreatureAction - Attacker: {attacker.Name}, Target: {target.Name}",
             LogTag.Actions | LogTag.Creatures);
 
         var damageAction = new DamageCreatureAction(target, attacker.Attack, attacker);
         gameManager.ActionsQueue.AddAction(damageAction);
+    }
+
+    public void ResetAttackingCreatures() {
+        attackingCreatureIds.Clear();
+        Log("Reset attacking creatures tracking", LogTag.Creatures | LogTag.Combat);
+    }
+
+    public bool HasCreatureAttacked(string creatureId) {
+        return attackingCreatureIds.Contains(creatureId);
     }
 }

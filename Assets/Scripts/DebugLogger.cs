@@ -5,6 +5,21 @@ using System;
 using UnityEngine;
 
 public static class DebugLogger {
+
+    static DebugLogger() {
+        _enabledTags = LogTag.UI | LogTag.Cards | LogTag.Actions | LogTag.Effects;
+        _tagColors = new Dictionary<LogTag, string>(_defaultTagColors);
+        InitializeStackTraceLogTypes();
+    }
+
+    private static void InitializeStackTraceLogTypes() {
+        Application.SetStackTraceLogType(LogType.Log, StackTraceLogType.None);
+        Application.SetStackTraceLogType(LogType.Warning, StackTraceLogType.None);
+        Application.SetStackTraceLogType(LogType.Error, StackTraceLogType.Full);
+        Application.SetStackTraceLogType(LogType.Exception, StackTraceLogType.Full);
+        Application.SetStackTraceLogType(LogType.Assert, StackTraceLogType.Full);
+    }
+
     [Flags]
     public enum LogTag {
         None = 0,
@@ -38,11 +53,6 @@ public static class DebugLogger {
     private static LogTag _enabledTags;
     private static Dictionary<LogTag, string> _tagColors;
 
-    static DebugLogger() {
-        _enabledTags = LogTag.UI | LogTag.Cards;
-        _tagColors = new Dictionary<LogTag, string>(_defaultTagColors);
-    }
-
     public static void EnableTags(LogTag tags) {
         _enabledTags |= tags;
     }
@@ -55,15 +65,13 @@ public static class DebugLogger {
         _tagColors[tag] = hexColor;
     }
 
+    #region Log Methods
     public static void Log(
         object message,
         LogTag tags = LogTag.All,
         [CallerMemberName] string memberName = "",
         [CallerFilePath] string sourceFilePath = "") {
-        if (!ShouldLog(tags)) return;
-
-        string formattedMessage = FormatMessage(message, tags, memberName, sourceFilePath);
-        Debug.Log(formattedMessage);
+        LogWithType(LogType.Log, message, tags, memberName, sourceFilePath);
     }
 
     public static void LogWarning(
@@ -71,10 +79,7 @@ public static class DebugLogger {
         LogTag tags,
         [CallerMemberName] string memberName = "",
         [CallerFilePath] string sourceFilePath = "") {
-        if (!ShouldLog(tags)) return;
-
-        string formattedMessage = FormatMessage(message, tags, memberName, sourceFilePath);
-        Debug.LogWarning(formattedMessage);
+        LogWithType(LogType.Warning, message, tags, memberName, sourceFilePath);
     }
 
     public static void LogError(
@@ -82,11 +87,32 @@ public static class DebugLogger {
         LogTag tags,
         [CallerMemberName] string memberName = "",
         [CallerFilePath] string sourceFilePath = "") {
+        LogWithType(LogType.Error, message, tags, memberName, sourceFilePath);
+    }
+
+    private static void LogWithType(
+        LogType logType,
+        object message,
+        LogTag tags,
+        string memberName,
+        string sourceFilePath) {
         if (!ShouldLog(tags)) return;
 
         string formattedMessage = FormatMessage(message, tags, memberName, sourceFilePath);
-        Debug.LogError(formattedMessage);
+
+        switch (logType) {
+            case LogType.Log:
+                Debug.Log(formattedMessage);
+                break;
+            case LogType.Warning:
+                Debug.LogWarning(formattedMessage);
+                break;
+            case LogType.Error:
+                Debug.LogError(formattedMessage);
+                break;
+        }
     }
+    #endregion
 
     private static bool ShouldLog(LogTag tags) {
         return (_enabledTags & tags) != 0;

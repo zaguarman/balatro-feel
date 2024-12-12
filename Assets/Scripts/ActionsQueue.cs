@@ -6,6 +6,9 @@ public class ActionsQueue {
     private int maxIterationDepth = 3;
     private int currentIterationDepth = 0;
 
+    // Add event for action resolution
+    public event System.Action OnActionsResolved;
+
     public void AddAction(IGameAction action) {
         if (currentIterationDepth < maxIterationDepth) {
             actionQueue.Enqueue(action);
@@ -23,6 +26,9 @@ public class ActionsQueue {
         }
 
         currentIterationDepth--;
+
+        // Notify listeners that actions have been resolved
+        OnActionsResolved?.Invoke();
     }
 
     public int GetPendingActionsCount() {
