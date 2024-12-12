@@ -1,4 +1,4 @@
-using static Enums;
+using static DebugLogger;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
@@ -10,14 +10,14 @@ public static class CardFactory {
     public static ICard CreateCard(CardData cardData) {
         if (cardData == null) return null;
 
-        DebugLogger.Log($"Creating card: {cardData.cardName} with {cardData.effects.Count} effects", LogTag.Cards | LogTag.Initialization);
+        Log($"Creating card: {cardData.cardName} with {cardData.effects.Count} effects", LogTag.Cards | LogTag.Initialization);
 
         ICard card = null;
         switch (cardData) {
             case CreatureData creatureData:
                 var creature = new Creature(creatureData.cardName, creatureData.attack, creatureData.health);
                 foreach (var effect in cardData.effects) {
-                    DebugLogger.Log($"Adding effect - Trigger: {effect.trigger}, Actions: {effect.actions.Count}", LogTag.Cards | LogTag.Effects);
+                    Log($"Adding effect - Trigger: {effect.trigger}, Actions: {effect.actions.Count}", LogTag.Cards | LogTag.Effects);
                     var newEffect = new CardEffect {
                         effectType = effect.effectType,
                         trigger = effect.trigger,
@@ -39,7 +39,7 @@ public static class CardFactory {
         }
 
         if (card != null) {
-            DebugLogger.Log($"Successfully created {card.Name} with {card.Effects.Count} effects", LogTag.Cards | LogTag.Initialization);
+            Log($"Successfully created {card.Name} with {card.Effects.Count} effects", LogTag.Cards | LogTag.Initialization);
         }
 
         return card;
@@ -48,7 +48,7 @@ public static class CardFactory {
     public static CardController CreateCardController(ICard cardData, IPlayer owner, Transform parent, GameReferences gameReferences) {
         var cardPrefab = gameReferences.GetCardPrefab();
         if (cardPrefab == null) {
-            DebugLogger.LogError("Failed to get card prefab from game references", LogTag.Cards | LogTag.Initialization);
+            LogError("Failed to get card prefab from game references", LogTag.Cards | LogTag.Initialization);
             return null;
         }
 
@@ -57,7 +57,7 @@ public static class CardFactory {
         if (controller != null) {
             var data = CreateCardDataFromCard(cardData);
             controller.Setup(data, owner);
-            DebugLogger.Log($"Created card controller for {cardData.Name}", LogTag.Cards | LogTag.Initialization);
+            Log($"Created card controller for {cardData.Name}", LogTag.Cards | LogTag.Initialization);
         }
         return controller;
     }
@@ -76,14 +76,14 @@ public static class CardFactory {
 
     public static CardData GetOrCreateCardData(string name, Action<CardData> setup) {
         if (cardDataCache.TryGetValue(name, out var existingData)) {
-            DebugLogger.Log($"Retrieved cached card data for {name}", LogTag.Cards);
+            Log($"Retrieved cached card data for {name}", LogTag.Cards);
             return existingData;
         }
 
         var newData = ScriptableObject.CreateInstance<CreatureData>();
         setup(newData);
         cardDataCache[name] = newData;
-        DebugLogger.Log($"Created new card data for {name}", LogTag.Cards | LogTag.Initialization);
+        Log($"Created new card data for {name}", LogTag.Cards | LogTag.Initialization);
         return newData;
     }
 
@@ -113,7 +113,7 @@ public static class CardFactory {
         if (onPointerExit != null)
             controller.OnPointerExitHandler += onPointerExit;
 
-        DebugLogger.Log($"Set up event handlers for card {controller.name}", LogTag.Cards | LogTag.UI);
+        Log($"Set up event handlers for card {controller.name}", LogTag.Cards | LogTag.UI);
     }
 
     public static void CleanupCardEventHandlers(CardController controller) {
@@ -125,6 +125,6 @@ public static class CardFactory {
         controller.OnPointerEnterHandler = null;
         controller.OnPointerExitHandler = null;
 
-        DebugLogger.Log($"Cleaned up event handlers for card {controller.name}", LogTag.Cards | LogTag.UI);
+        Log($"Cleaned up event handlers for card {controller.name}", LogTag.Cards | LogTag.UI);
     }
 }

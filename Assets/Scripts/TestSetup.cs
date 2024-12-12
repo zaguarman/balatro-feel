@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using static Enums;
+using static DebugLogger;
 
 public class TestSetup : MonoBehaviour {
     public List<CardData> CreateTestCards() {
@@ -31,7 +32,7 @@ public class TestSetup : MonoBehaviour {
             }
         };
         thornCreature.effects = new List<CardEffect> { thornEffect };
-        DebugLogger.Log($"Created Thorned card with {thornCreature.effects.Count} effects", LogTag.Cards | LogTag.Effects | LogTag.Initialization);
+        Log($"Created Thorned card with {thornCreature.effects.Count} effects", LogTag.Cards | LogTag.Effects | LogTag.Initialization);
         cards.Add(thornCreature);
 
         var dragon = ScriptableObject.CreateInstance<CreatureData>();
@@ -52,7 +53,7 @@ public class TestSetup : MonoBehaviour {
             }
         };
         dragon.effects = new List<CardEffect> { dragonEffect };
-        DebugLogger.Log($"Created Dragon card with {dragon.effects.Count} effects", LogTag.Cards | LogTag.Effects | LogTag.Initialization);
+        Log($"Created Dragon card with {dragon.effects.Count} effects", LogTag.Cards | LogTag.Effects | LogTag.Initialization);
         cards.Add(dragon);
 
         var guardian = ScriptableObject.CreateInstance<CreatureData>();

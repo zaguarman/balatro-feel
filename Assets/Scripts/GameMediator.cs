@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine.Events;
-using UnityEngine;
+using static DebugLogger;
 
 public class GameMediator : Singleton<GameMediator> {
     private readonly UnityEvent<IPlayer, int> onPlayerDamaged = new UnityEvent<IPlayer, int>();
@@ -97,20 +97,20 @@ public class GameMediator : Singleton<GameMediator> {
 
         if (registeredPlayers.Add(player)) {
             player.OnDamaged.AddListener((damage) => NotifyPlayerDamaged(player, damage));
-            DebugLogger.Log($"Player registered: {(player.IsPlayer1() ? "Player 1" : "Player 2")}", LogTag.Players);
+            Log($"Player registered: {(player.IsPlayer1() ? "Player 1" : "Player 2")}", LogTag.Players);
         }
     }
 
     public void UnregisterPlayer(IPlayer player) {
         if (player == null) return;
         if (registeredPlayers.Remove(player)) {
-            DebugLogger.Log($"Player unregistered: {(player.IsPlayer1() ? "Player 1" : "Player 2")}", LogTag.Players);
+            Log($"Player unregistered: {(player.IsPlayer1() ? "Player 1" : "Player 2")}", LogTag.Players);
         }
     }
 
     public void NotifyGameInitialized() {
         ValidateInitialization();
-        DebugLogger.Log("Game initialization", LogTag.Initialization);
+        Log("Game initialization", LogTag.Initialization);
         onGameInitialized.Invoke();
     }
 
@@ -124,7 +124,7 @@ public class GameMediator : Singleton<GameMediator> {
         if (player == null) throw new System.ArgumentNullException(nameof(player));
 
         onPlayerDamaged.Invoke(player, damage);
-        DebugLogger.Log($"{damage} damage to {(player.IsPlayer1() ? "Player 1" : "Player 2")}", LogTag.Players | LogTag.Combat);
+        Log($"{damage} damage to {(player.IsPlayer1() ? "Player 1" : "Player 2")}", LogTag.Players | LogTag.Combat);
 
         if (player.Health <= 0) {
             NotifyGameOver(player.Opponent);
@@ -136,7 +136,7 @@ public class GameMediator : Singleton<GameMediator> {
         if (creature == null) throw new System.ArgumentNullException(nameof(creature));
 
         onCreatureDamaged.Invoke(creature, damage);
-        DebugLogger.Log($"{damage} damage to {creature.Name}", LogTag.Creatures | LogTag.Combat);
+        Log($"{damage} damage to {creature.Name}", LogTag.Creatures | LogTag.Combat);
 
         if (creature.Health <= 0) {
             NotifyCreatureDied(creature);
@@ -148,7 +148,7 @@ public class GameMediator : Singleton<GameMediator> {
         if (creature == null) throw new System.ArgumentNullException(nameof(creature));
 
         onCreatureDied.Invoke(creature);
-        DebugLogger.Log($"Creature died: {creature.Name}", LogTag.Creatures);
+        Log($"Creature died: {creature.Name}", LogTag.Creatures);
 
         NotifyGameStateChanged();
     }
@@ -157,7 +157,7 @@ public class GameMediator : Singleton<GameMediator> {
         ValidateInitialization();
         if (winner == null) throw new System.ArgumentNullException(nameof(winner));
 
-        DebugLogger.Log($"Game over: {(winner.IsPlayer1() ? "Player 1" : "Player 2")} wins", LogTag.Players);
+        Log($"Game over: {(winner.IsPlayer1() ? "Player 1" : "Player 2")} wins", LogTag.Players);
         onGameOver.Invoke(winner);
     }
 
@@ -166,7 +166,7 @@ public class GameMediator : Singleton<GameMediator> {
         if (creature == null) throw new System.ArgumentNullException(nameof(creature));
 
         onCreaturePreSummon.Invoke(creature);
-        DebugLogger.Log($"Creature pre-summon: {creature.Name}", LogTag.Creatures);
+        Log($"Creature pre-summon: {creature.Name}", LogTag.Creatures);
     }
 
     public void NotifyCreatureSummoned(ICreature creature, IPlayer owner) {
@@ -175,7 +175,7 @@ public class GameMediator : Singleton<GameMediator> {
         if (owner == null) throw new System.ArgumentNullException(nameof(owner));
 
         onCreatureSummoned.Invoke(creature, owner);
-        DebugLogger.Log($"Creature summoned: {creature.Name} by {(owner.IsPlayer1() ? "Player 1" : "Player 2")}", LogTag.Creatures);
+        Log($"Creature summoned: {creature.Name} by {(owner.IsPlayer1() ? "Player 1" : "Player 2")}", LogTag.Creatures);
         NotifyGameStateChanged();
     }
 

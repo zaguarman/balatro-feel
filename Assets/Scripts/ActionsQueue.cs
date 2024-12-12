@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using UnityEngine;
+using static DebugLogger;
 
 public class ActionsQueue {
     private Queue<IGameAction> actionQueue = new Queue<IGameAction>();
@@ -9,13 +9,13 @@ public class ActionsQueue {
     public void AddAction(IGameAction action) {
         if (currentIterationDepth < maxIterationDepth) {
             actionQueue.Enqueue(action);
-            DebugLogger.Log($"Added action to queue: {action.GetType()}", LogTag.Actions);
+            Log($"Added action to queue: {action.GetType()}", LogTag.Actions);
         }
     }
 
     public void ResolveActions() {
         currentIterationDepth++;
-        DebugLogger.Log($"Resolving actions. Queue size: {actionQueue.Count}", LogTag.Actions);
+        Log($"Resolving actions. Queue size: {actionQueue.Count}", LogTag.Actions);
 
         while (actionQueue.Count > 0) {
             var action = actionQueue.Dequeue();

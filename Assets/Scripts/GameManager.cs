@@ -1,6 +1,6 @@
 using System.Linq;
 using UnityEngine;
-
+using static DebugLogger;
 public class GameManager : InitializableComponent {
     private static GameManager instance;
     public static GameManager Instance {
@@ -89,7 +89,7 @@ public class GameManager : InitializableComponent {
             var creature = new Creature(creatureData.cardName, creatureData.attack, creatureData.health, Player1);
             creature.SetOwner(Player1);
             Player1.AddToBattlefield(creature);
-            DebugLogger.Log($"Added {creature.Name} to Player 1's battlefield with proper owner reference", LogTag.Creatures | LogTag.Initialization);
+            Log($"Added {creature.Name} to Player 1's battlefield with proper owner reference", LogTag.Creatures | LogTag.Initialization);
         }
 
         for (int i = 0; i < 2; i++) {
@@ -98,7 +98,7 @@ public class GameManager : InitializableComponent {
             var creature = new Creature(creatureData.cardName, creatureData.attack, creatureData.health, Player2);
             creature.SetOwner(Player2);
             Player2.AddToBattlefield(creature);
-            DebugLogger.Log($"Added {creature.Name} to Player 2's battlefield with proper owner reference", LogTag.Creatures | LogTag.Initialization);
+            Log($"Added {creature.Name} to Player 2's battlefield with proper owner reference", LogTag.Creatures | LogTag.Initialization);
         }
     }
 
@@ -161,7 +161,7 @@ public class GameManager : InitializableComponent {
             state += $"Pending Actions: {ActionsQueue.GetPendingActionsCount()}\n";
         }
 
-        DebugLogger.Log(state, LogTag.Players | LogTag.Creatures | LogTag.Actions);
+        Log(state, LogTag.Players | LogTag.Creatures | LogTag.Actions);
     }
 
     private void OnDestroy() {

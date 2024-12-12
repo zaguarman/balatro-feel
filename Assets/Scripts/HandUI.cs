@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using static DebugLogger;
 
 public class HandUI : CardContainer {
     private void Start() {
@@ -13,7 +14,7 @@ public class HandUI : CardContainer {
 
     private void InitializeReferences() {
         if (!InitializationManager.Instance.IsComponentInitialized<GameManager>()) {
-            DebugLogger.LogWarning("GameManager not initialized yet, will retry later", LogTag.UI | LogTag.Initialization);
+            LogWarning("GameManager not initialized yet, will retry later", LogTag.UI | LogTag.Initialization);
             return;
         }
 
@@ -74,7 +75,7 @@ public class HandUI : CardContainer {
         var controller = cardObj.GetComponent<CardController>();
         if (controller != null) {
             var data = CreateCardData(cardData);
-            DebugLogger.Log($"Creating card {cardData.Name} with {cardData.Effects.Count} effects", LogTag.UI | LogTag.Cards);
+            Log($"Creating card {cardData.Name} with {cardData.Effects.Count} effects", LogTag.UI | LogTag.Cards);
             controller.Setup(data, player);
         }
         return controller;
@@ -101,7 +102,7 @@ public class HandUI : CardContainer {
                 creatureData.effects.Add(newEffect);
             }
 
-            DebugLogger.Log($"Created CreatureData for {creature.Name} with {creatureData.effects.Count} effects", LogTag.UI | LogTag.Cards | LogTag.Effects);
+            Log($"Created CreatureData for {creature.Name} with {creatureData.effects.Count} effects", LogTag.UI | LogTag.Cards | LogTag.Effects);
             return creatureData;
         }
         return null;

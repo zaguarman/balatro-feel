@@ -1,27 +1,27 @@
-using UnityEngine;
-using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System;
+using UnityEngine;
 
-[Flags]
-public enum LogTag {
-    None = 0,
-    UI = 1 << 0,
-    Actions = 1 << 1,
-    Effects = 1 << 2,
-    Creatures = 1 << 3,
-    Players = 1 << 4,
-    Cards = 1 << 5,
-    Combat = 1 << 6,
-    Initialization = 1 << 7,
-    Network = 1 << 8,
-    Economy = 1 << 9,
-    All = ~0
-}
+public static class DebugLogger {
+    [Flags]
+    public enum LogTag {
+        None = 0,
+        UI = 1 << 0,
+        Actions = 1 << 1,
+        Effects = 1 << 2,
+        Creatures = 1 << 3,
+        Players = 1 << 4,
+        Cards = 1 << 5,
+        Combat = 1 << 6,
+        Initialization = 1 << 7,
+        Network = 1 << 8,
+        Economy = 1 << 9,
+        All = ~0
+    }
 
-public class LoggerSettings {
-    private static readonly Dictionary<LogTag, string> DefaultTagColors = new Dictionary<LogTag, string>
+    private static readonly Dictionary<LogTag, string> _defaultTagColors = new Dictionary<LogTag, string>
     {
         { LogTag.UI, "#80FFFF" },
         { LogTag.Actions, "#FFE066" },
@@ -35,53 +35,24 @@ public class LoggerSettings {
         { LogTag.Economy, "#DDA0DD" }
     };
 
-    public static LoggerSettings Default => new LoggerSettings {
-        EnabledTags = LogTag.All,
-        TagColors = new Dictionary<LogTag, string>(DefaultTagColors)
-    };
+    private static LogTag _enabledTags;
+    private static Dictionary<LogTag, string> _tagColors;
 
-    public LogTag EnabledTags { get; set; } = LogTag.All;
-
-    public Dictionary<LogTag, string> TagColors { get; set; }
-
-    public LoggerSettings() {
-        TagColors = new Dictionary<LogTag, string>(DefaultTagColors);
-    }
-
-    public void EnableTags(LogTag tags) {
-        EnabledTags |= tags;
-    }
-
-    public void DisableTags(LogTag tags) {
-        EnabledTags &= ~tags;
-    }
-
-    public void SetTagColor(LogTag tag, string hexColor) {
-        TagColors[tag] = hexColor;
-    }
-}
-
-public static class DebugLogger {
-    private static readonly LoggerSettings _settings;
-
-    // Static constructor to initialize settings with only UI tags enabled
     static DebugLogger() {
-        _settings = new LoggerSettings {
-            EnabledTags = LogTag.UI, // Only enable UI tags
-            TagColors = new Dictionary<LogTag, string>
-            {
-                { LogTag.UI, "#80FFFF" },
-                { LogTag.Actions, "#FFE066" },
-                { LogTag.Effects, "#FF99FF" },
-                { LogTag.Creatures, "#90EE90" },
-                { LogTag.Players, "#ADD8E6" },
-                { LogTag.Cards, "#E0E0E0" },
-                { LogTag.Combat, "#FF9999" },
-                { LogTag.Initialization, "#DEB887" },
-                { LogTag.Network, "#98FB98" },
-                { LogTag.Economy, "#DDA0DD" }
-            }
-        };
+        _enabledTags = LogTag.UI | LogTag.Cards;
+        _tagColors = new Dictionary<LogTag, string>(_defaultTagColors);
+    }
+
+    public static void EnableTags(LogTag tags) {
+        _enabledTags |= tags;
+    }
+
+    public static void DisableTags(LogTag tags) {
+        _enabledTags &= ~tags;
+    }
+
+    public static void SetTagColor(LogTag tag, string hexColor) {
+        _tagColors[tag] = hexColor;
     }
 
     public static void Log(
@@ -118,7 +89,7 @@ public static class DebugLogger {
     }
 
     private static bool ShouldLog(LogTag tags) {
-        return (_settings.EnabledTags & tags) != 0;
+        return (_enabledTags & tags) != 0;
     }
 
     private static string FormatMessage(
@@ -151,7 +122,7 @@ public static class DebugLogger {
         string[] individualTags = tagList.Split('|');
 
         return string.Join("|", individualTags.Select(tag =>
-            Enum.TryParse(tag, out LogTag currentTag) && _settings.TagColors.TryGetValue(currentTag, out string color)
+            Enum.TryParse(tag, out LogTag currentTag) && _tagColors.TryGetValue(currentTag, out string color)
                 ? $"<color={color}>{tag}</color>"
                 : tag
         ));
