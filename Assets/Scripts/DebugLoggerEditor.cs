@@ -176,16 +176,24 @@ public class DebugLoggerEditor : Editor {
     }
 
     private void ResetTagColors() {
+        if (tagSettingsProp == null) return;
+
         for (int i = 0; i < tagSettingsProp.arraySize; i++) {
             SerializedProperty tagSetting = tagSettingsProp.GetArrayElementAtIndex(i);
-            SerializedProperty tagProp = tagSetting.FindPropertyRelative("tag");
-            SerializedProperty colorProp = tagSetting.FindPropertyRelative("color");
+            if (tagSetting == null) continue;
 
-            var currentTag = (DebugLogger.LogTag)tagProp.enumValueIndex;
+            SerializedProperty tagValueProp = tagSetting.FindPropertyRelative("tagValue");
+            SerializedProperty colorProp = tagSetting.FindPropertyRelative("color");
+            
+            if (tagValueProp == null || colorProp == null) continue;
+
+            var currentTag = (DebugLogger.LogTag)tagValueProp.intValue;
             if (DebugLogger.DefaultColors.TryGetValue(currentTag, out Color defaultColor)) {
                 colorProp.colorValue = defaultColor;
             }
         }
+
+        serializedObject.ApplyModifiedProperties();
     }
 
     private bool IsClassEnabled(string className) {
