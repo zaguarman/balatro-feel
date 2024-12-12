@@ -7,38 +7,61 @@ using System;
 public static class CardFactory {
     private static Dictionary<string, CardData> cardDataCache = new Dictionary<string, CardData>();
 
-    // Create actual card instance from CardData
     public static ICard CreateCard(CardData cardData) {
         if (cardData == null) return null;
+
+        DebugLogger.Log($"Creating card: {cardData.cardName} with {cardData.effects.Count} effects", LogTag.Cards | LogTag.Initialization);
 
         ICard card = null;
         switch (cardData) {
             case CreatureData creatureData:
-                card = new Creature(creatureData.cardName,
-                    creatureData.attack, creatureData.health);
-                foreach (var effect in creatureData.effects) {
-                    card.Effects.Add(effect);
+                var creature = new Creature(creatureData.cardName, creatureData.attack, creatureData.health);
+                foreach (var effect in cardData.effects) {
+                    DebugLogger.Log($"Adding effect - Trigger: {effect.trigger}, Actions: {effect.actions.Count}", LogTag.Cards | LogTag.Effects);
+                    var newEffect = new CardEffect {
+                        effectType = effect.effectType,
+                        trigger = effect.trigger,
+                        actions = new List<EffectAction>()
+                    };
+
+                    foreach (var action in effect.actions) {
+                        var newAction = new EffectAction {
+                            actionType = action.actionType,
+                            value = action.value,
+                            targetType = action.targetType
+                        };
+                        newEffect.actions.Add(newAction);
+                    }
+                    creature.Effects.Add(newEffect);
                 }
+                card = creature;
                 break;
         }
+
+        if (card != null) {
+            DebugLogger.Log($"Successfully created {card.Name} with {card.Effects.Count} effects", LogTag.Cards | LogTag.Initialization);
+        }
+
         return card;
     }
 
-    // Create CardController with proper setup
     public static CardController CreateCardController(ICard cardData, IPlayer owner, Transform parent, GameReferences gameReferences) {
         var cardPrefab = gameReferences.GetCardPrefab();
-        if (cardPrefab == null) return null;
+        if (cardPrefab == null) {
+            DebugLogger.LogError("Failed to get card prefab from game references", LogTag.Cards | LogTag.Initialization);
+            return null;
+        }
 
         var cardObj = GameObject.Instantiate(cardPrefab, parent);
         var controller = cardObj.GetComponent<CardController>();
         if (controller != null) {
             var data = CreateCardDataFromCard(cardData);
             controller.Setup(data, owner);
+            DebugLogger.Log($"Created card controller for {cardData.Name}", LogTag.Cards | LogTag.Initialization);
         }
         return controller;
     }
 
-    // Create CardData from ICard
     private static CardData CreateCardDataFromCard(ICard card) {
         var cardData = ScriptableObject.CreateInstance<CreatureData>();
         cardData.cardName = card.Name;
@@ -51,19 +74,19 @@ public static class CardFactory {
         return cardData;
     }
 
-    // Get or create CardData template
     public static CardData GetOrCreateCardData(string name, Action<CardData> setup) {
         if (cardDataCache.TryGetValue(name, out var existingData)) {
+            DebugLogger.Log($"Retrieved cached card data for {name}", LogTag.Cards);
             return existingData;
         }
 
         var newData = ScriptableObject.CreateInstance<CreatureData>();
         setup(newData);
         cardDataCache[name] = newData;
+        DebugLogger.Log($"Created new card data for {name}", LogTag.Cards | LogTag.Initialization);
         return newData;
     }
 
-    // Helper method for setting up common card event handlers
     public static void SetupCardEventHandlers(
         CardController controller,
         UnityAction<CardController> onBeginDrag = null,
@@ -73,10 +96,8 @@ public static class CardFactory {
         System.Action onPointerExit = null) {
         if (controller == null) return;
 
-        // Clean up any existing listeners first
         CleanupCardEventHandlers(controller);
 
-        // Add new listeners
         if (onBeginDrag != null)
             controller.OnBeginDragEvent.AddListener(onBeginDrag);
 
@@ -91,18 +112,19 @@ public static class CardFactory {
 
         if (onPointerExit != null)
             controller.OnPointerExitHandler += onPointerExit;
+
+        DebugLogger.Log($"Set up event handlers for card {controller.name}", LogTag.Cards | LogTag.UI);
     }
 
     public static void CleanupCardEventHandlers(CardController controller) {
         if (controller == null) return;
 
-        // Remove all listeners from Unity Events
         controller.OnBeginDragEvent.RemoveAllListeners();
         controller.OnEndDragEvent.RemoveAllListeners();
         controller.OnCardDropped.RemoveAllListeners();
-
-        // Clear C# event handlers
         controller.OnPointerEnterHandler = null;
         controller.OnPointerExitHandler = null;
+
+        DebugLogger.Log($"Cleaned up event handlers for card {controller.name}", LogTag.Cards | LogTag.UI);
     }
 }

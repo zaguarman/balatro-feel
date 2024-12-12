@@ -9,17 +9,19 @@ public class ActionsQueue {
     public void AddAction(IGameAction action) {
         if (currentIterationDepth < maxIterationDepth) {
             actionQueue.Enqueue(action);
-            Debug.Log($"Added action to queue: {action.GetType()}");
+            DebugLogger.Log($"Added action to queue: {action.GetType()}", LogTag.Actions);
         }
     }
 
     public void ResolveActions() {
         currentIterationDepth++;
-        Debug.Log($"Resolving actions. Queue size: {actionQueue.Count}");
+        DebugLogger.Log($"Resolving actions. Queue size: {actionQueue.Count}", LogTag.Actions);
+
         while (actionQueue.Count > 0) {
             var action = actionQueue.Dequeue();
             action.Execute();
         }
+
         currentIterationDepth--;
     }
 
@@ -27,7 +29,6 @@ public class ActionsQueue {
         return actionQueue.Count;
     }
 
-    // New method to expose pending actions
     public IReadOnlyCollection<IGameAction> GetPendingActions() {
         return actionQueue.ToArray();
     }

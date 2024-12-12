@@ -51,7 +51,7 @@ public class Player : Entity, IPlayer {
     public void AddToBattlefield(ICreature creature) {
         if (creature == null) return;
         Battlefield.Add(creature);
-        //Debug.Log($"[Player] Added creature to battlefield: {creature.Name}");
+        //DebugLogger.Log($"[Player] Added creature to battlefield: {creature.Name}");
         gameMediator?.NotifyGameStateChanged();
     }
 
@@ -59,7 +59,7 @@ public class Player : Entity, IPlayer {
         if (creature == null) return;
 
         if (Battlefield.Remove(creature)) {
-            Debug.Log($"[Player] Removed creature from battlefield: {creature.Name}");
+            DebugLogger.Log($"[Player] Removed creature from battlefield: {creature.Name}");
             gameMediator?.NotifyGameStateChanged();
         }
     }

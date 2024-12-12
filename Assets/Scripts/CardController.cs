@@ -24,7 +24,7 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
     private CardData cardData;
     private IPlayer player;
     private ICreature linkedCreature;
-    private string linkedCreatureId; // Store the TargetId of the linked creature
+    private string linkedCreatureId;
 
     public CardUnityEvent OnBeginDragEvent = new CardUnityEvent();
     public CardUnityEvent OnEndDragEvent = new CardUnityEvent();
@@ -51,22 +51,22 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
         cardData = data;
         player = owner;
         linkedCreatureId = creatureId;
-
+        if (cardData is CreatureData creatureData) {
+            DebugLogger.Log($"Setting up {cardData.cardName} with {cardData.effects.Count} effects", LogTag.Cards | LogTag.Initialization);
+        }
         if (cardData is CreatureData) {
             linkedCreature = FindLinkedCreature();
             if (linkedCreature != null) {
                 linkedCreatureId = linkedCreature.TargetId;
-                Debug.Log($"[CardController] Linked to creature: {linkedCreature.Name} with ID: {linkedCreatureId}");
+                DebugLogger.Log($"Linked to creature: {linkedCreature.Name} with ID: {linkedCreatureId}", LogTag.Cards);
             }
         }
-
         UpdateUI();
     }
 
     private ICreature FindLinkedCreature() {
         if (cardData == null || player == null) return null;
 
-        // If we have a linkedCreatureId, use it to find the creature
         if (!string.IsNullOrEmpty(linkedCreatureId)) {
             return player.Battlefield.Find(c => c.TargetId == linkedCreatureId) ??
                    player.Opponent.Battlefield.Find(c => c.TargetId == linkedCreatureId);
@@ -95,23 +95,23 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
 
     private void OnCreatureDamaged(ICreature creature, int damage) {
         if (linkedCreature != null && creature.TargetId == linkedCreature.TargetId) {
-            Debug.Log($"[CardController] Creature {creature.Name} took {damage} damage, updating UI");
-            linkedCreature = creature; // Update reference to get new health
+            DebugLogger.Log($"Creature {creature.Name} took {damage} damage, updating UI", LogTag.Creatures | LogTag.UI);
+            linkedCreature = creature;
             UpdateUI();
         }
     }
 
     private void OnCreatureDied(ICreature creature) {
         if (linkedCreature != null && creature.TargetId == linkedCreature.TargetId) {
-            Debug.Log($"[CardController] Creature {creature.Name} died, updating UI");
-            linkedCreature = null; // Clear the reference since the creature is dead
+            DebugLogger.Log($"Creature {creature.Name} died, updating UI", LogTag.Creatures | LogTag.UI);
+            linkedCreature = null;
             UpdateUI();
         }
     }
 
     public override void UpdateUI() {
         if (cardData == null) {
-            Debug.LogWarning("[CardController] Attempted to update UI with null card data");
+            DebugLogger.LogWarning("Attempted to update UI with null card data", LogTag.UI | LogTag.Cards);
             return;
         }
 
@@ -128,10 +128,9 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
 
             if (linkedCreature != null) {
                 if (linkedCreature.Health <= 0) {
-                    Debug.Log($"[CardController] Creature {linkedCreature.Name} is dead, should be removed");
+                    DebugLogger.Log($"Creature {linkedCreature.Name} is dead, should be removed", LogTag.Creatures);
                     statsText.text = $"{creatureData.attack}/{creatureData.health}";
                 } else {
-                    //Debug.Log($"[CardController] Updating stats for {linkedCreature.Name}: {linkedCreature.Attack}/{linkedCreature.Health}");
                     statsText.text = $"{linkedCreature.Attack}/{linkedCreature.Health}";
                 }
             } else {
@@ -154,7 +153,7 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
         if (eventData.button != PointerEventData.InputButton.Left) return;
 
         if (canvasGroup == null) {
-            Debug.LogWarning("[CardController] CanvasGroup is missing, adding it now");
+            DebugLogger.LogWarning("CanvasGroup is missing, adding it now", LogTag.UI);
             canvasGroup = gameObject.AddComponent<CanvasGroup>();
         }
 
@@ -164,7 +163,6 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
         transform.SetAsLastSibling();
 
         OnBeginDragEvent.Invoke(this);
-        //Debug.Log($"[CardController] Started dragging {cardData.cardName}");
     }
 
     public void OnDrag(PointerEventData eventData) {
@@ -188,7 +186,6 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
         OnEndDragEvent.Invoke(this);
         OnCardDropped.Invoke(this);
 
-        //Debug.Log($"[CardController] Ended dragging {cardData.cardName}");
         gameMediator?.NotifyGameStateChanged();
     }
 

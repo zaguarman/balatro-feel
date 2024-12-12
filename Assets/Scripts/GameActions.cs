@@ -1,26 +1,36 @@
-using UnityEngine;
+using static Enums;
 
-public interface IGameAction {
-    void Execute();
-}
+public interface IGameAction { void Execute(); }
 
 public class SummonCreatureAction : IGameAction {
-    private readonly ICard card;
+    private readonly ICreature creature;
     private readonly IPlayer owner;
-    private readonly GameMediator gameMediator;
 
-    public SummonCreatureAction(ICard card, IPlayer owner) {
-        this.card = card;
+    public SummonCreatureAction(ICreature creature, IPlayer owner) {
+        this.creature = creature;
         this.owner = owner;
-        this.gameMediator = GameMediator.Instance;
+        DebugLogger.Log($"Created for {creature.Name} with {creature.Effects.Count} effects", LogTag.Actions | LogTag.Creatures);
     }
 
     public void Execute() {
-        if (card is ICreature creature) {
-            gameMediator.NotifyCreaturePreSummon(creature);
-            owner.AddToBattlefield(creature);
-            gameMediator.NotifyCreatureSummoned(creature, owner);
+        DebugLogger.Log($"Executing for {creature.Name}", LogTag.Actions | LogTag.Creatures);
+
+        if (creature == null || owner == null) {
+            DebugLogger.LogError("Creature or owner is null", LogTag.Actions | LogTag.Creatures);
+            return;
         }
+
+        if (creature is Creature c) {
+            c.SetOwner(owner);
+        }
+
+        var actionsQueue = GameManager.Instance?.ActionsQueue;
+        if (creature is Creature c2 && actionsQueue != null) {
+            DebugLogger.Log($"Processing OnPlay effects for {creature.Name} with {creature.Effects.Count} effects", LogTag.Actions | LogTag.Effects);
+            c2.HandleEffect(EffectTrigger.OnPlay, actionsQueue);
+        }
+
+        owner.AddToBattlefield(creature);
     }
 }
 
@@ -31,12 +41,12 @@ public class DamagePlayerAction : IGameAction {
     public DamagePlayerAction(IPlayer target, int damage) {
         this.target = target;
         this.damage = damage;
-        Debug.Log($"DamagePlayerAction created - Target: {target}, Damage: {damage}");
+        DebugLogger.Log($"Created - Target: {target}, Damage: {damage}", LogTag.Actions | LogTag.Players | LogTag.Combat);
     }
 
     public void Execute() {
         target.TakeDamage(damage);
-        Debug.Log($"{damage} damage dealt to {target}");
+        DebugLogger.Log($"{damage} damage dealt to {target}", LogTag.Actions | LogTag.Players | LogTag.Combat);
     }
 }
 
@@ -49,23 +59,25 @@ public class DamageCreatureAction : IGameAction {
         this.target = target;
         this.damage = damage;
         this.attacker = attacker;
-        Debug.Log($"[DamageCreatureAction] Created - Target: {target?.Name} (TargetId: {target?.TargetId}), " +
-                 $"Damage: {damage}, Attacker: {attacker?.Name} (TargetId: {attacker?.TargetId})");
+        DebugLogger.Log($"Created - Target: {target?.Name} (TargetId: {target?.TargetId}), " +
+                        $"Damage: {damage}, Attacker: {attacker?.Name} (TargetId: {attacker?.TargetId})",
+                        LogTag.Actions | LogTag.Creatures | LogTag.Combat);
     }
 
     public void Execute() {
-        Debug.Log($"[DamageCreatureAction] Executing - Target: {target?.Name} (TargetId: {target?.TargetId}), " +
-                 $"Damage: {damage}, Attacker: {attacker?.Name} (TargetId: {attacker?.TargetId})");
+        DebugLogger.Log($"Executing - Target: {target?.Name} (TargetId: {target?.TargetId}), " +
+                        $"Damage: {damage}, Attacker: {attacker?.Name} (TargetId: {attacker?.TargetId})",
+                        LogTag.Actions | LogTag.Creatures | LogTag.Combat);
         target?.TakeDamage(damage);
     }
 
     public ICreature GetTarget() {
-        Debug.Log($"[DamageCreatureAction] Getting target: {target?.Name} (TargetId: {target?.TargetId})");
+        DebugLogger.Log($"Getting target: {target?.Name} (TargetId: {target?.TargetId})", LogTag.Actions | LogTag.Creatures);
         return target;
     }
 
     public ICreature GetAttacker() {
-        Debug.Log($"[DamageCreatureAction] Getting attacker: {attacker?.Name} (TargetId: {attacker?.TargetId})");
+        DebugLogger.Log($"Getting attacker: {attacker?.Name} (TargetId: {attacker?.TargetId})", LogTag.Actions | LogTag.Creatures);
         return attacker;
     }
 

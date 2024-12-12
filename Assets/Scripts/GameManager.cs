@@ -48,7 +48,7 @@ public class GameManager : InitializableComponent {
 
         InitializeGameSystem();
 
-        base.Initialize();  // This will set IsInitialized to true
+        base.Initialize();
     }
 
     private void InitializeGameSystem() {
@@ -83,24 +83,22 @@ public class GameManager : InitializableComponent {
             .Cast<CreatureData>()
             .ToList();
 
-        // Place 2 random creatures for Player 1
         for (int i = 0; i < 2; i++) {
             int randomIndex = random.Next(availableCreatures.Count);
             var creatureData = availableCreatures[randomIndex];
             var creature = new Creature(creatureData.cardName, creatureData.attack, creatureData.health, Player1);
-            creature.SetOwner(Player1);  // Explicitly set the owner
+            creature.SetOwner(Player1);
             Player1.AddToBattlefield(creature);
-            Debug.Log($"Added {creature.Name} to Player 1's battlefield with proper owner reference");
+            DebugLogger.Log($"Added {creature.Name} to Player 1's battlefield with proper owner reference", LogTag.Creatures | LogTag.Initialization);
         }
 
-        // Place 2 random creatures for Player 2
         for (int i = 0; i < 2; i++) {
             int randomIndex = random.Next(availableCreatures.Count);
             var creatureData = availableCreatures[randomIndex];
             var creature = new Creature(creatureData.cardName, creatureData.attack, creatureData.health, Player2);
-            creature.SetOwner(Player2);  // Explicitly set the owner
+            creature.SetOwner(Player2);
             Player2.AddToBattlefield(creature);
-            Debug.Log($"Added {creature.Name} to Player 2's battlefield with proper owner reference");
+            DebugLogger.Log($"Added {creature.Name} to Player 2's battlefield with proper owner reference", LogTag.Creatures | LogTag.Initialization);
         }
     }
 
@@ -126,7 +124,7 @@ public class GameManager : InitializableComponent {
 
     public void PlayCard(CardData cardData, IPlayer player) {
         if (!IsInitialized) {
-            Debug.LogError("Cannot play card - GameManager not initialized");
+            DebugLogger.LogError("Cannot play card - GameManager not initialized", LogTag.Actions | LogTag.Initialization);
             return;
         }
 
@@ -137,7 +135,7 @@ public class GameManager : InitializableComponent {
 
     public void ResolveActions() {
         if (!IsInitialized) {
-            Debug.LogError("Cannot resolve actions - GameManager not initialized");
+            DebugLogger.LogError("Cannot resolve actions - GameManager not initialized", LogTag.Actions | LogTag.Initialization);
             return;
         }
 
@@ -163,7 +161,7 @@ public class GameManager : InitializableComponent {
             state += $"Pending Actions: {ActionsQueue.GetPendingActionsCount()}\n";
         }
 
-        Debug.Log(state);
+        DebugLogger.Log(state, LogTag.Players | LogTag.Creatures | LogTag.Actions);
     }
 
     private void OnDestroy() {

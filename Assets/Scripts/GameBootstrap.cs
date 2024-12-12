@@ -9,7 +9,6 @@ public class GameBootstrap : MonoBehaviour {
     private IEnumerator InitializeGame() {
         var initManager = InitializationManager.Instance;
 
-        // Wait for all required components to be available
         while (GameReferences.Instance == null ||
                GameMediator.Instance == null ||
                GameManager.Instance == null ||
@@ -17,31 +16,33 @@ public class GameBootstrap : MonoBehaviour {
             yield return null;
         }
 
-        // Step 1: Initialize GameReferences
+        DebugLogger.Log("Starting game initialization", LogTag.Initialization);
+
         initManager.RegisterComponent(GameReferences.Instance);
         initManager.InitializeComponents();
         yield return new WaitUntil(() => GameReferences.Instance.IsInitialized);
+        DebugLogger.Log("GameReferences initialized", LogTag.Initialization);
 
-        // Step 2: Initialize GameMediator
         initManager.RegisterComponent(GameMediator.Instance);
         initManager.InitializeComponents();
         yield return new WaitUntil(() => GameMediator.Instance.IsInitialized);
+        DebugLogger.Log("GameMediator initialized", LogTag.Initialization);
 
-        // Step 3: Initialize GameManager
         if (GameManager.Instance != null) {
             initManager.RegisterComponent(GameManager.Instance);
             initManager.InitializeComponents();
             yield return new WaitUntil(() => GameManager.Instance.IsInitialized);
+            DebugLogger.Log("GameManager initialized", LogTag.Initialization);
         } else {
-            Debug.LogError("GameManager instance is null!");
+            DebugLogger.LogError("GameManager instance is null!", LogTag.Initialization);
             yield break;
         }
 
-        // Step 4: Initialize GameUI
         initManager.RegisterComponent(GameUI.Instance);
         initManager.InitializeComponents();
         yield return new WaitUntil(() => GameUI.Instance.IsInitialized);
+        DebugLogger.Log("GameUI initialized", LogTag.Initialization);
 
-        Debug.Log("All components initialized successfully");
+        DebugLogger.Log("All components initialized successfully", LogTag.Initialization);
     }
 }

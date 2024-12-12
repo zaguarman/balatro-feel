@@ -30,12 +30,13 @@ public class TestSetup : MonoBehaviour {
                 }
             }
         };
-        thornCreature.effects.Add(thornEffect);
+        thornCreature.effects = new List<CardEffect> { thornEffect };
+        DebugLogger.Log($"Created Thorned card with {thornCreature.effects.Count} effects", LogTag.Cards | LogTag.Effects | LogTag.Initialization);
         cards.Add(thornCreature);
 
         var dragon = ScriptableObject.CreateInstance<CreatureData>();
         dragon.cardName = "Dragon";
-        dragon.description = "Deals 2 damage when played";
+        dragon.description = "Deals 2 damage to all enemy creatures when played";
         dragon.attack = 4;
         dragon.health = 4;
 
@@ -46,14 +47,14 @@ public class TestSetup : MonoBehaviour {
                 new EffectAction {
                     actionType = ActionType.Damage,
                     value = 2,
-                    targetType = TargetType.Enemy
+                    targetType = TargetType.EnemyCreatures
                 }
             }
         };
-        dragon.effects.Add(dragonEffect);
+        dragon.effects = new List<CardEffect> { dragonEffect };
+        DebugLogger.Log($"Created Dragon card with {dragon.effects.Count} effects", LogTag.Cards | LogTag.Effects | LogTag.Initialization);
         cards.Add(dragon);
 
-        // New Card 1: Guardian Angel
         var guardian = ScriptableObject.CreateInstance<CreatureData>();
         guardian.cardName = "Angel";
         guardian.description = "Heals friendly creatures at the start of your turn";
@@ -74,7 +75,6 @@ public class TestSetup : MonoBehaviour {
         guardian.effects.Add(guardianEffect);
         cards.Add(guardian);
 
-        // New Card 2: Berserker
         var berserker = ScriptableObject.CreateInstance<CreatureData>();
         berserker.cardName = "Berserker";
         berserker.description = "Deals 1 damage to all creatures at end of turn";
@@ -95,28 +95,6 @@ public class TestSetup : MonoBehaviour {
         berserker.effects.Add(berserkerEffect);
         cards.Add(berserker);
 
-        // New Card 3: Soul Collector
-        //var soulCollector = ScriptableObject.CreateInstance<CreatureData>();
-        //soulCollector.cardName = "Soul Collector";
-        //soulCollector.description = "Draw a card when another creature dies";
-        //soulCollector.attack = 2;
-        //soulCollector.health = 4;
-
-        //var soulCollectorEffect = new CardEffect {
-        //    effectType = EffectType.Triggered,
-        //    trigger = EffectTrigger.OnDeath,
-        //    actions = new List<EffectAction> {
-        //        new EffectAction {
-        //            actionType = ActionType.Draw,
-        //            value = 1,
-        //            targetType = TargetType.Player
-        //        }
-        //    }
-        //};
-        //soulCollector.effects.Add(soulCollectorEffect);
-        //cards.Add(soulCollector);
-
-        // New Card 4: War Chief
         var warChief = ScriptableObject.CreateInstance<CreatureData>();
         warChief.cardName = "War Chief";
         warChief.description = "Damages enemy creatures when played";

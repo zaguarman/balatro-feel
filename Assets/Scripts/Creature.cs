@@ -1,5 +1,5 @@
-
 using UnityEngine;
+using static Enums;
 
 public interface ICreature : ICard {
     int Attack { get; }
@@ -19,20 +19,31 @@ public class Creature : Card, ICreature {
         this.owner = owner;
     }
 
-    public override void Play(IPlayer owner, ActionsQueue context) {
-        this.owner = owner;
-        context.AddAction(new SummonCreatureAction(this, owner));
-    }
-
     public void SetOwner(IPlayer newOwner) {
         this.owner = newOwner;
     }
 
+    public override void Play(IPlayer owner, ActionsQueue context) {
+        DebugLogger.Log($"Playing {Name} with {Effects.Count} effects", LogTag.Creatures | LogTag.Cards | LogTag.Actions);
+        this.owner = owner;
+        var summonAction = new SummonCreatureAction(this, owner);
+        context.AddAction(summonAction);
+        DebugLogger.Log($"Added SummonCreatureAction to queue for {Name}", LogTag.Creatures | LogTag.Actions);
+    }
+
     public void TakeDamage(int damage) {
-        if (isDead) return; // Prevent multiple death triggers
+        if (isDead) return;
 
         Health = System.Math.Max(0, Health - damage);
-        Debug.Log($"[Creature] {Name} took {damage} damage, health now: {Health}");
+        DebugLogger.Log($"{Name} took {damage} damage, health now: {Health}. Has {Effects.Count} effects", LogTag.Creatures | LogTag.Combat);
+
+        var gameManager = GameManager.Instance;
+        if (gameManager != null && owner != null) {
+            DebugLogger.Log($"Processing OnDamage effects for {Name}", LogTag.Creatures | LogTag.Effects);
+            HandleEffect(EffectTrigger.OnDamage, gameManager.ActionsQueue);
+        } else {
+            DebugLogger.LogError($"Cannot process damage effects - GameManager: {gameManager != null}, Owner: {owner != null}", LogTag.Creatures | LogTag.Effects);
+        }
 
         var gameMediator = GameMediator.Instance;
         if (gameMediator != null) {
@@ -40,17 +51,48 @@ public class Creature : Card, ICreature {
 
             if (Health <= 0 && !isDead) {
                 isDead = true;
-                Debug.Log($"[Creature] {Name} died, removing from battlefield");
-
-                // Remove from owner's battlefield
                 if (owner != null) {
                     owner.RemoveFromBattlefield(this);
-                    Debug.Log($"[Creature] Successfully removed {Name} from {(owner.IsPlayer1() ? "Player 1's" : "Player 2's")} battlefield");
-                } else {
-                    Debug.LogError($"[Creature] Cannot remove {Name} from battlefield - owner is null!");
                 }
-
                 gameMediator.NotifyCreatureDied(this);
+            }
+        }
+    }
+
+    public void HandleEffect(EffectTrigger trigger, ActionsQueue actionsQueue) {
+        DebugLogger.Log($"Handling {trigger} effect for {Name} with {Effects.Count} effects", LogTag.Creatures | LogTag.Effects);
+        foreach (var effect in Effects) {
+            DebugLogger.Log($"Checking effect - Trigger: {effect.trigger}, Actions: {effect.actions.Count}", LogTag.Creatures | LogTag.Effects);
+            if (effect.trigger == trigger) {
+                foreach (var action in effect.actions) {
+                    DebugLogger.Log($"Processing action - Type: {action.actionType}, Value: {action.value}, Target: {action.targetType}", LogTag.Creatures | LogTag.Actions);
+                    switch (action.actionType) {
+                        case ActionType.Damage:
+                            HandleDamageEffect(action, actionsQueue);
+                            break;
+                    }
+                }
+            }
+        }
+    }
+
+    private void HandleDamageEffect(EffectAction action, ActionsQueue actionsQueue) {
+        if (owner == null) {
+            DebugLogger.LogError($"Cannot handle damage effect for {Name} - owner is null", LogTag.Creatures | LogTag.Effects);
+            return;
+        }
+
+        DebugLogger.Log($"Getting targets for {Name}'s damage effect. TargetType: {action.targetType}, Damage: {action.value}", LogTag.Creatures | LogTag.Actions);
+        var targets = TargetingSystem.GetValidTargets(owner, action.targetType);
+        DebugLogger.Log($"Found {targets.Count} targets for {Name}'s damage effect", LogTag.Creatures | LogTag.Actions);
+
+        foreach (var target in targets) {
+            if (target is ICreature creature) {
+                DebugLogger.Log($"Adding DamageCreatureAction - Source: {Name}, Target: {creature.Name}, Damage: {action.value}", LogTag.Creatures | LogTag.Actions | LogTag.Combat);
+                actionsQueue.AddAction(new DamageCreatureAction(creature, action.value, this));
+            } else if (target is IPlayer player) {
+                DebugLogger.Log($"Adding DamagePlayerAction - Target: Player {(player.IsPlayer1() ? "1" : "2")}, Damage: {action.value}", LogTag.Creatures | LogTag.Actions | LogTag.Players | LogTag.Combat);
+                actionsQueue.AddAction(new DamagePlayerAction(player, action.value));
             }
         }
     }

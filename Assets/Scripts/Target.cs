@@ -1,13 +1,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using static Enums;
+
 public interface ITarget {
     string TargetId { get; }
     bool IsValidTarget(IPlayer controller);
 }
 
-public class TargetingSystem : Singleton<TargetingSystem> {
-    public List<ITarget> GetValidTargets(IPlayer controller, TargetType targetType) {
+public static class TargetingSystem {
+    public static List<ITarget> GetValidTargets(IPlayer controller, TargetType targetType) {
         var validTargets = new List<ITarget>();
 
         switch (targetType) {

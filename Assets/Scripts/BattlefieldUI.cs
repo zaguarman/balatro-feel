@@ -10,21 +10,31 @@ public class BattlefieldUI : CardContainer {
     private CardController attackingCard;
     private Dictionary<string, ArrowIndicator> activeArrows = new Dictionary<string, ArrowIndicator>();
 
+    private const LogTag INITIALIZATION_LOG_TAG = LogTag.Initialization;
+    private const LogTag CREATURE_LOG_TAG = LogTag.Creatures;
+    private const LogTag ACTIONS_LOG_TAG = LogTag.Actions;
+    private const LogTag CARD_LOG_TAG = LogTag.Cards;
+
     private void Start() {
         gameManager = GameManager.Instance;
         SetupDragArrow();
+        DebugLogger.Log("BattlefieldUI initialized", INITIALIZATION_LOG_TAG);
     }
 
     private void SetupDragArrow() {
         dragArrowIndicator = ArrowIndicator.Create(transform);
         dragArrowIndicator.Hide();
+        DebugLogger.Log("Drag arrow indicator setup completed", INITIALIZATION_LOG_TAG);
     }
 
     protected override void HandleCardDropped(CardController card) {
-        if (card == null || !CanAcceptCard(card)) return;
+        if (card == null || !CanAcceptCard(card)) {
+            DebugLogger.Log("Card dropped is null or cannot be accepted", CARD_LOG_TAG);
+            return;
+        }
 
         if (gameManager == null) {
-            Debug.LogError("GameManager reference is null in BattlefieldUI");
+            DebugLogger.LogError("GameManager reference is null", INITIALIZATION_LOG_TAG);
             return;
         }
 
@@ -40,13 +50,25 @@ public class BattlefieldUI : CardContainer {
 
     private void HandleNewCreature(CardController card) {
         if (card.GetCardData() is CreatureData creatureData) {
-            gameManager.PlayCard(creatureData, card.IsPlayer1Card() ? gameManager.Player1 : gameManager.Player2);
-            gameMediator?.NotifyGameStateChanged();
+            var gameManager = GameManager.Instance;
+            if (gameManager != null) {
+                DebugLogger.Log($"Creating new creature from {creatureData.cardName} with {creatureData.effects.Count} effects",
+                    CREATURE_LOG_TAG | ACTIONS_LOG_TAG);
+
+                // Create the card through CardFactory to ensure effects are copied
+                ICard newCard = CardFactory.CreateCard(creatureData);
+                if (newCard != null) {
+                    DebugLogger.Log($"Playing creature with {newCard.Effects.Count} effects", CREATURE_LOG_TAG | ACTIONS_LOG_TAG);
+                    newCard.Play(card.IsPlayer1Card() ? gameManager.Player1 : gameManager.Player2, gameManager.ActionsQueue);
+                    gameMediator?.NotifyGameStateChanged();
+                }
+            }
         }
     }
 
     private void HandleCreatureCombat(CardController attackingCard) {
-        Debug.Log($"[Combat] Starting combat with attacker: {attackingCard.GetCardData().cardName}");
+        DebugLogger.Log($"Starting combat with attacker: {attackingCard.GetCardData().cardName}",
+            ACTIONS_LOG_TAG | CREATURE_LOG_TAG);
 
         // Convert mouse position to world space
         Vector3 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
@@ -57,41 +79,46 @@ public class BattlefieldUI : CardContainer {
         var raycastResults = new List<RaycastResult>();
         EventSystem.current.RaycastAll(pointerEventData, raycastResults);
 
-        Debug.Log($"[Combat] Found {raycastResults.Count} potential targets under mouse position");
+        DebugLogger.Log($"Found {raycastResults.Count} potential targets under mouse position", ACTIONS_LOG_TAG);
 
         foreach (var result in raycastResults) {
             var targetCardController = result.gameObject.GetComponent<CardController>();
             if (targetCardController != null && targetCardController != attackingCard) {
-                Debug.Log($"[Combat] Found target card: {targetCardController.GetCardData().cardName}");
+                DebugLogger.Log($"Found target card: {targetCardController.GetCardData().cardName}", ACTIONS_LOG_TAG);
 
                 // Ensure the target is an enemy creature
                 bool isEnemyCreature = targetCardController.IsPlayer1Card() != attackingCard.IsPlayer1Card();
-                Debug.Log($"[Combat] Is enemy creature? {isEnemyCreature}");
+                DebugLogger.Log($"Is enemy creature? {isEnemyCreature}", ACTIONS_LOG_TAG);
 
                 if (isEnemyCreature) {
                     // Get the actual creatures from the battlefield
                     var attackerCreature = FindCreatureByTargetId(attackingCard);
                     var targetCreature = FindCreatureByTargetId(targetCardController);
 
-                    Debug.Log($"[Combat] Found attacker creature: {(attackerCreature != null ? attackerCreature.Name : "null")}");
-                    Debug.Log($"[Combat] Found target creature: {(targetCreature != null ? targetCreature.Name : "null")}");
+                    DebugLogger.Log($"Found attacker creature: {(attackerCreature != null ? attackerCreature.Name : "null")}",
+                        CREATURE_LOG_TAG | ACTIONS_LOG_TAG);
+                    DebugLogger.Log($"Found target creature: {(targetCreature != null ? targetCreature.Name : "null")}",
+                        CREATURE_LOG_TAG | ACTIONS_LOG_TAG);
 
                     if (attackerCreature != null && targetCreature != null) {
-                        Debug.Log($"[Combat] Creating DamageCreatureAction - Attacker: {attackerCreature.Name}, Attack: {attackerCreature.Attack}, Target: {targetCreature.Name}, Current Health: {targetCreature.Health}");
+                        DebugLogger.Log($"Creating DamageCreatureAction - Attacker: {attackerCreature.Name}, Attack: {attackerCreature.Attack}, Target: {targetCreature.Name}, Current Health: {targetCreature.Health}",
+                            ACTIONS_LOG_TAG | CREATURE_LOG_TAG);
 
                         // Create damage action including the attacker reference
                         var damageAction = new DamageCreatureAction(targetCreature, attackerCreature.Attack, attackerCreature);
                         gameManager.ActionsQueue.AddAction(damageAction);
 
-                        Debug.Log($"[Combat] Added damage action to queue. Queue size: {gameManager.ActionsQueue.GetPendingActionsCount()}");
+                        DebugLogger.Log($"Added damage action to queue. Queue size: {gameManager.ActionsQueue.GetPendingActionsCount()}",
+                            ACTIONS_LOG_TAG);
 
                         // Force an immediate update of the arrows
                         UpdateArrowsFromActionsQueue();
-                        Debug.Log("[Combat] Updated arrows from queue after adding action");
+                        DebugLogger.Log("Updated arrows from queue after adding action", ACTIONS_LOG_TAG);
 
                         gameMediator?.NotifyGameStateChanged();
                     } else {
-                        Debug.LogWarning("[Combat] Failed to find either attacker or target creature in battlefield");
+                        DebugLogger.LogWarning("Failed to find either attacker or target creature in battlefield",
+                            CREATURE_LOG_TAG | ACTIONS_LOG_TAG);
                     }
                     break;
                 }
@@ -101,37 +128,39 @@ public class BattlefieldUI : CardContainer {
 
     private ICreature FindCreatureByTargetId(CardController cardController) {
         if (cardController == null) {
-            Debug.LogWarning("[FindCreature] CardController is null");
+            DebugLogger.LogWarning("CardController is null", CREATURE_LOG_TAG);
             return null;
         }
 
         string targetId = cardController.GetLinkedCreatureId();
         if (string.IsNullOrEmpty(targetId)) {
-            Debug.LogWarning("[FindCreature] No linked creature ID found");
+            DebugLogger.LogWarning("No linked creature ID found", CREATURE_LOG_TAG);
             return null;
         }
 
-        Debug.Log($"[FindCreature] Looking for creature with TargetId: {targetId}");
+        DebugLogger.Log($"Looking for creature with TargetId: {targetId}", CREATURE_LOG_TAG);
 
         var player1Creature = gameManager.Player1.Battlefield.FirstOrDefault(c => c.TargetId == targetId);
         if (player1Creature != null) {
-            Debug.Log($"[FindCreature] Found creature in Player1's battlefield. TargetId: {player1Creature.TargetId}, Name: {player1Creature.Name}, Health: {player1Creature.Health}, Attack: {player1Creature.Attack}");
+            DebugLogger.Log($"Found creature in Player1's battlefield. TargetId: {player1Creature.TargetId}, Name: {player1Creature.Name}, Health: {player1Creature.Health}, Attack: {player1Creature.Attack}",
+                CREATURE_LOG_TAG);
             return player1Creature;
         }
 
         var player2Creature = gameManager.Player2.Battlefield.FirstOrDefault(c => c.TargetId == targetId);
         if (player2Creature != null) {
-            Debug.Log($"[FindCreature] Found creature in Player2's battlefield. TargetId: {player2Creature.TargetId}, Name: {player2Creature.Name}, Health: {player2Creature.Health}, Attack: {player2Creature.Attack}");
+            DebugLogger.Log($"Found creature in Player2's battlefield. TargetId: {player2Creature.TargetId}, Name: {player2Creature.Name}, Health: {player2Creature.Health}, Attack: {player2Creature.Attack}",
+                CREATURE_LOG_TAG);
             return player2Creature;
         }
 
-        Debug.LogWarning($"[FindCreature] Could not find creature with TargetId {targetId} in either battlefield");
+        DebugLogger.LogWarning($"Could not find creature with TargetId {targetId} in either battlefield", CREATURE_LOG_TAG);
         return null;
     }
 
     private CardController FindCardControllerForCreature(ICreature creature) {
         if (creature == null) return null;
-        Debug.Log($"[FindCardController] Looking for creature with TargetId: {creature.TargetId}");
+        DebugLogger.Log($"Looking for creature with TargetId: {creature.TargetId}", CREATURE_LOG_TAG);
 
         // First look in current battlefield
         var cardInCurrentBattlefield = creatureCards.Values.FirstOrDefault(card => {
@@ -140,7 +169,7 @@ public class BattlefieldUI : CardContainer {
         });
 
         if (cardInCurrentBattlefield != null) {
-            Debug.Log($"[FindCardController] Found creature in current battlefield with TargetId: {creature.TargetId}");
+            DebugLogger.Log($"Found creature in current battlefield with TargetId: {creature.TargetId}", CREATURE_LOG_TAG);
             return cardInCurrentBattlefield;
         }
 
@@ -156,21 +185,21 @@ public class BattlefieldUI : CardContainer {
             });
 
             if (cardInOtherBattlefield != null) {
-                Debug.Log($"[FindCardController] Found creature in opponent battlefield with TargetId: {creature.TargetId}");
+                DebugLogger.Log($"Found creature in opponent battlefield with TargetId: {creature.TargetId}", CREATURE_LOG_TAG);
                 return cardInOtherBattlefield;
             }
         }
 
-        Debug.LogWarning($"[FindCardController] Could not find card controller for creature with TargetId: {creature.TargetId}");
+        DebugLogger.LogWarning($"Could not find card controller for creature with TargetId: {creature.TargetId}", CREATURE_LOG_TAG);
         return null;
     }
 
     public override void UpdateUI() {
         if (!IsInitialized || player == null) {
-            Debug.LogWarning("[BattlefieldUI] UpdateUI called but not initialized or player is null");
+            DebugLogger.LogWarning("UpdateUI called but not initialized or player is null", INITIALIZATION_LOG_TAG);
             return;
         }
-        Debug.Log($"[BattlefieldUI] Updating UI for {(player.IsPlayer1() ? "Player 1" : "Player 2")}'s battlefield");
+        DebugLogger.Log($"Updating UI for {(player.IsPlayer1() ? "Player 1" : "Player 2")}'s battlefield", CREATURE_LOG_TAG);
 
         UpdateArrowsFromActionsQueue();
 
@@ -211,44 +240,46 @@ public class BattlefieldUI : CardContainer {
     }
 
     private void UpdateArrowsFromActionsQueue() {
-        Debug.Log("[UpdateArrowsFromActionsQueue] Starting update...");
+        DebugLogger.Log("Starting update of arrows from actions queue", ACTIONS_LOG_TAG);
 
         // Clear existing arrows
         foreach (var arrow in activeArrows.Values) {
             if (arrow != null) {
-                Debug.Log($"[UpdateArrowsFromActionsQueue] Destroying existing arrow");
+                DebugLogger.Log("Destroying existing arrow", ACTIONS_LOG_TAG);
                 Destroy(arrow.gameObject);
             }
         }
         activeArrows.Clear();
 
         if (gameManager.ActionsQueue == null) {
-            Debug.LogWarning("[UpdateArrowsFromActionsQueue] ActionsQueue is null!");
+            DebugLogger.LogWarning("ActionsQueue is null!", ACTIONS_LOG_TAG);
             return;
         }
 
         var pendingActions = gameManager.ActionsQueue.GetPendingActions();
-        Debug.Log($"[UpdateArrowsFromActionsQueue] Found {pendingActions.Count} pending actions");
+        DebugLogger.Log($"Found {pendingActions.Count} pending actions", ACTIONS_LOG_TAG);
 
         foreach (var action in pendingActions) {
-            Debug.Log($"[UpdateArrowsFromActionsQueue] Processing action of type: {action.GetType().Name}");
+            DebugLogger.Log($"Processing action of type: {action.GetType().Name}", ACTIONS_LOG_TAG);
 
             if (action is DamageCreatureAction damageAction) {
                 var attacker = damageAction.GetAttacker();
                 var target = damageAction.GetTarget();
 
-                Debug.Log($"[UpdateArrowsFromActionsQueue] Found DamageCreatureAction - Attacker: {attacker?.Name}, Target: {target?.Name}");
+                DebugLogger.Log($"Found DamageCreatureAction - Attacker: {attacker?.Name}, Target: {target?.Name}",
+                    ACTIONS_LOG_TAG | CREATURE_LOG_TAG);
 
                 // Find the relevant card controllers
                 var attackerCard = FindCardControllerForCreature(attacker);
                 var targetCard = FindCardControllerForCreature(target);
 
-                Debug.Log($"[UpdateArrowsFromActionsQueue] Found cards - Attacker: {(attackerCard != null)}, Target: {(targetCard != null)}");
+                DebugLogger.Log($"Found cards - Attacker: {(attackerCard != null)}, Target: {(targetCard != null)}",
+                    ACTIONS_LOG_TAG | CREATURE_LOG_TAG);
 
                 if (attackerCard != null && targetCard != null) {
                     // Create new arrow
                     var arrow = ArrowIndicator.Create(transform);
-                    Debug.Log($"[UpdateArrowsFromActionsQueue] Created new ArrowIndicator");
+                    DebugLogger.Log("Created new ArrowIndicator", ACTIONS_LOG_TAG);
 
                     // Get world positions of the cards
                     Vector3 startPos = attackerCard.transform.position;
@@ -259,14 +290,15 @@ public class BattlefieldUI : CardContainer {
                     endPos.z = 0;
 
                     arrow.Show(startPos, endPos);
-                    Debug.Log($"[UpdateArrowsFromActionsQueue] Showed arrow from {startPos} to {endPos}");
+                    DebugLogger.Log($"Showed arrow from {startPos} to {endPos}", ACTIONS_LOG_TAG);
 
                     string attackerId = attackerCard.GetCardData().cardName;
                     activeArrows[attackerId] = arrow;
 
-                    Debug.Log($"[UpdateArrowsFromActionsQueue] Added arrow to activeArrows dictionary. Count: {activeArrows.Count}");
+                    DebugLogger.Log($"Added arrow to activeArrows dictionary. Count: {activeArrows.Count}", ACTIONS_LOG_TAG);
                 } else {
-                    Debug.LogWarning("[UpdateArrowsFromActionsQueue] Could not find either attacker or target card controller");
+                    DebugLogger.LogWarning("Could not find either attacker or target card controller",
+                        ACTIONS_LOG_TAG | CREATURE_LOG_TAG);
                 }
             }
         }
@@ -276,6 +308,7 @@ public class BattlefieldUI : CardContainer {
         if (gameMediator != null) {
             gameMediator.AddGameStateChangedListener(UpdateUI);
             gameMediator.AddCreatureDiedListener(OnCreatureDied);
+            DebugLogger.Log("Registered game events", INITIALIZATION_LOG_TAG);
         }
     }
 
@@ -283,79 +316,80 @@ public class BattlefieldUI : CardContainer {
         if (gameMediator != null) {
             gameMediator.RemoveGameStateChangedListener(UpdateUI);
             gameMediator.RemoveCreatureDiedListener(OnCreatureDied);
+            DebugLogger.Log("Unregistered game events", INITIALIZATION_LOG_TAG);
         }
     }
 
     private void OnCreatureDied(ICreature creature) {
-    if (!IsInitialized) return;
+        if (!IsInitialized) return;
 
-    Debug.Log($"[BattlefieldUI] Handling creature death: {creature.Name}");
-    if (creatureCards.TryGetValue(creature.TargetId, out CardController card)) {
-        Debug.Log($"[BattlefieldUI] Removing card for dead creature: {creature.Name}");
-        RemoveCard(card);
-        if (card != null) {
-            Destroy(card.gameObject);
+        DebugLogger.Log($"Handling creature death: {creature.Name}", CREATURE_LOG_TAG);
+        if (creatureCards.TryGetValue(creature.TargetId, out CardController card)) {
+            DebugLogger.Log($"Removing card for dead creature: {creature.Name}", CREATURE_LOG_TAG);
+            RemoveCard(card);
+            if (card != null) {
+                Destroy(card.gameObject);
+            }
+            creatureCards.Remove(creature.TargetId);
         }
-        creatureCards.Remove(creature.TargetId);
+
+        // Force layout update
+        UpdateLayout();
     }
 
-    // Force layout update
-    UpdateLayout();
-}
+    // Dragging functionality
+    protected override void OnCardBeginDrag(CardController card) {
+        if (card == null) return;
 
-// Dragging functionality
-protected override void OnCardBeginDrag(CardController card) {
-    if (card == null) return;
+        attackingCard = card;
+        Vector3 startPos = card.transform.position;
+        startPos.z = 0;
+        dragArrowIndicator.Show(startPos, startPos);
+        card.transform.SetAsLastSibling();
 
-    attackingCard = card;
-    Vector3 startPos = card.transform.position;
-    startPos.z = 0;
-    dragArrowIndicator.Show(startPos, startPos);
-    card.transform.SetAsLastSibling();
-
-    Debug.Log($"Started dragging card at position: {startPos}");
-}
-
-public void OnCardDrag(PointerEventData eventData) {
-    if (dragArrowIndicator != null && dragArrowIndicator.IsVisible()) {
-        // Convert screen position to world position
-        Vector3 worldPos = Camera.main.ScreenToWorldPoint(eventData.position);
-        worldPos.z = 0; // Keep it on the same Z plane as the cards
-        dragArrowIndicator.UpdateEndPosition(worldPos);
-
-        Debug.Log($"Dragging arrow to position: {worldPos}");
-    }
-}
-
-protected override void OnCardEndDrag(CardController card) {
-    if (dragArrowIndicator != null) {
-        dragArrowIndicator.Hide(); // Only hide the drag indicator
+        DebugLogger.Log($"Started dragging card at position: {startPos}", CARD_LOG_TAG);
     }
 
-    // Don't need to clear activeArrows here since they're managed by UpdateArrowsFromActionsQueue
-    attackingCard = null;
-    UpdateLayout();
+    public void OnCardDrag(PointerEventData eventData) {
+        if (dragArrowIndicator != null && dragArrowIndicator.IsVisible()) {
+            // Convert screen position to world position
+            Vector3 worldPos = Camera.main.ScreenToWorldPoint(eventData.position);
+            worldPos.z = 0; // Keep it on the same Z plane as the cards
+            dragArrowIndicator.UpdateEndPosition(worldPos);
 
-    // Update the arrows based on the current state of the ActionsQueue
-    UpdateArrowsFromActionsQueue();
-}
-
-// Empty implementations - no hover effects
-protected override void OnCardHoverEnter(CardController card) { }
-protected override void OnCardHoverExit(CardController card) { }
-
-protected override void OnDestroy() {
-    foreach (var arrow in activeArrows.Values) {
-        if (arrow != null) {
-            Destroy(arrow.gameObject);
+            DebugLogger.Log($"Dragging arrow to position: {worldPos}", CARD_LOG_TAG);
         }
     }
-    activeArrows.Clear();
 
-    if (dragArrowIndicator != null) {
-        Destroy(dragArrowIndicator.gameObject);
+    protected override void OnCardEndDrag(CardController card) {
+        if (dragArrowIndicator != null) {
+            dragArrowIndicator.Hide(); // Only hide the drag indicator
+        }
+
+        // Don't need to clear activeArrows here since they're managed by UpdateArrowsFromActionsQueue
+        attackingCard = null;
+        UpdateLayout();
+
+        // Update the arrows based on the current state of the ActionsQueue
+        UpdateArrowsFromActionsQueue();
     }
 
-    base.OnDestroy();
-}
+    // Empty implementations - no hover effects
+    protected override void OnCardHoverEnter(CardController card) { }
+    protected override void OnCardHoverExit(CardController card) { }
+
+    protected override void OnDestroy() {
+        foreach (var arrow in activeArrows.Values) {
+            if (arrow != null) {
+                Destroy(arrow.gameObject);
+            }
+        }
+        activeArrows.Clear();
+
+        if (dragArrowIndicator != null) {
+            Destroy(dragArrowIndicator.gameObject);
+        }
+
+        base.OnDestroy();
+    }
 }
