@@ -1,53 +1,49 @@
+using static DebugLogger;
 using System.Collections.Generic;
 using System.Linq;
-using static DebugLogger;
 
 public class ActionsQueue {
     private Queue<IGameAction> actionQueue = new Queue<IGameAction>();
-    private HashSet<string> attackingCreatureIds = new HashSet<string>();
     private int maxIterationDepth = 3;
     private int currentIterationDepth = 0;
 
+    // Add event for action resolution
     public event System.Action OnActionsResolved;
 
     public void AddAction(IGameAction action) {
-        if (currentIterationDepth >= maxIterationDepth) return;
+        if (currentIterationDepth < maxIterationDepth) {
+            // If it's a damage action, check if we need to replace an existing one
+            if (action is DamageCreatureAction damageAction) {
+                RemoveExistingDamageAction(damageAction.GetAttacker());
+            }
 
-        if (action is DamageCreatureAction damageAction) {
-            HandleDamageAction(damageAction);
-        } else {
             actionQueue.Enqueue(action);
+            Log($"Added action to queue: {action.GetType()}", LogTag.Actions);
         }
-
-        Log($"Added action to queue: {action.GetType()}", LogTag.Actions);
     }
 
-    private void HandleDamageAction(DamageCreatureAction newAction) {
-        var attacker = newAction.GetAttacker();
-        if (attacker == null) {
-            actionQueue.Enqueue(newAction);
-            return;
-        }
+    private void RemoveExistingDamageAction(ICreature attacker) {
+        if (attacker == null) return;
 
-        // Remove any existing attacks from this creature
-        RemoveExistingAttacks(attacker.TargetId);
+        var currentActions = actionQueue.ToList();
+        bool found = false;
 
-        // Add the new attack and mark the creature as having attacked
-        actionQueue.Enqueue(newAction);
-        attackingCreatureIds.Add(attacker.TargetId);
-
-        Log($"Updated attack for creature {attacker.Name}", LogTag.Actions | LogTag.Combat);
-    }
-
-    private void RemoveExistingAttacks(string attackerId) {
-        var remainingActions = actionQueue
-            .Where(action => !(action is DamageCreatureAction damageAction &&
-                             damageAction.GetAttacker()?.TargetId == attackerId))
-            .ToList();
-
+        // Clear the queue
         actionQueue.Clear();
-        foreach (var action in remainingActions) {
-            actionQueue.Enqueue(action);
+
+        // Re-add actions, skipping the old damage action from the same attacker
+        foreach (var existingAction in currentActions) {
+            if (existingAction is DamageCreatureAction existingDamage &&
+                existingDamage.GetAttacker()?.TargetId == attacker.TargetId) {
+                found = true;
+                Log($"Removing existing damage action for {attacker.Name}", LogTag.Actions);
+                continue;
+            }
+            actionQueue.Enqueue(existingAction);
+        }
+
+        if (found) {
+            Log($"Replaced damage action for {attacker.Name}", LogTag.Actions);
         }
     }
 
@@ -61,17 +57,9 @@ public class ActionsQueue {
         }
 
         currentIterationDepth--;
-        ResetAttackingCreatures();
+
+        // Notify listeners that actions have been resolved
         OnActionsResolved?.Invoke();
-    }
-
-    public void ResetAttackingCreatures() {
-        attackingCreatureIds.Clear();
-        Log("Reset attacking creatures", LogTag.Creatures | LogTag.Combat);
-    }
-
-    public bool HasCreatureAttacked(string creatureId) {
-        return attackingCreatureIds.Contains(creatureId);
     }
 
     public int GetPendingActionsCount() {
