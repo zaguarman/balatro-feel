@@ -2,18 +2,44 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-[System.Serializable]
-public class PlayerUIReferences {
-    [Header("Main UI")]
-    public PlayerUI playerUI;
-    public TextMeshProUGUI healthText;
-
-    [Header("Card Containers")]
-    public HandUI handUI;
-    public BattlefieldUI battlefieldUI;
-}
-
 public class GameReferences : Singleton<GameReferences> {
+    [System.Serializable]
+    private class PlayerUIReferences {
+        [Header("Main UI")]
+        [SerializeField] private PlayerUI playerUI;
+        [SerializeField] private TextMeshProUGUI healthText;
+
+        [Header("Card Containers")]
+        [SerializeField] private HandUI handUI;
+        [SerializeField] private BattlefieldUI battlefieldUI;
+
+        public PlayerUI PlayerUI => playerUI;
+        public TextMeshProUGUI HealthText => healthText;
+        public HandUI HandUI => handUI;
+        public BattlefieldUI BattlefieldUI => battlefieldUI;
+
+        public bool ValidateReferences(string playerName) {
+            bool isValid = true;
+            if (playerUI == null) {
+                Debug.LogError($"{playerName} PlayerUI reference missing!");
+                isValid = false;
+            }
+            if (healthText == null) {
+                Debug.LogError($"{playerName} HealthText reference missing!");
+                isValid = false;
+            }
+            if (handUI == null) {
+                Debug.LogError($"{playerName} HandUI reference missing!");
+                isValid = false;
+            }
+            if (battlefieldUI == null) {
+                Debug.LogError($"{playerName} BattlefieldUI reference missing!");
+                isValid = false;
+            }
+            return isValid;
+        }
+    }
+
     [Header("Game Control")]
     [SerializeField] private Button resolveActionsButton;
 
@@ -28,6 +54,8 @@ public class GameReferences : Singleton<GameReferences> {
     [SerializeField] private Color player1CardColor = new Color(0.8f, 0.9f, 1f);
     [SerializeField] private Color player2CardColor = new Color(1f, 0.8f, 0.8f);
 
+    private bool referencesValidated = false;
+
     public override void Initialize() {
         if (IsInitialized) return;
         ValidateReferences();
@@ -35,35 +63,37 @@ public class GameReferences : Singleton<GameReferences> {
     }
 
     private void ValidateReferences() {
-        // Core UI validation
-        if (player1References.playerUI == null) Debug.LogError("Player1UI reference missing!");
-        if (player2References.playerUI == null) Debug.LogError("Player2UI reference missing!");
-        if (cardPrefab == null) Debug.LogError("CardPrefab reference missing!");
+        if (referencesValidated) return;
 
-        // Validate hand and battlefield UIs
-        ValidatePlayerReferences(player1References, "Player 1");
-        ValidatePlayerReferences(player2References, "Player 2");
+        bool isValid = true;
+
+        if (resolveActionsButton == null) {
+            Debug.LogError("ResolveActionsButton reference missing!");
+            isValid = false;
+        }
+
+        if (cardPrefab == null) {
+            Debug.LogError("CardPrefab reference missing!");
+            isValid = false;
+        }
+
+        isValid &= player1References.ValidateReferences("Player 1");
+        isValid &= player2References.ValidateReferences("Player 2");
+
+        referencesValidated = isValid;
     }
 
-    private void ValidatePlayerReferences(PlayerUIReferences refs, string playerName) {
-        if (refs.handUI == null) Debug.LogError($"{playerName} HandUI reference missing!");
-        if (refs.battlefieldUI == null) Debug.LogError($"{playerName} BattlefieldUI reference missing!");
-        if (refs.healthText == null) Debug.LogError($"{playerName} HealthText reference missing!");
-    }
-
-    // Player UI getters
-    public PlayerUI GetPlayer1UI() => player1References.playerUI;
-    public PlayerUI GetPlayer2UI() => player2References.playerUI;
-
-    // Card Container getters
-    public HandUI GetPlayer1HandUI() => player1References.handUI;
-    public HandUI GetPlayer2HandUI() => player2References.handUI;
-    public BattlefieldUI GetPlayer1BattlefieldUI() => player1References.battlefieldUI;
-    public BattlefieldUI GetPlayer2BattlefieldUI() => player2References.battlefieldUI;
-
-    // Shared components getters
+    // Immutable references getters
+    public PlayerUI GetPlayer1UI() => player1References.PlayerUI;
+    public PlayerUI GetPlayer2UI() => player2References.PlayerUI;
+    public HandUI GetPlayer1HandUI() => player1References.HandUI;
+    public HandUI GetPlayer2HandUI() => player2References.HandUI;
+    public BattlefieldUI GetPlayer1BattlefieldUI() => player1References.BattlefieldUI;
+    public BattlefieldUI GetPlayer2BattlefieldUI() => player2References.BattlefieldUI;
     public Button GetCardPrefab() => cardPrefab;
     public Button GetResolveActionsButton() => resolveActionsButton;
     public Color GetPlayer1CardColor() => player1CardColor;
     public Color GetPlayer2CardColor() => player2CardColor;
+
+    public bool AreReferencesValid() => referencesValidated;
 }

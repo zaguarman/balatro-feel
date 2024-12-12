@@ -1,6 +1,7 @@
 using System.Linq;
 using UnityEngine;
 using static DebugLogger;
+
 public class GameManager : InitializableComponent {
     private static GameManager instance;
     public static GameManager Instance {
@@ -45,6 +46,7 @@ public class GameManager : InitializableComponent {
         gameMediator = GameMediator.Instance;
         gameReferences = GameReferences.Instance;
         cardDealingService = new CardDealingService(gameMediator);
+        ActionsQueue = new ActionsQueue(gameMediator);
 
         InitializeGameSystem();
 
@@ -52,7 +54,6 @@ public class GameManager : InitializableComponent {
     }
 
     private void InitializeGameSystem() {
-        ActionsQueue = new ActionsQueue();
         InitializePlayers();
         InitializeCards();
         PlaceInitialCreatures();
@@ -83,22 +84,24 @@ public class GameManager : InitializableComponent {
             .Cast<CreatureData>()
             .ToList();
 
+        // Place creatures for Player 1
         for (int i = 0; i < 2; i++) {
             int randomIndex = random.Next(availableCreatures.Count);
             var creatureData = availableCreatures[randomIndex];
             var creature = new Creature(creatureData.cardName, creatureData.attack, creatureData.health, Player1);
             creature.SetOwner(Player1);
             Player1.AddToBattlefield(creature);
-            Log($"Added {creature.Name} to Player 1's battlefield with proper owner reference", LogTag.Creatures | LogTag.Initialization);
+            Log($"Added {creature.Name} to Player 1's battlefield", LogTag.Creatures | LogTag.Initialization);
         }
 
+        // Place creatures for Player 2
         for (int i = 0; i < 2; i++) {
             int randomIndex = random.Next(availableCreatures.Count);
             var creatureData = availableCreatures[randomIndex];
             var creature = new Creature(creatureData.cardName, creatureData.attack, creatureData.health, Player2);
             creature.SetOwner(Player2);
             Player2.AddToBattlefield(creature);
-            Log($"Added {creature.Name} to Player 2's battlefield with proper owner reference", LogTag.Creatures | LogTag.Initialization);
+            Log($"Added {creature.Name} to Player 2's battlefield", LogTag.Creatures | LogTag.Initialization);
         }
     }
 
@@ -118,13 +121,12 @@ public class GameManager : InitializableComponent {
     private void OnResolveButtonClicked() {
         if (ActionsQueue != null) {
             ActionsQueue.ResolveActions();
-            gameMediator?.NotifyGameStateChanged();
         }
     }
 
     public void PlayCard(CardData cardData, IPlayer player) {
         if (!IsInitialized) {
-            DebugLogger.LogError("Cannot play card - GameManager not initialized", LogTag.Actions | LogTag.Initialization);
+            LogError("Cannot play card - GameManager not initialized", LogTag.Actions | LogTag.Initialization);
             return;
         }
 
@@ -135,12 +137,11 @@ public class GameManager : InitializableComponent {
 
     public void ResolveActions() {
         if (!IsInitialized) {
-            DebugLogger.LogError("Cannot resolve actions - GameManager not initialized", LogTag.Actions | LogTag.Initialization);
+            LogError("Cannot resolve actions - GameManager not initialized", LogTag.Actions | LogTag.Initialization);
             return;
         }
 
         ActionsQueue.ResolveActions();
-        gameMediator.NotifyGameStateChanged();
         LogGameState("Actions resolved");
     }
 
@@ -179,6 +180,7 @@ public class GameManager : InitializableComponent {
                 gameMediator?.UnregisterPlayer(Player2);
             }
 
+            ActionsQueue?.Cleanup();
             instance = null;
         }
     }
