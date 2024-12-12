@@ -40,12 +40,12 @@ public class BattlefieldArrowManager {
     }
 
     public void UpdateArrowsFromActionsQueue() {
-        DebugLogger.Log("Starting update of arrows from actions queue", LogTag.Actions);
+        Log("Starting update of arrows from actions queue", LogTag.Actions);
 
         ClearExistingArrows();
 
         if (gameManager.ActionsQueue == null) {
-            DebugLogger.LogWarning("ActionsQueue is null!", LogTag.Actions);
+            LogWarning("ActionsQueue is null!", LogTag.Actions);
             return;
         }
 

@@ -20,14 +20,6 @@ public class BattlefieldUI : CardContainer {
 
     public override void Initialize(IPlayer player) {
         base.Initialize(player);
-
-        if (gameManager?.ActionsQueue != null) {
-            gameManager.ActionsQueue.OnActionsResolved += OnActionsResolved;
-        }
-    }
-
-    private void OnActionsResolved() {
-        combatHandler?.ResetAttackingCreatures();
     }
 
     public CardController GetCardControllerByCreatureId(string creatureId) {
@@ -74,12 +66,6 @@ public class BattlefieldUI : CardContainer {
         arrowManager.UpdateArrowsFromActionsQueue();
         UpdateCreatureCards();
         dropZoneHandler?.ResetVisualFeedback();
-    }
-
-    public void ResetAttackingCreatures() {
-        if (combatHandler != null) {
-            combatHandler.ResetAttackingCreatures();
-        }
     }
 
     private void UpdateCreatureCards() {
@@ -173,9 +159,6 @@ public class BattlefieldUI : CardContainer {
     protected override void OnCardHoverExit(CardController card) { }
 
     protected override void OnDestroy() {
-        if (gameManager?.ActionsQueue != null) {
-            gameManager.ActionsQueue.OnActionsResolved -= OnActionsResolved;
-        }
         base.OnDestroy();
     }
 }

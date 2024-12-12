@@ -6,7 +6,6 @@ using static DebugLogger;
 
 public class BattlefieldCombatHandler {
     private readonly GameManager gameManager;
-    private HashSet<string> attackingCreatureIds = new HashSet<string>();
 
     public BattlefieldCombatHandler(GameManager gameManager) {
         this.gameManager = gameManager;
@@ -21,7 +20,7 @@ public class BattlefieldCombatHandler {
         }
 
         // Check if creature has already attacked
-        if (attackingCreatureIds.Contains(attackerCreature.TargetId)) {
+        if (gameManager.ActionsQueue.HasCreatureAttacked(attackerCreature.TargetId)) {
             LogWarning($"Creature {attackerCreature.Name} has already attacked this turn",
                 LogTag.Creatures | LogTag.Combat);
             return;
@@ -37,8 +36,6 @@ public class BattlefieldCombatHandler {
         var targetCreature = FindCreatureByTargetId(targetCard);
 
         if (targetCreature != null) {
-            // Mark creature as having attacked
-            attackingCreatureIds.Add(attackerCreature.TargetId);
             CreateAndQueueDamageAction(attackerCreature, targetCreature);
         }
     }
@@ -85,12 +82,7 @@ public class BattlefieldCombatHandler {
         gameManager.ActionsQueue.AddAction(damageAction);
     }
 
-    public void ResetAttackingCreatures() {
-        attackingCreatureIds.Clear();
-        Log("Reset attacking creatures tracking", LogTag.Creatures | LogTag.Combat);
-    }
-
     public bool HasCreatureAttacked(string creatureId) {
-        return attackingCreatureIds.Contains(creatureId);
+        return gameManager.ActionsQueue.HasCreatureAttacked(creatureId);
     }
 }
