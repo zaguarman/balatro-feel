@@ -189,13 +189,20 @@ public class DebugLoggerEditor : Editor {
     }
 
     private bool IsClassEnabled(string className) {
+        if (classFiltersProp == null) return !whitelistModeProp.boolValue;
+        
         for (int i = 0; i < classFiltersProp.arraySize; i++) {
             var filter = classFiltersProp.GetArrayElementAtIndex(i);
-            if (filter.FindPropertyRelative("className").stringValue == className) {
-                return filter.FindPropertyRelative("isEnabled").boolValue;
+            var classNameProp = filter.FindPropertyRelative("className");
+            var isEnabledProp = filter.FindPropertyRelative("isEnabled");
+            
+            if (classNameProp.stringValue == className) {
+                return isEnabledProp.boolValue;
             }
         }
-        return false;
+        
+        // If no explicit setting is found, return true for whitelist mode (all selected by default)
+        return whitelistModeProp.boolValue;
     }
 
     private void AddClassFilter(string className) {
@@ -216,18 +223,39 @@ public class DebugLoggerEditor : Editor {
     }
 
     private void RemoveClassFilter(string className) {
-        for (int i = 0; i < classFiltersProp.arraySize; i++) {
-            var filter = classFiltersProp.GetArrayElementAtIndex(i);
-            if (filter.FindPropertyRelative("className").stringValue == className) {
-                filter.FindPropertyRelative("isEnabled").boolValue = false;
-                return;
+        // Always add an explicit entry when removing in whitelist mode
+        if (whitelistModeProp.boolValue) {
+            // Check if class filter already exists
+            for (int i = 0; i < classFiltersProp.arraySize; i++) {
+                var filter = classFiltersProp.GetArrayElementAtIndex(i);
+                if (filter.FindPropertyRelative("className").stringValue == className) {
+                    filter.FindPropertyRelative("isEnabled").boolValue = false;
+                    return;
+                }
+            }
+
+            // If no entry exists, create one with disabled state
+            classFiltersProp.InsertArrayElementAtIndex(classFiltersProp.arraySize);
+            var newFilter = classFiltersProp.GetArrayElementAtIndex(classFiltersProp.arraySize - 1);
+            newFilter.FindPropertyRelative("className").stringValue = className;
+            newFilter.FindPropertyRelative("isEnabled").boolValue = false;
+        } else {
+            // In blacklist mode, just set to disabled if exists
+            for (int i = 0; i < classFiltersProp.arraySize; i++) {
+                var filter = classFiltersProp.GetArrayElementAtIndex(i);
+                if (filter.FindPropertyRelative("className").stringValue == className) {
+                    filter.FindPropertyRelative("isEnabled").boolValue = false;
+                    return;
+                }
             }
         }
     }
 
     private void ToggleAllClasses(bool enable) {
+        // Clear existing filters
         classFiltersProp.ClearArray();
 
+        // Add all classes with the specified enabled state
         foreach (var className in DebugLogger.AvailableClasses) {
             classFiltersProp.InsertArrayElementAtIndex(classFiltersProp.arraySize);
             var filter = classFiltersProp.GetArrayElementAtIndex(classFiltersProp.arraySize - 1);

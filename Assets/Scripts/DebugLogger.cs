@@ -215,15 +215,6 @@ public class DebugLogger : MonoBehaviour {
             InitializeLogger();
         }
 
-        // If tags is All or None, special handling
-        if (tags == LogTag.None) return false;
-        if (tags == LogTag.All) {
-            // Check if any tag is enabled
-            tags = (LogTag)tagSettings
-                .Where(ts => ts.isEnabled)
-                .Aggregate(LogTag.None, (current, ts) => current | ts.tag);
-        }
-
         // Check if any of the tags are enabled
         bool anyTagEnabled = false;
         foreach (var setting in tagSettings) {
@@ -237,9 +228,9 @@ public class DebugLogger : MonoBehaviour {
 
         string className = GetClassName(sourceFilePath);
 
-        // If no class filters are set, allow all classes
-        if (classFilters == null || classFilters.Count == 0) {
-            return true;
+        // If whitelist mode is enabled and no classes are in the enabled set, block all logging
+        if (whitelistMode && _enabledClasses.Count == 0) {
+            return false;
         }
 
         // If whitelist mode is enabled, only allow listed classes
