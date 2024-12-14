@@ -16,6 +16,8 @@ public class DebugLoggerEditor : Editor {
     private Vector2 tagListScrollPosition;
     private string classSearchString = "";
     private string tagSearchString = "";
+    private bool allTagsSelected = true;
+    private bool allClassesSelected = true;
 
     private void OnEnable() {
         tagSettingsProp = serializedObject.FindProperty("tagSettings");
@@ -77,11 +79,9 @@ public class DebugLoggerEditor : Editor {
         showTagSettings = EditorGUILayout.Foldout(showTagSettings, "Tag Settings", true);
         if (showTagSettings) {
             EditorGUI.indentLevel++;
-
-            // Tag whitelist mode toggle and select all button
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.PropertyField(tagWhitelistModeProp, new GUIContent("Tag Whitelist Mode"));
-            if (GUILayout.Button(allTagsSelected ? "Deselect All" : "Select All", GUILayout.Width(120))) {
+            EditorGUILayout.PropertyField(tagWhitelistModeProp, new GUIContent("Whitelist"));
+            if (GUILayout.Button(allTagsSelected ? "Deselect All" : "Select All", GUILayout.Width(100))) {
                 ToggleAllTags();
             }
             EditorGUILayout.EndHorizontal();
@@ -92,7 +92,6 @@ public class DebugLoggerEditor : Editor {
             // Tag list with scrollview
             EditorGUILayout.LabelField("Available Tags");
             tagListScrollPosition = EditorGUILayout.BeginScrollView(tagListScrollPosition, GUILayout.Height(200));
-
             if (tagSettingsProp != null) {
                 // Filter and display tag settings
                 for (int i = 0; i < tagSettingsProp.arraySize; i++) {
@@ -102,7 +101,6 @@ public class DebugLoggerEditor : Editor {
                     SerializedProperty tagValueProp = tagSetting.FindPropertyRelative("tagValue");
                     SerializedProperty isEnabledProp = tagSetting.FindPropertyRelative("isEnabled");
                     SerializedProperty colorProp = tagSetting.FindPropertyRelative("color");
-
                     if (tagValueProp == null || isEnabledProp == null || colorProp == null) continue;
 
                     // Get the current tag name
@@ -116,20 +114,24 @@ public class DebugLoggerEditor : Editor {
                     }
 
                     EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.PropertyField(isEnabledProp, GUIContent.none, GUILayout.Width(10));
-                    EditorGUILayout.LabelField(tagName, GUILayout.ExpandWidth(true));
+                    // Calculate the minimum width needed for the text plus some padding
+                    float minTextWidth = GUI.skin.toggle.CalcSize(new GUIContent(tagName)).x + 15;
+                    bool newEnabled = EditorGUILayout.ToggleLeft(tagName, isEnabledProp.boolValue, GUILayout.Width(minTextWidth));
+                    if (newEnabled != isEnabledProp.boolValue) {
+                        isEnabledProp.boolValue = newEnabled;
+                    }
+
+                    GUILayout.FlexibleSpace();
                     EditorGUILayout.PropertyField(colorProp, GUIContent.none, GUILayout.Width(100));
                     EditorGUILayout.EndHorizontal();
                 }
             }
-
             EditorGUILayout.EndScrollView();
 
             // Reset colors button
             if (GUILayout.Button("Reset Colors")) {
                 ResetTagColors();
             }
-
             EditorGUI.indentLevel--;
         }
 
@@ -141,8 +143,8 @@ public class DebugLoggerEditor : Editor {
 
             // Class whitelist mode toggle and select all button
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.PropertyField(whitelistModeProp, new GUIContent("Whitelist Mode"));
-            if (GUILayout.Button(allClassesSelected ? "Deselect All" : "Select All", GUILayout.Width(120))) {
+            EditorGUILayout.PropertyField(whitelistModeProp, new GUIContent("Whitelist"));
+            if (GUILayout.Button(allClassesSelected ? "Deselect All" : "Select All", GUILayout.Width(100))) {
                 ToggleAllClasses();
             }
             EditorGUILayout.EndHorizontal();
@@ -152,8 +154,7 @@ public class DebugLoggerEditor : Editor {
 
             // Class list with checkboxes
             EditorGUILayout.LabelField("Available Classes");
-            classListScrollPosition = EditorGUILayout.BeginScrollView(classListScrollPosition,
-                GUILayout.Height(300));
+            classListScrollPosition = EditorGUILayout.BeginScrollView(classListScrollPosition, GUILayout.Height(300));
 
             var filteredClasses = DebugLogger.AvailableClasses
                 .Where(c => string.IsNullOrEmpty(classSearchString) ||
@@ -174,15 +175,11 @@ public class DebugLoggerEditor : Editor {
 
             EditorGUILayout.EndScrollView();
 
-
-
             EditorGUI.indentLevel--;
         }
 
         serializedObject.ApplyModifiedProperties();
     }
-
-    private bool allTagsSelected = true;
 
     private void ToggleAllTags() {
         if (tagSettingsProp == null) return;
@@ -276,8 +273,6 @@ public class DebugLoggerEditor : Editor {
             }
         }
     }
-
-    private bool allClassesSelected = true;
 
     private void ToggleAllClasses() {
         allClassesSelected = !allClassesSelected;
