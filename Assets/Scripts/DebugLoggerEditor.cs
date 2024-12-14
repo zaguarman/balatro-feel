@@ -61,7 +61,7 @@ public class DebugLoggerEditor : Editor {
 
     public override void OnInspectorGUI() {
         if (serializedObject == null) return;
-        
+
         serializedObject.Update();
 
         EditorGUILayout.Space();
@@ -83,7 +83,7 @@ public class DebugLoggerEditor : Editor {
             EditorGUILayout.LabelField("Available Tags");
             tagListScrollPosition = EditorGUILayout.BeginScrollView(tagListScrollPosition, GUILayout.Height(200));
 
-            GUI.enabled = !Application.isPlaying;
+            // Removed GUI.enabled = !Application.isPlaying to allow tag settings during play mode
 
             if (tagSettingsProp != null) {
                 // Filter and display tag settings
@@ -115,7 +115,6 @@ public class DebugLoggerEditor : Editor {
                 }
             }
 
-            GUI.enabled = true;
             EditorGUILayout.EndScrollView();
 
             // Add a button to reset to default colors
@@ -182,7 +181,7 @@ public class DebugLoggerEditor : Editor {
 
             SerializedProperty tagValueProp = tagSetting.FindPropertyRelative("tagValue");
             SerializedProperty colorProp = tagSetting.FindPropertyRelative("color");
-            
+
             if (tagValueProp == null || colorProp == null) continue;
 
             var currentTag = (DebugLogger.LogTag)tagValueProp.intValue;
@@ -196,23 +195,21 @@ public class DebugLoggerEditor : Editor {
 
     private bool IsClassEnabled(string className) {
         if (classFiltersProp == null) return !whitelistModeProp.boolValue;
-        
+
         for (int i = 0; i < classFiltersProp.arraySize; i++) {
             var filter = classFiltersProp.GetArrayElementAtIndex(i);
             var classNameProp = filter.FindPropertyRelative("className");
             var isEnabledProp = filter.FindPropertyRelative("isEnabled");
-            
+
             if (classNameProp.stringValue == className) {
                 return isEnabledProp.boolValue;
             }
         }
-        
-        // If no explicit setting is found, return true for whitelist mode (all selected by default)
+
         return whitelistModeProp.boolValue;
     }
 
     private void AddClassFilter(string className) {
-        // Check if class filter already exists
         for (int i = 0; i < classFiltersProp.arraySize; i++) {
             var filter = classFiltersProp.GetArrayElementAtIndex(i);
             if (filter.FindPropertyRelative("className").stringValue == className) {
@@ -221,7 +218,6 @@ public class DebugLoggerEditor : Editor {
             }
         }
 
-        // Add new class filter
         classFiltersProp.InsertArrayElementAtIndex(classFiltersProp.arraySize);
         var newFilter = classFiltersProp.GetArrayElementAtIndex(classFiltersProp.arraySize - 1);
         newFilter.FindPropertyRelative("className").stringValue = className;
@@ -229,9 +225,7 @@ public class DebugLoggerEditor : Editor {
     }
 
     private void RemoveClassFilter(string className) {
-        // Always add an explicit entry when removing in whitelist mode
         if (whitelistModeProp.boolValue) {
-            // Check if class filter already exists
             for (int i = 0; i < classFiltersProp.arraySize; i++) {
                 var filter = classFiltersProp.GetArrayElementAtIndex(i);
                 if (filter.FindPropertyRelative("className").stringValue == className) {
@@ -240,13 +234,11 @@ public class DebugLoggerEditor : Editor {
                 }
             }
 
-            // If no entry exists, create one with disabled state
             classFiltersProp.InsertArrayElementAtIndex(classFiltersProp.arraySize);
             var newFilter = classFiltersProp.GetArrayElementAtIndex(classFiltersProp.arraySize - 1);
             newFilter.FindPropertyRelative("className").stringValue = className;
             newFilter.FindPropertyRelative("isEnabled").boolValue = false;
         } else {
-            // In blacklist mode, just set to disabled if exists
             for (int i = 0; i < classFiltersProp.arraySize; i++) {
                 var filter = classFiltersProp.GetArrayElementAtIndex(i);
                 if (filter.FindPropertyRelative("className").stringValue == className) {
@@ -258,10 +250,8 @@ public class DebugLoggerEditor : Editor {
     }
 
     private void ToggleAllClasses(bool enable) {
-        // Clear existing filters
         classFiltersProp.ClearArray();
 
-        // Add all classes with the specified enabled state
         foreach (var className in DebugLogger.AvailableClasses) {
             classFiltersProp.InsertArrayElementAtIndex(classFiltersProp.arraySize);
             var filter = classFiltersProp.GetArrayElementAtIndex(classFiltersProp.arraySize - 1);
