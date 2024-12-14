@@ -100,7 +100,6 @@ public class DebugLogger : MonoBehaviour {
         }
 
         _instance = this;
-        DontDestroyOnLoad(gameObject);
 
         InitializeLogger();
     }
