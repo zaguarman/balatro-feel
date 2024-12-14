@@ -2144,7 +2144,8 @@ MonoBehaviour:
   - className: UIComponent
     isEnabled: 1
   showStackTrace: 0
-  whitelistMode: 0
+  whitelistMode: 1
+  tagWhitelistMode: 1
 --- !u!1 &2014619533
 GameObject:
   m_ObjectHideFlags: 0
