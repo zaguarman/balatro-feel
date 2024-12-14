@@ -88,6 +88,7 @@ public class DebugLogger : MonoBehaviour {
     [SerializeField] private List<ClassFilter> classFilters = new List<ClassFilter>();
     [SerializeField] private bool showStackTrace = false;
     [SerializeField] private bool whitelistMode = false;
+    [SerializeField] private bool tagWhitelistMode = false;
 
     private Dictionary<LogTag, string> _tagColorMap;
     private HashSet<string> _enabledClasses;
@@ -100,7 +101,6 @@ public class DebugLogger : MonoBehaviour {
         }
 
         _instance = this;
-
         InitializeLogger();
     }
 
@@ -214,12 +214,30 @@ public class DebugLogger : MonoBehaviour {
             InitializeLogger();
         }
 
-        // Check if any of the tags are enabled
+        // Check if any of the tags are enabled based on whitelist mode
         bool anyTagEnabled = false;
-        foreach (var setting in tagSettings) {
-            if (setting.isEnabled && (tags & setting.tag) != 0) {
-                anyTagEnabled = true;
-                break;
+        bool hasEnabledTags = tagSettings.Any(setting => setting.isEnabled);
+
+        if (tagWhitelistMode) {
+            // In whitelist mode, if no tags are enabled and tags parameter isn't All, block logging
+            if (!hasEnabledTags && tags != LogTag.All) {
+                return false;
+            }
+            // Only allow explicitly enabled tags
+            foreach (var setting in tagSettings) {
+                if (setting.isEnabled && (tags & setting.tag) != 0) {
+                    anyTagEnabled = true;
+                    break;
+                }
+            }
+        } else {
+            // In blacklist mode, allow if any non-disabled tag is present
+            anyTagEnabled = true;
+            foreach (var setting in tagSettings) {
+                if (!setting.isEnabled && (tags & setting.tag) != 0) {
+                    anyTagEnabled = false;
+                    break;
+                }
             }
         }
 

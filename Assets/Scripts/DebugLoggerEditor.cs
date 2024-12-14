@@ -9,6 +9,7 @@ public class DebugLoggerEditor : Editor {
     private SerializedProperty classFiltersProp;
     private SerializedProperty showStackTraceProp;
     private SerializedProperty whitelistModeProp;
+    private SerializedProperty tagWhitelistModeProp;
     private bool showTagSettings = true;
     private bool showClassFilters = true;
     private Vector2 classListScrollPosition;
@@ -21,6 +22,7 @@ public class DebugLoggerEditor : Editor {
         classFiltersProp = serializedObject.FindProperty("classFilters");
         showStackTraceProp = serializedObject.FindProperty("showStackTrace");
         whitelistModeProp = serializedObject.FindProperty("whitelistMode");
+        tagWhitelistModeProp = serializedObject.FindProperty("tagWhitelistMode");
 
         // Initialize default tag settings if empty
         if (!Application.isPlaying && (tagSettingsProp.arraySize == 0 || tagSettingsProp == null)) {
@@ -76,14 +78,16 @@ public class DebugLoggerEditor : Editor {
         if (showTagSettings) {
             EditorGUI.indentLevel++;
 
+            // Tag whitelist mode toggle
+            EditorGUILayout.PropertyField(tagWhitelistModeProp, new GUIContent("Tag Whitelist Mode",
+                "When enabled, only selected tags will be logged. When disabled, selected tags will be blocked from logging."));
+
             // Tag search bar
             tagSearchString = EditorGUILayout.TextField("Search Tags", tagSearchString ?? "");
 
             // Tag list with scrollview
             EditorGUILayout.LabelField("Available Tags");
             tagListScrollPosition = EditorGUILayout.BeginScrollView(tagListScrollPosition, GUILayout.Height(200));
-
-            // Removed GUI.enabled = !Application.isPlaying to allow tag settings during play mode
 
             if (tagSettingsProp != null) {
                 // Filter and display tag settings
@@ -117,10 +121,15 @@ public class DebugLoggerEditor : Editor {
 
             EditorGUILayout.EndScrollView();
 
-            // Add a button to reset to default colors
-            if (GUILayout.Button("Reset to Default Colors")) {
+            // Add buttons for tag operations
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Reset Colors")) {
                 ResetTagColors();
             }
+            if (GUILayout.Button(tagWhitelistModeProp.boolValue ? "Select All Tags" : "Deselect All Tags")) {
+                ToggleAllTags(tagWhitelistModeProp.boolValue);
+            }
+            EditorGUILayout.EndHorizontal();
 
             EditorGUI.indentLevel--;
         }
@@ -132,7 +141,7 @@ public class DebugLoggerEditor : Editor {
             EditorGUI.indentLevel++;
 
             // Whitelist/Blacklist mode toggle
-            EditorGUILayout.PropertyField(whitelistModeProp, new GUIContent("Whitelist Mode",
+            EditorGUILayout.PropertyField(whitelistModeProp, new GUIContent("Class Whitelist Mode",
                 "When enabled, only selected classes will be logged. When disabled, selected classes will be blocked from logging."));
 
             // Search bar
@@ -170,6 +179,20 @@ public class DebugLoggerEditor : Editor {
         }
 
         serializedObject.ApplyModifiedProperties();
+    }
+
+    private void ToggleAllTags(bool enable) {
+        if (tagSettingsProp == null) return;
+
+        for (int i = 0; i < tagSettingsProp.arraySize; i++) {
+            var tagSetting = tagSettingsProp.GetArrayElementAtIndex(i);
+            if (tagSetting != null) {
+                var isEnabledProp = tagSetting.FindPropertyRelative("isEnabled");
+                if (isEnabledProp != null) {
+                    isEnabledProp.boolValue = enable;
+                }
+            }
+        }
     }
 
     private void ResetTagColors() {
