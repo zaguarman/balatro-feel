@@ -14,30 +14,88 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   tagSettings:
   - tagValue: 1
-    isEnabled: 1
+    isEnabled: 0
     color: {r: 0.5019608, g: 1, b: 1, a: 1}
   - tagValue: 2
-    isEnabled: 1
+    isEnabled: 0
     color: {r: 1, g: 0.8784314, b: 0.4, a: 1}
   - tagValue: 4
-    isEnabled: 1
+    isEnabled: 0
     color: {r: 1, g: 0.6, b: 1, a: 1}
   - tagValue: 8
-    isEnabled: 1
+    isEnabled: 0
     color: {r: 0.5647059, g: 0.93333334, b: 0.5647059, a: 1}
   - tagValue: 16
-    isEnabled: 1
+    isEnabled: 0
     color: {r: 0.6784314, g: 0.84705883, b: 0.9019608, a: 1}
   - tagValue: 32
-    isEnabled: 1
+    isEnabled: 0
     color: {r: 0.8784314, g: 0.8784314, b: 0.8784314, a: 1}
   - tagValue: 64
-    isEnabled: 1
+    isEnabled: 0
     color: {r: 1, g: 0.6, b: 0.6, a: 1}
   - tagValue: 128
     isEnabled: 1
     color: {r: 0.87058824, g: 0.72156864, b: 0.5294118, a: 1}
-  classFilters: []
+  classFilters:
+  - className: ActionsQueue
+    isEnabled: 0
+  - className: ArrowIndicator
+    isEnabled: 0
+  - className: BattlefieldArrowManager
+    isEnabled: 0
+  - className: BattlefieldCombatHandler
+    isEnabled: 0
+  - className: BattlefieldUI
+    isEnabled: 0
+  - className: Card
+    isEnabled: 0
+  - className: CardContainer
+    isEnabled: 0
+  - className: CardController
+    isEnabled: 0
+  - className: CardData
+    isEnabled: 0
+  - className: CardDealingService
+    isEnabled: 0
+  - className: CardDropZone
+    isEnabled: 0
+  - className: CardFactory
+    isEnabled: 0
+  - className: ContainerSettings
+    isEnabled: 0
+  - className: Creature
+    isEnabled: 0
+  - className: Deck
+    isEnabled: 0
+  - className: Entity
+    isEnabled: 0
+  - className: GameActions
+    isEnabled: 0
+  - className: GameBootstrap
+    isEnabled: 0
+  - className: GameManager
+    isEnabled: 0
+  - className: GameMediator
+    isEnabled: 0
+  - className: GameReferences
+    isEnabled: 0
+  - className: GameUI
+    isEnabled: 0
+  - className: HandUI
+    isEnabled: 0
+  - className: HealthHandler
+    isEnabled: 0
+  - className: Player
+    isEnabled: 0
+  - className: PlayerUI
+    isEnabled: 0
+  - className: Target
+    isEnabled: 0
+  - className: TestSetup
+    isEnabled: 0
+  - className: UIComponent
+    isEnabled: 0
   showStackTrace: 0
-  whitelistMode: 1
-  tagWhitelistMode: 1
+  whitelistMode: 0
+  tagWhitelistMode: 0

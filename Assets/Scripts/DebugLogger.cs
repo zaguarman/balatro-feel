@@ -199,49 +199,45 @@ public class DebugLogger : MonoBehaviour {
             InitializeLogger();
         }
 
-        // Check if any of the tags are enabled based on whitelist mode
-        bool anyTagEnabled = false;
-        bool hasEnabledTags = settings.TagSettings.Any(setting => setting.isEnabled);
-
-        if (settings.TagWhitelistMode) {
-            // In whitelist mode, if no tags are enabled and tags parameter isn't All, block logging
-            if (!hasEnabledTags && tags != LogTag.All) {
-                return false;
-            }
-            // Only allow explicitly enabled tags
-            foreach (var setting in settings.TagSettings) {
-                if (setting.isEnabled && (tags & setting.tag) != 0) {
-                    anyTagEnabled = true;
-                    break;
-                }
-            }
-        } else {
-            // In blacklist mode, allow if any non-disabled tag is present
-            anyTagEnabled = true;
-            foreach (var setting in settings.TagSettings) {
-                if (!setting.isEnabled && (tags & setting.tag) != 0) {
-                    anyTagEnabled = false;
-                    break;
-                }
-            }
-        }
-
-        if (!anyTagEnabled) return false;
-
         string className = GetClassName(sourceFilePath);
 
-        // If whitelist mode is enabled and no classes are in the enabled set, block all logging
-        if (settings.WhitelistMode && _enabledClasses.Count == 0) {
-            return false;
+        // First check class filtering
+        bool classAllowed;
+        if (settings.WhitelistMode) {
+            // In whitelist mode, class must be in the enabled set
+            classAllowed = _enabledClasses.Count > 0 && _enabledClasses.Contains(className);
+        } else {
+            // In blacklist mode, class must NOT be in the enabled set
+            classAllowed = !_enabledClasses.Contains(className);
         }
 
-        // If whitelist mode is enabled, only allow listed classes
-        if (settings.WhitelistMode) {
-            return _enabledClasses.Contains(className);
-        }
-        // If blacklist mode is enabled, block listed classes
-        else {
-            return !_enabledClasses.Contains(className);
+        if (!classAllowed) return false;
+
+        // Then check tag filtering - skip if LogTag.All is specified
+        if (tags == LogTag.All) return true;
+
+        // Get all the active tags from the input (excluding None and All)
+        var activeTags = Enum.GetValues(typeof(LogTag))
+            .Cast<LogTag>()
+            .Where(tag => tag != LogTag.None && tag != LogTag.All && (tags & tag) != 0);
+
+        if (settings.TagWhitelistMode) {
+            // In whitelist mode, check if any of the active tags are enabled
+            bool hasEnabledTags = settings.TagSettings.Any(setting => setting.isEnabled);
+            if (!hasEnabledTags) return false;
+
+            return activeTags.Any(tag =>
+                settings.TagSettings.Any(setting =>
+                    setting.tag == tag && setting.isEnabled
+                )
+            );
+        } else {
+            // In blacklist mode, block if any active tag is selected in the list
+            return !activeTags.Any(tag =>
+                settings.TagSettings.Any(setting =>
+                    setting.tag == tag && setting.isEnabled // Block if the tag is enabled in blacklist mode
+                )
+            );
         }
     }
 

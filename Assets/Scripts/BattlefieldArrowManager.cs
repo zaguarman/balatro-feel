@@ -83,7 +83,7 @@ public class BattlefieldArrowManager {
         endPos.z = 0;
 
         arrow.Show(startPos, endPos);
-        activeArrows[attacker.Name] = arrow;
+        activeArrows[attacker.TargetId] = arrow;
     }
 
     private Vector3 GetCreaturePosition(ICreature creature) {
@@ -101,11 +101,11 @@ public class BattlefieldArrowManager {
 
         if (cardController != null) {
             var position = cardController.transform.position;
-            Log($"Found position for creature {creature.Name}: {position}", LogTag.Actions);
+            Log($"Found position for creature {creature.Name} with ID {creature.TargetId}: {position}", LogTag.Actions);
             return position;
         }
 
-        LogWarning($"Could not find CardController for creature {creature.Name}", LogTag.Actions);
+        LogWarning($"Could not find CardController for creature {creature.Name} with ID {creature.TargetId}", LogTag.Actions);
         return Vector3.zero;
     }
 
