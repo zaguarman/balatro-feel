@@ -101,6 +101,10 @@ public class DebugLoggerSettingsEditor : Editor {
         if (!Application.isPlaying && (tagSettingsProp.arraySize == 0 || tagSettingsProp == null)) {
             InitializeDefaultTagSettings();
         }
+
+        // Sync initial states
+        allTagsSelected = AreAllTagsEnabled();
+        allClassesSelected = AreAllClassesEnabled();
     }
 
     private void InitializeDefaultTagSettings() {
@@ -262,14 +266,16 @@ public class DebugLoggerSettingsEditor : Editor {
     private void ToggleAllTags() {
         if (tagSettingsProp == null) return;
 
-        allTagsSelected = !allTagsSelected;
+        // Set the target state based on current actual state
+        bool targetState = !AreAllTagsEnabled();
+        allTagsSelected = targetState;
 
         for (int i = 0; i < tagSettingsProp.arraySize; i++) {
             var tagSetting = tagSettingsProp.GetArrayElementAtIndex(i);
             if (tagSetting != null) {
                 var isEnabledProp = tagSetting.FindPropertyRelative("isEnabled");
                 if (isEnabledProp != null) {
-                    isEnabledProp.boolValue = allTagsSelected;
+                    isEnabledProp.boolValue = targetState;
                 }
             }
         }
@@ -348,7 +354,9 @@ public class DebugLoggerSettingsEditor : Editor {
     }
 
     private void ToggleAllClasses() {
-        allClassesSelected = !allClassesSelected;
+        // Set the target state based on current actual state
+        bool targetState = !AreAllClassesEnabled();
+        allClassesSelected = targetState;
 
         // Instead of clearing the array, we'll update existing entries
         // and only add new ones if necessary
@@ -361,18 +369,18 @@ public class DebugLoggerSettingsEditor : Editor {
                 var classNameProp = filter.FindPropertyRelative("className");
 
                 if (classNameProp.stringValue == className) {
-                    filter.FindPropertyRelative("isEnabled").boolValue = allClassesSelected;
+                    filter.FindPropertyRelative("isEnabled").boolValue = targetState;
                     found = true;
                     break;
                 }
             }
 
             // If entry wasn't found, add it only if necessary
-            if (!found && allClassesSelected != !whitelistModeProp.boolValue) {
+            if (!found && targetState != !whitelistModeProp.boolValue) {
                 classFiltersProp.InsertArrayElementAtIndex(classFiltersProp.arraySize);
                 var newFilter = classFiltersProp.GetArrayElementAtIndex(classFiltersProp.arraySize - 1);
                 newFilter.FindPropertyRelative("className").stringValue = className;
-                newFilter.FindPropertyRelative("isEnabled").boolValue = allClassesSelected;
+                newFilter.FindPropertyRelative("isEnabled").boolValue = targetState;
             }
         }
     }
