@@ -112,3 +112,38 @@ public class DirectDamageAction : IGameAction {
     public ICreature GetSource() => source;
     public int GetDamage() => damage;
 }
+
+public class SwapCreaturesAction : IGameAction {
+    private readonly ICreature creature1;
+    private readonly ICreature creature2;
+    private readonly int slot1Index;
+    private readonly int slot2Index;
+    private readonly IPlayer owner;
+
+    public SwapCreaturesAction(ICreature creature1, ICreature creature2, int slot1Index, int slot2Index, IPlayer owner) {
+        this.creature1 = creature1;
+        this.creature2 = creature2;
+        this.slot1Index = slot1Index;
+        this.slot2Index = slot2Index;
+        this.owner = owner;
+        Log($"Created SwapCreaturesAction between {creature1.Name} (slot {slot1Index}) and {creature2.Name} (slot {slot2Index})",
+            LogTag.Actions | LogTag.Creatures);
+    }
+
+    public void Execute() {
+        if (creature1 == null || creature2 == null || owner == null) {
+            LogError("Cannot execute swap - one or more components are null", LogTag.Actions | LogTag.Creatures);
+            return;
+        }
+
+        // Temporarily remove both creatures from battlefield
+        owner.RemoveFromBattlefield(creature1);
+        owner.RemoveFromBattlefield(creature2);
+
+        // Re-add them in swapped order using the slot-specific overload
+        ((Player)owner).AddToBattlefield(creature1, slot2Index);
+        ((Player)owner).AddToBattlefield(creature2, slot1Index);
+
+        Log($"Executed swap between {creature1.Name} and {creature2.Name}", LogTag.Actions | LogTag.Creatures);
+    }
+}

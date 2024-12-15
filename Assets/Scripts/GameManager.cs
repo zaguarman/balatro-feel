@@ -91,8 +91,10 @@ public class GameManager : InitializableComponent {
             var creature = CardFactory.CreateCard(creatureData) as Creature;
             if (creature != null) {
                 creature.SetOwner(Player1);
-                Player1.AddToBattlefield(creature);
-                Log($"Added {creature.Name} to Player 1's battlefield with {creature.Effects.Count} effects", LogTag.Creatures | LogTag.Initialization);
+                // Place in specific slots (0 and 1 for initial creatures)
+                ((Player)Player1).AddToBattlefield(creature, i);
+                Log($"Added {creature.Name} to Player 1's battlefield slot {i} with {creature.Effects.Count} effects",
+                    LogTag.Creatures | LogTag.Initialization);
             }
         }
 
@@ -103,8 +105,10 @@ public class GameManager : InitializableComponent {
             var creature = CardFactory.CreateCard(creatureData) as Creature;
             if (creature != null) {
                 creature.SetOwner(Player2);
-                Player2.AddToBattlefield(creature);
-                Log($"Added {creature.Name} to Player 2's battlefield with {creature.Effects.Count} effects", LogTag.Creatures | LogTag.Initialization);
+                // Place in specific slots (0 and 1 for initial creatures)
+                Player2.AddToBattlefield(creature, i);
+                Log($"Added {creature.Name} to Player 2's battlefield slot {i} with {creature.Effects.Count} effects",
+                    LogTag.Creatures | LogTag.Initialization);
             }
         }
     }

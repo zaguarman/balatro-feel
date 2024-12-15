@@ -7,9 +7,11 @@ using static DebugLogger;
 public class BattlefieldCombatHandler {
     private readonly GameManager gameManager;
     private HashSet<string> attackingCreatureIds = new HashSet<string>();
+    private readonly GameReferences gameReferences;
 
     public BattlefieldCombatHandler(GameManager gameManager) {
         this.gameManager = gameManager;
+        this.gameReferences = GameReferences.Instance;
     }
 
     public void HandleCreatureCombat(CardController attackingCard) {
@@ -20,25 +22,30 @@ public class BattlefieldCombatHandler {
             return;
         }
 
-        var targetCard = FindTargetCard(attackingCard);
-
-        if (targetCard == null) {
-            LogWarning("Target card is null", LogTag.Creatures | LogTag.Actions);
+        // Check if the creature has already attacked
+        if (HasCreatureAttacked(attackerCreature.TargetId)) {
+            LogWarning($"Creature {attackerCreature.Name} has already attacked this turn", LogTag.Creatures | LogTag.Combat);
             return;
         }
 
-        var targetCreature = FindCreatureByTargetId(targetCard);
+        var targetSlot = FindTargetSlot();
+        if (targetSlot != null && targetSlot.IsOccupied) {
+            var targetCard = targetSlot.OccupyingCard;
+            if (targetCard != null) {
+                var targetCreature = FindCreatureByTargetId(targetCard);
+                if (targetCreature != null && IsValidTarget(targetCard, attackingCard)) {
+                    // Create and queue the damage action
+                    CreateAndQueueDamageAction(attackerCreature, targetCreature);
 
-        if (targetCreature != null) {
-            // Create and queue the damage action
-            CreateAndQueueDamageAction(attackerCreature, targetCreature);
-
-            // Mark creature as having attacked only after the action is queued
-            attackingCreatureIds.Add(attackerCreature.TargetId);
+                    // Mark creature as having attacked only after the action is queued
+                    attackingCreatureIds.Add(attackerCreature.TargetId);
+                    Log($"{attackerCreature.Name} attacks {targetCreature.Name}", LogTag.Creatures | LogTag.Combat);
+                }
+            }
         }
     }
 
-    private CardController FindTargetCard(CardController attackingCard) {
+    private BattlefieldSlot FindTargetSlot() {
         var pointerEventData = new PointerEventData(EventSystem.current) {
             position = Input.mousePosition
         };
@@ -47,9 +54,9 @@ public class BattlefieldCombatHandler {
         EventSystem.current.RaycastAll(pointerEventData, raycastResults);
 
         foreach (var result in raycastResults) {
-            var targetCard = result.gameObject.GetComponent<CardController>();
-            if (IsValidTarget(targetCard, attackingCard)) {
-                return targetCard;
+            var slot = result.gameObject.GetComponent<BattlefieldSlot>();
+            if (slot != null) {
+                return slot;
             }
         }
 
