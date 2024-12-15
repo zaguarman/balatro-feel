@@ -88,20 +88,24 @@ public class GameManager : InitializableComponent {
         for (int i = 0; i < 2; i++) {
             int randomIndex = random.Next(availableCreatures.Count);
             var creatureData = availableCreatures[randomIndex];
-            var creature = new Creature(creatureData.cardName, creatureData.attack, creatureData.health, Player1);
-            creature.SetOwner(Player1);
-            Player1.AddToBattlefield(creature);
-            Log($"Added {creature.Name} to Player 1's battlefield", LogTag.Creatures | LogTag.Initialization);
+            var creature = CardFactory.CreateCard(creatureData) as Creature;
+            if (creature != null) {
+                creature.SetOwner(Player1);
+                Player1.AddToBattlefield(creature);
+                Log($"Added {creature.Name} to Player 1's battlefield with {creature.Effects.Count} effects", LogTag.Creatures | LogTag.Initialization);
+            }
         }
 
         // Place creatures for Player 2
         for (int i = 0; i < 2; i++) {
             int randomIndex = random.Next(availableCreatures.Count);
             var creatureData = availableCreatures[randomIndex];
-            var creature = new Creature(creatureData.cardName, creatureData.attack, creatureData.health, Player2);
-            creature.SetOwner(Player2);
-            Player2.AddToBattlefield(creature);
-            Log($"Added {creature.Name} to Player 2's battlefield", LogTag.Creatures | LogTag.Initialization);
+            var creature = CardFactory.CreateCard(creatureData) as Creature;
+            if (creature != null) {
+                creature.SetOwner(Player2);
+                Player2.AddToBattlefield(creature);
+                Log($"Added {creature.Name} to Player 2's battlefield with {creature.Effects.Count} effects", LogTag.Creatures | LogTag.Initialization);
+            }
         }
     }
 

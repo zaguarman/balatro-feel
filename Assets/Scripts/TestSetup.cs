@@ -1,12 +1,13 @@
-using UnityEngine;
-using System.Collections.Generic;
-using static Enums;
 using static DebugLogger;
+using static Enums;
+using System.Collections.Generic;
+using UnityEngine;
 
 public class TestSetup : MonoBehaviour {
     public List<CardData> CreateTestCards() {
         var cards = new List<CardData>();
 
+        // Basic Ogre (no changes needed)
         var ogre = ScriptableObject.CreateInstance<CreatureData>();
         ogre.cardName = "Ogre";
         ogre.description = "High attack power";
@@ -14,9 +15,10 @@ public class TestSetup : MonoBehaviour {
         ogre.health = 3;
         cards.Add(ogre);
 
+        // Thorned - Modified to target the attacker
         var thornCreature = ScriptableObject.CreateInstance<CreatureData>();
         thornCreature.cardName = "Thorned";
-        thornCreature.description = "Deals 1 damage when hit";
+        thornCreature.description = "Returns 1 damage when attacked";
         thornCreature.attack = 2;
         thornCreature.health = 6;
 
@@ -27,7 +29,7 @@ public class TestSetup : MonoBehaviour {
                 new EffectAction {
                     actionType = ActionType.Damage,
                     value = 1,
-                    targetType = TargetType.Enemy
+                    targetType = TargetType.EnemyCreatures // This will be filtered to just the attacker in the Creature.HandleDamageEffect
                 }
             }
         };
@@ -35,6 +37,7 @@ public class TestSetup : MonoBehaviour {
         Log($"Created Thorned card with {thornCreature.effects.Count} effects", LogTag.Cards | LogTag.Effects | LogTag.Initialization);
         cards.Add(thornCreature);
 
+        // Dragon - Modified to hit all enemy creatures
         var dragon = ScriptableObject.CreateInstance<CreatureData>();
         dragon.cardName = "Dragon";
         dragon.description = "Deals 2 damage to all enemy creatures when played";
@@ -56,6 +59,7 @@ public class TestSetup : MonoBehaviour {
         Log($"Created Dragon card with {dragon.effects.Count} effects", LogTag.Cards | LogTag.Effects | LogTag.Initialization);
         cards.Add(dragon);
 
+        // Rest of the cards remain unchanged
         var guardian = ScriptableObject.CreateInstance<CreatureData>();
         guardian.cardName = "Angel";
         guardian.description = "Heals friendly creatures at the start of your turn";

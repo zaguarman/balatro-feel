@@ -1,7 +1,7 @@
-using System.Collections.Generic;
-using System.Linq;
-using UnityEngine.Events;
 using static DebugLogger;
+using System.Collections.Generic;
+using UnityEngine.Events;
+using System.Linq;
 
 public class ActionsQueue {
     private Queue<IGameAction> actionQueue = new Queue<IGameAction>();
@@ -10,7 +10,6 @@ public class ActionsQueue {
     private Dictionary<string, DamageCreatureAction> pendingDamageActions = new Dictionary<string, DamageCreatureAction>();
     private readonly GameMediator gameMediator;
 
-    // Using UnityEvent for better Unity integration and editor support
     public readonly UnityEvent OnActionsQueued = new UnityEvent();
     public readonly UnityEvent OnActionsResolved = new UnityEvent();
 
@@ -24,7 +23,11 @@ public class ActionsQueue {
             return;
         }
 
-        if (action is DamageCreatureAction damageAction) {
+        // DirectDamageAction bypasses the pending actions system
+        if (action is DirectDamageAction) {
+            actionQueue.Enqueue(action);
+            Log($"Added DirectDamageAction to queue", LogTag.Actions);
+        } else if (action is DamageCreatureAction damageAction) {
             HandleDamageAction(damageAction);
         } else {
             actionQueue.Enqueue(action);

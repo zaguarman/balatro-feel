@@ -1,5 +1,6 @@
 using static DebugLogger;
 using static Enums;
+using System.Linq;
 
 public interface ICreature : ICard {
     int Attack { get; }
@@ -12,6 +13,7 @@ public class Creature : Card, ICreature {
     public int Health { get; private set; }
     private bool isDead = false;
     private IPlayer owner;
+    private ICreature lastAttacker;
 
     public Creature(string name, int attack, int health, IPlayer owner = null) : base(name) {
         Attack = attack;
@@ -31,9 +33,16 @@ public class Creature : Card, ICreature {
         Log($"Added SummonCreatureAction to queue for {Name}", LogTag.Creatures | LogTag.Actions);
     }
 
+    // Implement the interface method
     public void TakeDamage(int damage) {
+        TakeDamage(damage, null);
+    }
+
+    // Internal method with additional functionality
+    internal void TakeDamage(int damage, ICreature attacker) {
         if (isDead) return;
 
+        lastAttacker = attacker;
         Health = System.Math.Max(0, Health - damage);
         Log($"{Name} took {damage} damage, health now: {Health}. Has {Effects.Count} effects", LogTag.Creatures | LogTag.Combat);
 
@@ -57,6 +66,8 @@ public class Creature : Card, ICreature {
                 gameMediator.NotifyCreatureDied(this);
             }
         }
+
+        lastAttacker = null;
     }
 
     public void HandleEffect(EffectTrigger trigger, ActionsQueue actionsQueue) {
@@ -83,15 +94,33 @@ public class Creature : Card, ICreature {
         }
 
         Log($"Getting targets for {Name}'s damage effect. TargetType: {action.targetType}, Damage: {action.value}", LogTag.Creatures | LogTag.Actions);
+
+        // Special handling for OnDamage trigger to target the attacker
+        if (lastAttacker != null && Effects.Any(e => e.trigger == EffectTrigger.OnDamage)) {
+            Log($"Targeting attacker {lastAttacker.Name} for damage effect", LogTag.Creatures | LogTag.Actions);
+            actionsQueue.AddAction(new DirectDamageAction(lastAttacker, action.value, this));
+            return;
+        }
+
+        // Normal targeting for other effects
         var targets = TargetingSystem.GetValidTargets(owner, action.targetType);
         Log($"Found {targets.Count} targets for {Name}'s damage effect", LogTag.Creatures | LogTag.Actions);
 
         foreach (var target in targets) {
             if (target is ICreature creature) {
-                Log($"Adding DamageCreatureAction - Source: {Name}, Target: {creature.Name}, Damage: {action.value}", LogTag.Creatures | LogTag.Actions | LogTag.Combat);
-                actionsQueue.AddAction(new DamageCreatureAction(creature, action.value, this));
+                // Use DirectDamageAction for area effects (OnPlay trigger)
+                if (Effects.Any(e => e.trigger == EffectTrigger.OnPlay)) {
+                    Log($"Adding DirectDamageAction - Source: {Name}, Target: {creature.Name}, Damage: {action.value}",
+                        LogTag.Creatures | LogTag.Actions | LogTag.Combat);
+                    actionsQueue.AddAction(new DirectDamageAction(creature, action.value, this));
+                } else {
+                    Log($"Adding DamageCreatureAction - Source: {Name}, Target: {creature.Name}, Damage: {action.value}",
+                        LogTag.Creatures | LogTag.Actions | LogTag.Combat);
+                    actionsQueue.AddAction(new DamageCreatureAction(creature, action.value, this));
+                }
             } else if (target is IPlayer player) {
-                Log($"Adding DamagePlayerAction - Target: Player {(player.IsPlayer1() ? "1" : "2")}, Damage: {action.value}", LogTag.Creatures | LogTag.Actions | LogTag.Players | LogTag.Combat);
+                Log($"Adding DamagePlayerAction - Target: Player {(player.IsPlayer1() ? "1" : "2")}, Damage: {action.value}",
+                    LogTag.Creatures | LogTag.Actions | LogTag.Players | LogTag.Combat);
                 actionsQueue.AddAction(new DamagePlayerAction(player, action.value));
             }
         }

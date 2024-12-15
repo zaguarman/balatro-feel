@@ -60,27 +60,55 @@ public class DamageCreatureAction : IGameAction {
         this.target = target;
         this.damage = damage;
         this.attacker = attacker;
-        Log($"Created - Target: {target?.Name} (TargetId: {target?.TargetId}), " +
-                        $"Damage: {damage}, Attacker: {attacker?.Name} (TargetId: {attacker?.TargetId})",
-                        LogTag.Actions | LogTag.Creatures | LogTag.Combat);
+        Log($"Created DamageAction - Target: {target?.Name}, Damage: {damage}, Attacker: {attacker?.Name}",
+            LogTag.Actions | LogTag.Creatures | LogTag.Combat);
     }
 
     public void Execute() {
-        Log($"Executing - Target: {target?.Name} (TargetId: {target?.TargetId}), " +
-                        $"Damage: {damage}, Attacker: {attacker?.Name} (TargetId: {attacker?.TargetId})",
-                        LogTag.Actions | LogTag.Creatures | LogTag.Combat);
-        target?.TakeDamage(damage);
+        if (target == null) return;
+
+        Log($"Executing DamageAction - Target: {target.Name}, Damage: {damage}, Attacker: {attacker?.Name}",
+            LogTag.Actions | LogTag.Creatures | LogTag.Combat);
+
+        if (target is Creature creatureTarget) {
+            creatureTarget.TakeDamage(damage, attacker);
+        } else {
+            target.TakeDamage(damage);
+        }
     }
 
-    public ICreature GetTarget() {
-        Log($"Getting target: {target?.Name} (TargetId: {target?.TargetId})", LogTag.Actions | LogTag.Creatures);
-        return target;
+    public ICreature GetTarget() => target;
+    public ICreature GetAttacker() => attacker;
+    public int GetDamage() => damage;
+}
+
+public class DirectDamageAction : IGameAction {
+    private readonly ICreature target;
+    private readonly int damage;
+    private readonly ICreature source;
+
+    public DirectDamageAction(ICreature target, int damage, ICreature source = null) {
+        this.target = target;
+        this.damage = damage;
+        this.source = source;
+        Log($"Created DirectDamageAction - Source: {source?.Name}, Target: {target?.Name}, Damage: {damage}",
+            LogTag.Actions | LogTag.Creatures | LogTag.Combat);
     }
 
-    public ICreature GetAttacker() {
-        Log($"Getting attacker: {attacker?.Name} (TargetId: {attacker?.TargetId})", LogTag.Actions | LogTag.Creatures);
-        return attacker;
+    public void Execute() {
+        if (target == null) return;
+
+        Log($"Executing DirectDamageAction - Source: {source?.Name}, Target: {target.Name}, Damage: {damage}",
+            LogTag.Actions | LogTag.Creatures | LogTag.Combat);
+
+        if (target is Creature creatureTarget) {
+            creatureTarget.TakeDamage(damage, source);
+        } else {
+            target.TakeDamage(damage);
+        }
     }
 
+    public ICreature GetTarget() => target;
+    public ICreature GetSource() => source;
     public int GetDamage() => damage;
 }
