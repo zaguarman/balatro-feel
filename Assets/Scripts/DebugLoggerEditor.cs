@@ -1,10 +1,33 @@
 #if UNITY_EDITOR
-using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using System.Linq;
 
 [CustomEditor(typeof(DebugLogger))]
 public class DebugLoggerEditor : Editor {
+    private SerializedProperty settingsProp;
+    private Editor settingsEditor;
+
+    private void OnEnable() {
+        settingsProp = serializedObject.FindProperty("settings");
+    }
+
+    public override void OnInspectorGUI() {
+        serializedObject.Update();
+
+        EditorGUILayout.PropertyField(settingsProp);
+
+        if (settingsProp.objectReferenceValue != null) {
+            CreateCachedEditor(settingsProp.objectReferenceValue, null, ref settingsEditor);
+            settingsEditor.OnInspectorGUI();
+        }
+
+        serializedObject.ApplyModifiedProperties();
+    }
+}
+
+[CustomEditor(typeof(DebugLoggerSettings))]
+public class DebugLoggerSettingsEditor : Editor {
     private SerializedProperty tagSettingsProp;
     private SerializedProperty classFiltersProp;
     private SerializedProperty showStackTraceProp;
@@ -16,8 +39,8 @@ public class DebugLoggerEditor : Editor {
     private Vector2 tagListScrollPosition;
     private string classSearchString = "";
     private string tagSearchString = "";
-    private bool allTagsSelected = true;
-    private bool allClassesSelected = true;
+    private bool allTagsSelected = false;
+    private bool allClassesSelected = false;
 
     private void OnEnable() {
         tagSettingsProp = serializedObject.FindProperty("tagSettings");
@@ -36,8 +59,8 @@ public class DebugLoggerEditor : Editor {
         serializedObject.Update();
         tagSettingsProp.ClearArray();
 
-        // Define the exact order and values we want
-        var orderedTags = new[] {
+        var orderedTags = new[]
+        {
             DebugLogger.LogTag.UI,
             DebugLogger.LogTag.Actions,
             DebugLogger.LogTag.Effects,
@@ -53,7 +76,6 @@ public class DebugLoggerEditor : Editor {
                 tagSettingsProp.InsertArrayElementAtIndex(tagSettingsProp.arraySize);
                 var element = tagSettingsProp.GetArrayElementAtIndex(tagSettingsProp.arraySize - 1);
 
-                // Set the raw integer value directly
                 element.FindPropertyRelative("tagValue").intValue = (int)tag;
                 element.FindPropertyRelative("isEnabled").boolValue = true;
                 element.FindPropertyRelative("color").colorValue = DebugLogger.DefaultColors[tag];
@@ -64,8 +86,6 @@ public class DebugLoggerEditor : Editor {
     }
 
     public override void OnInspectorGUI() {
-        if (serializedObject == null) return;
-
         serializedObject.Update();
 
         EditorGUILayout.Space();
@@ -93,7 +113,6 @@ public class DebugLoggerEditor : Editor {
             EditorGUILayout.LabelField("Available Tags");
             tagListScrollPosition = EditorGUILayout.BeginScrollView(tagListScrollPosition, GUILayout.Height(200));
             if (tagSettingsProp != null) {
-                // Filter and display tag settings
                 for (int i = 0; i < tagSettingsProp.arraySize; i++) {
                     SerializedProperty tagSetting = tagSettingsProp.GetArrayElementAtIndex(i);
                     if (tagSetting == null) continue;
@@ -103,18 +122,15 @@ public class DebugLoggerEditor : Editor {
                     SerializedProperty colorProp = tagSetting.FindPropertyRelative("color");
                     if (tagValueProp == null || isEnabledProp == null || colorProp == null) continue;
 
-                    // Get the current tag name
                     var currentTag = (DebugLogger.LogTag)tagValueProp.intValue;
                     string tagName = currentTag.ToString();
 
-                    // Apply tag search filter
                     if (!string.IsNullOrEmpty(tagSearchString) &&
                         !tagName.ToLower().Contains(tagSearchString.ToLower())) {
                         continue;
                     }
 
                     EditorGUILayout.BeginHorizontal();
-                    // Calculate the minimum width needed for the text plus some padding
                     float minTextWidth = GUI.skin.toggle.CalcSize(new GUIContent(tagName)).x + 15;
                     bool newEnabled = EditorGUILayout.ToggleLeft(tagName, isEnabledProp.boolValue, GUILayout.Width(minTextWidth));
                     if (newEnabled != isEnabledProp.boolValue) {
@@ -128,7 +144,6 @@ public class DebugLoggerEditor : Editor {
             }
             EditorGUILayout.EndScrollView();
 
-            // Reset colors button
             if (GUILayout.Button("Reset Colors")) {
                 ResetTagColors();
             }
@@ -141,7 +156,6 @@ public class DebugLoggerEditor : Editor {
         if (showClassFilters) {
             EditorGUI.indentLevel++;
 
-            // Class whitelist mode toggle and select all button
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.PropertyField(whitelistModeProp, new GUIContent("Whitelist"));
             if (GUILayout.Button(allClassesSelected ? "Deselect All" : "Select All", GUILayout.Width(100))) {
@@ -149,10 +163,8 @@ public class DebugLoggerEditor : Editor {
             }
             EditorGUILayout.EndHorizontal();
 
-            // Search bar
             classSearchString = EditorGUILayout.TextField("Search", classSearchString ?? "");
 
-            // Class list with checkboxes
             EditorGUILayout.LabelField("Available Classes");
             classListScrollPosition = EditorGUILayout.BeginScrollView(classListScrollPosition, GUILayout.Height(300));
 
@@ -214,8 +226,6 @@ public class DebugLoggerEditor : Editor {
                 colorProp.colorValue = defaultColor;
             }
         }
-
-        serializedObject.ApplyModifiedProperties();
     }
 
     private bool IsClassEnabled(string className) {

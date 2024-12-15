@@ -41,7 +41,8 @@ public class DebugLogger : MonoBehaviour {
         All = ~0
     }
 
-    public static readonly Dictionary<LogTag, Color> DefaultColors = new Dictionary<LogTag, Color>() {
+    public static readonly Dictionary<LogTag, Color> DefaultColors = new Dictionary<LogTag, Color>()
+    {
         { LogTag.UI, GetColorFromHex("#80FFFF") },
         { LogTag.Actions, GetColorFromHex("#FFE066") },
         { LogTag.Effects, GetColorFromHex("#FF99FF") },
@@ -52,7 +53,8 @@ public class DebugLogger : MonoBehaviour {
         { LogTag.Initialization, GetColorFromHex("#DEB887") },
     };
 
-    public static readonly string[] AvailableClasses = new string[] {
+    public static readonly string[] AvailableClasses = new string[]
+    {
         "ActionsQueue",
         "ArrowIndicator",
         "BattlefieldArrowManager",
@@ -84,11 +86,7 @@ public class DebugLogger : MonoBehaviour {
         "UIComponent"
     };
 
-    [SerializeField] private List<TagSettings> tagSettings = new List<TagSettings>();
-    [SerializeField] private List<ClassFilter> classFilters = new List<ClassFilter>();
-    [SerializeField] private bool showStackTrace = false;
-    [SerializeField] private bool whitelistMode = false;
-    [SerializeField] private bool tagWhitelistMode = false;
+    [SerializeField] private DebugLoggerSettings settings;
 
     private Dictionary<LogTag, string> _tagColorMap;
     private HashSet<string> _enabledClasses;
@@ -105,7 +103,7 @@ public class DebugLogger : MonoBehaviour {
     }
 
     private void InitializeStackTraceLogTypes() {
-        var stackTraceType = showStackTrace ? StackTraceLogType.ScriptOnly : StackTraceLogType.None;
+        var stackTraceType = settings.ShowStackTrace ? StackTraceLogType.ScriptOnly : StackTraceLogType.None;
 
         Application.SetStackTraceLogType(LogType.Log, stackTraceType);
         Application.SetStackTraceLogType(LogType.Warning, stackTraceType);
@@ -170,37 +168,24 @@ public class DebugLogger : MonoBehaviour {
     }
 
     private void InitializeLogger() {
-        // Initialize tag settings if empty
-        if (tagSettings == null || tagSettings.Count == 0) {
-            tagSettings = new List<TagSettings>();
-            foreach (LogTag tag in Enum.GetValues(typeof(LogTag))) {
-                // Explicitly exclude None and All
-                if (tag != LogTag.None && tag != LogTag.All && DefaultColors.ContainsKey(tag)) {
-                    tagSettings.Add(new TagSettings {
-                        tag = tag,
-                        isEnabled = true,
-                        color = DefaultColors[tag]
-                    });
-                }
-            }
+        if (settings == null) {
+            Debug.LogError("DebugLoggerSettings asset is not assigned!");
+            return;
         }
+
+        settings.Initialize();
 
         // Create tag color map ensuring no duplicates
         _tagColorMap = new Dictionary<LogTag, string>();
-        foreach (var setting in tagSettings) {
+        foreach (var setting in settings.TagSettings) {
             if (!_tagColorMap.ContainsKey(setting.tag)) {
                 _tagColorMap[setting.tag] = setting.HexColor;
             }
         }
 
-        // Initialize class filters if empty
-        if (classFilters == null) {
-            classFilters = new List<ClassFilter>();
-        }
-
         // Create enabled classes set
         _enabledClasses = new HashSet<string>(
-            classFilters
+            settings.ClassFilters
                 .Where(cf => cf.isEnabled && !string.IsNullOrEmpty(cf.className))
                 .Select(cf => cf.className)
         );
@@ -216,15 +201,15 @@ public class DebugLogger : MonoBehaviour {
 
         // Check if any of the tags are enabled based on whitelist mode
         bool anyTagEnabled = false;
-        bool hasEnabledTags = tagSettings.Any(setting => setting.isEnabled);
+        bool hasEnabledTags = settings.TagSettings.Any(setting => setting.isEnabled);
 
-        if (tagWhitelistMode) {
+        if (settings.TagWhitelistMode) {
             // In whitelist mode, if no tags are enabled and tags parameter isn't All, block logging
             if (!hasEnabledTags && tags != LogTag.All) {
                 return false;
             }
             // Only allow explicitly enabled tags
-            foreach (var setting in tagSettings) {
+            foreach (var setting in settings.TagSettings) {
                 if (setting.isEnabled && (tags & setting.tag) != 0) {
                     anyTagEnabled = true;
                     break;
@@ -233,7 +218,7 @@ public class DebugLogger : MonoBehaviour {
         } else {
             // In blacklist mode, allow if any non-disabled tag is present
             anyTagEnabled = true;
-            foreach (var setting in tagSettings) {
+            foreach (var setting in settings.TagSettings) {
                 if (!setting.isEnabled && (tags & setting.tag) != 0) {
                     anyTagEnabled = false;
                     break;
@@ -246,12 +231,12 @@ public class DebugLogger : MonoBehaviour {
         string className = GetClassName(sourceFilePath);
 
         // If whitelist mode is enabled and no classes are in the enabled set, block all logging
-        if (whitelistMode && _enabledClasses.Count == 0) {
+        if (settings.WhitelistMode && _enabledClasses.Count == 0) {
             return false;
         }
 
         // If whitelist mode is enabled, only allow listed classes
-        if (whitelistMode) {
+        if (settings.WhitelistMode) {
             return _enabledClasses.Contains(className);
         }
         // If blacklist mode is enabled, block listed classes
@@ -277,7 +262,6 @@ public class DebugLogger : MonoBehaviour {
     }
 
     private string GetTagList(LogTag tags) {
-        // Explicitly filter out None and All
         return string.Join("|",
             Enum.GetValues(typeof(LogTag))
                 .Cast<LogTag>()
