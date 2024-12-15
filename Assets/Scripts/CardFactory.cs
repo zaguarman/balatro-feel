@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using System;
+using System.Linq;
 
 public static class CardFactory {
     private static Dictionary<string, CardData> cardDataCache = new Dictionary<string, CardData>();
@@ -21,17 +22,12 @@ public static class CardFactory {
                     var newEffect = new CardEffect {
                         effectType = effect.effectType,
                         trigger = effect.trigger,
-                        actions = new List<EffectAction>()
+                        actions = effect.actions.Select(a => new EffectAction {
+                            actionType = a.actionType,
+                            value = a.value,
+                            targetType = a.targetType
+                        }).ToList()
                     };
-
-                    foreach (var action in effect.actions) {
-                        var newAction = new EffectAction {
-                            actionType = action.actionType,
-                            value = action.value,
-                            targetType = action.targetType
-                        };
-                        newEffect.actions.Add(newAction);
-                    }
                     creature.Effects.Add(newEffect);
                 }
                 card = creature;
