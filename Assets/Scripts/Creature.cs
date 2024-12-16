@@ -28,8 +28,11 @@ public class Creature : Card, ICreature {
     public override void Play(IPlayer owner, ActionsQueue context) {
         Log($"Playing {Name} with {Effects.Count} effects", LogTag.Creatures | LogTag.Cards | LogTag.Actions);
         this.owner = owner;
+
+        // Add summon action to the queue
         var summonAction = new SummonCreatureAction(this, owner);
         context.AddAction(summonAction);
+
         Log($"Added SummonCreatureAction to queue for {Name}", LogTag.Creatures | LogTag.Actions);
     }
 

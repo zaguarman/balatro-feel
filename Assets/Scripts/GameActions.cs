@@ -147,3 +147,31 @@ public class SwapCreaturesAction : IGameAction {
         Log($"Executed swap between {creature1.Name} and {creature2.Name}", LogTag.Actions | LogTag.Creatures);
     }
 }
+
+public class PlayCardAction : IGameAction {
+    private readonly ICard card;
+    private readonly IPlayer owner;
+    private readonly int targetSlot;
+
+    public PlayCardAction(ICard card, IPlayer owner, int targetSlot = -1) {
+        this.card = card;
+        this.owner = owner;
+        this.targetSlot = targetSlot;
+        Log($"Created PlayCardAction for {card.Name} targeting slot {targetSlot}", LogTag.Actions | LogTag.Cards);
+    }
+
+    public void Execute() {
+        if (card == null || owner == null) {
+            LogError("Cannot execute PlayCardAction - card or owner is null", LogTag.Actions);
+            return;
+        }
+
+        // Remove the card from hand first
+        owner.Hand.Remove(card);
+
+        // Play the card (this will handle creature summoning through SummonCreatureAction)
+        card.Play(owner, GameManager.Instance.ActionsQueue);
+
+        Log($"Executed PlayCardAction for {card.Name}", LogTag.Actions | LogTag.Cards);
+    }
+}

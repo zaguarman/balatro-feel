@@ -62,7 +62,15 @@ public class BattlefieldUI : CardContainer {
         var targetSlot = GetTargetSlot(Input.mousePosition);
 
         if (sourceContainer is HandUI) {
-            HandleNewCreature(card, targetSlot?.Index ?? -1);
+            // Create and queue the play card action for hand drops
+            var cardData = card.GetCardData();
+            if (cardData != null) {
+                var newCard = CardFactory.CreateCard(cardData);
+                if (newCard != null) {
+                    gameManager.ActionsQueue.AddAction(new PlayCardAction(newCard, player, targetSlot?.Index ?? -1));
+                    gameMediator?.NotifyGameStateChanged();
+                }
+            }
         } else if (sourceContainer is BattlefieldUI) {
             if (targetSlot != null && targetSlot.IsOccupied) {
                 var targetCard = targetSlot.OccupyingCard;
