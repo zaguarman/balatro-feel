@@ -21,6 +21,7 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
     private Canvas parentCanvas;
     private CanvasGroup canvasGroup;
     private Vector3 originalPosition;
+    private Transform originalParent;
     private bool isDragging;
     private CardData cardData;
     private IPlayer player;
@@ -32,6 +33,8 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
     public CardUnityEvent OnCardDropped = new CardUnityEvent();
     public Action OnPointerEnterHandler;
     public Action OnPointerExitHandler;
+
+    public Transform OriginalParent => originalParent;
 
     protected override void Awake() {
         base.Awake();
@@ -159,6 +162,7 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
         }
 
         originalPosition = transform.position;
+        originalParent = transform.parent;
         isDragging = true;
         canvasGroup.blocksRaycasts = false;
         transform.SetAsLastSibling();

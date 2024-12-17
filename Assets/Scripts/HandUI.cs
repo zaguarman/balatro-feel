@@ -77,8 +77,31 @@ public class HandUI : CardContainer {
             var data = CreateCardData(cardData);
             Log($"Creating card {cardData.Name} with {cardData.Effects.Count} effects", LogTag.UI | LogTag.Cards);
             controller.Setup(data, player);
+            SetupCardEventHandlers(controller);
         }
         return controller;
+    }
+
+    private void SetupCardEventHandlers(CardController controller) {
+        controller.OnBeginDragEvent.AddListener(OnCardBeginDrag);
+        controller.OnEndDragEvent.AddListener(OnCardEndDrag);
+        controller.OnCardDropped.AddListener(OnCardDropped);
+    }
+
+    protected override void OnCardBeginDrag(CardController card) {
+        if (card == null) return;
+        card.transform.SetAsLastSibling();
+        Log($"Begin dragging card from hand: {card.GetCardData()?.cardName}", LogTag.UI | LogTag.Cards);
+    }
+
+    protected override void OnCardEndDrag(CardController card) {
+        Log($"End dragging card from hand: {card.GetCardData()?.cardName}", LogTag.UI | LogTag.Cards);
+        UpdateLayout();
+    }
+
+    protected override void OnCardDropped(CardController card) {
+        Log($"Card dropped from hand: {card.GetCardData()?.cardName}", LogTag.UI | LogTag.Cards);
+        UpdateLayout();
     }
 
     private CardData CreateCardData(ICard card) {
@@ -102,23 +125,11 @@ public class HandUI : CardContainer {
                 creatureData.effects.Add(newEffect);
             }
 
-            Log($"Created CreatureData for {creature.Name} with {creatureData.effects.Count} effects", LogTag.UI | LogTag.Cards | LogTag.Effects);
+            Log($"Created CreatureData for {creature.Name} with {creatureData.effects.Count} effects",
+                LogTag.UI | LogTag.Cards | LogTag.Effects);
             return creatureData;
         }
         return null;
-    }
-
-    protected override void OnCardBeginDrag(CardController card) {
-        if (card == null) return;
-        card.transform.SetAsLastSibling();
-    }
-
-    protected override void OnCardEndDrag(CardController card) {
-        UpdateLayout();
-    }
-
-    protected override void OnCardDropped(CardController card) {
-        UpdateLayout();
     }
 
     protected override void OnCardHoverEnter(CardController card) { }

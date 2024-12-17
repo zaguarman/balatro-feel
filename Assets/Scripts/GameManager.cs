@@ -18,11 +18,15 @@ public class GameManager : InitializableComponent {
     public IPlayer Player1 { get; private set; }
     public IPlayer Player2 { get; private set; }
     public ActionsQueue ActionsQueue { get; private set; }
+    private BattlefieldCombatHandler combatHandler;
 
     private GameMediator gameMediator;
     private GameReferences gameReferences;
     private ICardDealingService cardDealingService;
     private System.Random random = new System.Random();
+
+    // Public accessor for the combat handler
+    public BattlefieldCombatHandler CombatHandler => combatHandler;
 
     protected override void Awake() {
         base.Awake();
@@ -46,7 +50,12 @@ public class GameManager : InitializableComponent {
         gameMediator = GameMediator.Instance;
         gameReferences = GameReferences.Instance;
         cardDealingService = new CardDealingService(gameMediator);
-        ActionsQueue = new ActionsQueue(gameMediator);
+
+        // Initialize combat handler first
+        combatHandler = new BattlefieldCombatHandler(this);
+
+        // Then initialize actions queue with combat handler
+        ActionsQueue = new ActionsQueue(gameMediator, combatHandler);
 
         InitializeGameSystem();
 
@@ -91,7 +100,6 @@ public class GameManager : InitializableComponent {
             var creature = CardFactory.CreateCard(creatureData) as Creature;
             if (creature != null) {
                 creature.SetOwner(Player1);
-                // Place in specific slots (0 and 1 for initial creatures)
                 ((Player)Player1).AddToBattlefield(creature, i);
                 Log($"Added {creature.Name} to Player 1's battlefield slot {i} with {creature.Effects.Count} effects",
                     LogTag.Creatures | LogTag.Initialization);
@@ -105,8 +113,7 @@ public class GameManager : InitializableComponent {
             var creature = CardFactory.CreateCard(creatureData) as Creature;
             if (creature != null) {
                 creature.SetOwner(Player2);
-                // Place in specific slots (0 and 1 for initial creatures)
-                Player2.AddToBattlefield(creature, i);
+                ((Player)Player2).AddToBattlefield(creature, i);
                 Log($"Added {creature.Name} to Player 2's battlefield slot {i} with {creature.Effects.Count} effects",
                     LogTag.Creatures | LogTag.Initialization);
             }
@@ -188,7 +195,10 @@ public class GameManager : InitializableComponent {
                 gameMediator?.UnregisterPlayer(Player2);
             }
 
-            ActionsQueue?.Cleanup();
+            if (ActionsQueue != null) {
+                ActionsQueue.Cleanup();
+            }
+
             instance = null;
         }
     }

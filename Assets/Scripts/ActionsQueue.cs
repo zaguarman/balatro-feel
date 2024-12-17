@@ -9,12 +9,14 @@ public class ActionsQueue {
     private int currentIterationDepth = 0;
     private Dictionary<string, DamageCreatureAction> pendingDamageActions = new Dictionary<string, DamageCreatureAction>();
     private readonly GameMediator gameMediator;
+    private readonly BattlefieldCombatHandler combatHandler;
 
     public readonly UnityEvent OnActionsQueued = new UnityEvent();
     public readonly UnityEvent OnActionsResolved = new UnityEvent();
 
-    public ActionsQueue(GameMediator gameMediator) {
+    public ActionsQueue(GameMediator gameMediator, BattlefieldCombatHandler combatHandler) {
         this.gameMediator = gameMediator;
+        this.combatHandler = combatHandler;
     }
 
     public void AddAction(IGameAction action) {
@@ -80,6 +82,11 @@ public class ActionsQueue {
 
         currentIterationDepth--;
         pendingDamageActions.Clear();
+
+        // Reset attacking creatures after actions are resolved
+        if (combatHandler != null) {
+            combatHandler.ResetAttackingCreatures();
+        }
 
         OnActionsResolved.Invoke();
         gameMediator.NotifyGameStateChanged();

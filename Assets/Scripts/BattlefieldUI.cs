@@ -11,7 +11,6 @@ public class BattlefieldUI : CardContainer {
 
     protected GameManager gameManager;
     private BattlefieldArrowManager arrowManager;
-    private BattlefieldCombatHandler combatHandler;
 
     #region Initialization
 
@@ -24,11 +23,9 @@ public class BattlefieldUI : CardContainer {
 
     private void InitializeManagers() {
         arrowManager = new BattlefieldArrowManager(transform, gameManager);
-        combatHandler = new BattlefieldCombatHandler(gameManager);
     }
 
     private void CreateSlots() {
-        // Create slot GameObjects
         for (int i = 0; i < MAX_SLOTS; i++) {
             GameObject slotObj = new GameObject($"Slot_{i}", typeof(RectTransform));
             slotObj.transform.SetParent(transform, false);
@@ -58,57 +55,143 @@ public class BattlefieldUI : CardContainer {
         if (card == null || !CanAcceptCard(card)) return;
         if (gameManager == null) return;
 
-        var sourceContainer = card.transform.parent.GetComponent<CardContainer>();
-        var targetSlot = GetTargetSlot(Input.mousePosition);
+        // Get the target slot using raycasting
+        var targetSlot = GetTargetSlot();
+        if (targetSlot == null) return;
 
-        if (sourceContainer is HandUI) {
-            // Create and queue the play card action for hand drops
-            var cardData = card.GetCardData();
-            if (cardData != null) {
-                var newCard = CardFactory.CreateCard(cardData);
-                if (newCard != null) {
-                    gameManager.ActionsQueue.AddAction(new PlayCardAction(newCard, player, targetSlot?.Index ?? -1));
-                    gameMediator?.NotifyGameStateChanged();
-                }
-            }
-        } else if (sourceContainer is BattlefieldUI) {
-            if (targetSlot != null && targetSlot.IsOccupied) {
-                var targetCard = targetSlot.OccupyingCard;
-                if (card.IsPlayer1Card() == targetCard.IsPlayer1Card()) {
-                    // Same player creatures - handle swap
-                    HandleCreatureSwap(card, targetSlot);
-                } else {
-                    // Enemy creature - handle combat
-                    combatHandler.HandleCreatureCombat(card);
-                }
-            } else {
-                combatHandler.HandleCreatureCombat(card);
-            }
-            arrowManager.UpdateArrowsFromActionsQueue();
-            gameMediator?.NotifyGameStateChanged();
-        }
-    }
+        // Check if the card originated from HandUI
+        bool isFromHand = IsCardFromHand(card);
 
-    private BattlefieldSlot GetTargetSlot(Vector3 mousePosition) {
-        Ray ray = Camera.main.ScreenPointToRay(mousePosition);
-        RaycastHit2D[] hits = Physics2D.RaycastAll(ray.origin, ray.direction);
-
-        foreach (var hit in hits) {
-            var slot = hit.collider?.GetComponent<BattlefieldSlot>();
-            if (slot != null) return slot;
+        if (isFromHand) {
+            HandleCardFromHand(card, targetSlot);
+        } else {
+            HandleCardFromBattlefield(card, targetSlot);
         }
 
-        return null;
+        arrowManager.UpdateArrowsFromActionsQueue();
+        gameMediator?.NotifyGameStateChanged();
     }
 
-    private void HandleNewCreature(CardController card, int slotIndex) {
-        if (card.GetCardData() is CreatureData creatureData) {
-            ICard newCard = CardFactory.CreateCard(creatureData);
+    private bool IsCardFromHand(CardController card) {
+        // Check if the original parent is part of a HandUI
+        if (card.OriginalParent == null) return false;
+
+        Transform parent = card.OriginalParent;
+        while (parent != null) {
+            if (parent.GetComponent<HandUI>() != null) {
+                return true;
+            }
+            parent = parent.parent;
+        }
+        return false;
+    }
+
+    private CardContainer GetSourceContainer(CardController card) {
+        if (card == null) return null;
+
+        // Use the original parent stored during drag start
+        var originalParent = card.OriginalParent;
+        if (originalParent == null) {
+            Log($"Original parent is null for card: {card.name}", LogTag.UI | LogTag.Cards);
+            return null;
+        }
+
+        // The card's original parent should be a slot, so we need to get its parent which would be the container
+        var containerObject = originalParent.parent?.gameObject;
+        if (containerObject == null) {
+            Log($"Container object is null for card: {card.name}", LogTag.UI | LogTag.Cards);
+            return null;
+        }
+
+        var container = containerObject.GetComponent<CardContainer>();
+        Log($"Found source container: {(container != null ? container.GetType().Name : "null")}", LogTag.UI | LogTag.Cards);
+        return container;
+    }
+
+    private void HandleCardFromHand(CardController card, BattlefieldSlot targetSlot) {
+        var cardData = card.GetCardData();
+        if (cardData != null) {
+            var newCard = CardFactory.CreateCard(cardData);
             if (newCard != null) {
-                ((Player)player).AddToBattlefield(newCard as ICreature, slotIndex);
-                gameMediator?.NotifyGameStateChanged();
+                int slotIndex = targetSlot != null ? targetSlot.Index : -1;
+                Log($"Adding PlayCardAction for {cardData.cardName} to slot {slotIndex}", LogTag.Actions | LogTag.Cards);
+                gameManager.ActionsQueue.AddAction(new PlayCardAction(newCard, player, slotIndex));
             }
         }
+    }
+
+    private void HandleCardFromBattlefield(CardController card, BattlefieldSlot targetSlot) {
+        if (targetSlot != null && targetSlot.IsOccupied) {
+            var targetCard = targetSlot.OccupyingCard;
+            if (card.IsPlayer1Card() == targetCard.IsPlayer1Card()) {
+                // Same player creatures - handle swap
+                HandleCreatureSwap(card, targetSlot);
+            } else {
+                // Enemy creature - handle combat
+                gameManager.CombatHandler.HandleCreatureCombat(card);
+            }
+        } else {
+            gameManager.CombatHandler.HandleCreatureCombat(card);
+        }
+    }
+
+    private BattlefieldSlot GetTargetSlot() {
+        // First try to find the slot using EventSystem raycast
+        var pointerEventData = new PointerEventData(EventSystem.current) {
+            position = Input.mousePosition
+        };
+
+        var raycastResults = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(pointerEventData, raycastResults);
+
+        Log($"UI Raycast found {raycastResults.Count} hits", LogTag.UI);
+
+        // First pass: Look for direct BattlefieldSlot components
+        foreach (var result in raycastResults) {
+            Log($"Hit UI object: {result.gameObject.name}", LogTag.UI);
+
+            var slot = result.gameObject.GetComponent<BattlefieldSlot>();
+            if (slot != null) {
+                Log($"Found direct slot: {slot.gameObject.name}", LogTag.UI);
+                return slot;
+            }
+        }
+
+        // Second pass: Look for parent BattlefieldSlot components
+        foreach (var result in raycastResults) {
+            var parentSlot = result.gameObject.GetComponentInParent<BattlefieldSlot>();
+            if (parentSlot != null) {
+                Log($"Found parent slot: {parentSlot.gameObject.name}", LogTag.UI);
+                return parentSlot;
+            }
+        }
+
+        // If no slot found through raycast, try to find the nearest slot based on position
+        if (slots != null && slots.Count > 0) {
+            Vector2 mousePos = Input.mousePosition;
+            float closestDistance = float.MaxValue;
+            BattlefieldSlot nearestSlot = null;
+
+            foreach (var slot in slots) {
+                if (slot == null) continue;
+
+                Vector2 slotScreenPos = Camera.main.WorldToScreenPoint(slot.transform.position);
+                float distance = Vector2.Distance(mousePos, slotScreenPos);
+
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    nearestSlot = slot;
+                }
+            }
+
+            if (nearestSlot != null) {
+                Log($"Found nearest slot: {nearestSlot.gameObject.name}", LogTag.UI);
+                return nearestSlot;
+            }
+        }
+
+        Log("No valid slot found", LogTag.UI);
+        return null;
     }
 
     private void HandleCreatureSwap(CardController card1, BattlefieldSlot targetSlot) {
@@ -127,9 +210,6 @@ public class BattlefieldUI : CardContainer {
                 LogTag.Actions | LogTag.Creatures);
             var swapAction = new SwapCreaturesAction(creature1, creature2, slot1Index, slot2Index, player);
             gameManager.ActionsQueue.AddAction(swapAction);
-        } else {
-            LogWarning($"Could not find slot indices for swap. Slot1: {slot1Index}, Slot2: {slot2Index}",
-                LogTag.Actions | LogTag.Creatures);
         }
     }
 
@@ -179,7 +259,6 @@ public class BattlefieldUI : CardContainer {
             }
 
             if (cardController != null) {
-                // Find the appropriate slot
                 var slot = slots[i];
                 slot.OccupySlot(cardController);
                 cardController.UpdateUI();
@@ -284,7 +363,6 @@ public class BattlefieldUI : CardContainer {
 
     #endregion
 
-    // Empty implementations for hover effects (can be implemented later if needed)
     protected override void OnCardHoverEnter(CardController card) { }
     protected override void OnCardHoverExit(CardController card) { }
 }
