@@ -35,6 +35,10 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
     public Action OnPointerExitHandler;
 
     public Transform OriginalParent => originalParent;
+    public ICreature GetLinkedCreature() => linkedCreature;
+    public bool IsPlayer1Card() => player?.IsPlayer1() ?? false;
+    public CardData GetCardData() => cardData;
+
 
     protected override void Awake() {
         base.Awake();
@@ -223,7 +227,4 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
         OnPointerExitHandler = null;
     }
 
-    public CardData GetCardData() => cardData;
-    public bool IsPlayer1Card() => player?.IsPlayer1() ?? false;
-    public ICreature GetLinkedCreature() => linkedCreature;
 }

@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using static DebugLogger;
+using System.Linq;
 
 public class BattlefieldArrowManager {
     private readonly Transform parentTransform;
@@ -8,11 +9,6 @@ public class BattlefieldArrowManager {
     private readonly GameReferences gameReferences;
     private ArrowIndicator dragArrowIndicator;
     private Dictionary<string, ArrowIndicator> activeArrows = new Dictionary<string, ArrowIndicator>();
-
-    // Deep green for player 1's arrows (#20853E)
-    private static readonly Color player1ArrowColor = new Color(0.125f, 0.522f, 0.243f, 0.9f);
-    // Deep red for player 2's arrows (#820807)
-    private static readonly Color player2ArrowColor = new Color(0.510f, 0.031f, 0.027f, 0.9f);
 
     public BattlefieldArrowManager(Transform parent, GameManager gameManager) {
         this.parentTransform = parent;
@@ -23,13 +19,11 @@ public class BattlefieldArrowManager {
 
     private void SetupDragArrow() {
         dragArrowIndicator = ArrowIndicator.Create(parentTransform);
-        dragArrowIndicator.SetColor(player1ArrowColor); // Default to player 1 color
         dragArrowIndicator.Hide();
     }
 
-    public void ShowDragArrow(Vector3 startPos, bool isPlayer1 = true) {
+    public void ShowDragArrow(Vector3 startPos) {
         startPos.z = 0;
-        dragArrowIndicator.SetColor(isPlayer1 ? player1ArrowColor : player2ArrowColor);
         dragArrowIndicator.Show(startPos, startPos);
     }
 
@@ -73,6 +67,8 @@ public class BattlefieldArrowManager {
     private void ProcessAction(IGameAction action) {
         if (action is DamageCreatureAction damageAction) {
             CreateArrowForDamageAction(damageAction);
+        } else if (action is DamagePlayerAction playerDamageAction) {
+            CreateArrowForPlayerDamageAction(playerDamageAction);
         }
     }
 
@@ -89,11 +85,46 @@ public class BattlefieldArrowManager {
         startPos.z = 0;
         endPos.z = 0;
 
-        // Determine if the attacker belongs to player 1
-        bool isPlayer1Attacker = gameManager.Player1.Battlefield.Contains(attacker);
-        arrow.SetColor(isPlayer1Attacker ? player1ArrowColor : player2ArrowColor);
         arrow.Show(startPos, endPos);
         activeArrows[attacker.TargetId] = arrow;
+
+        Log($"Created arrow from {attacker.Name} to {target.Name}", LogTag.Actions | LogTag.UI);
+    }
+
+    private void CreateArrowForPlayerDamageAction(DamagePlayerAction action) {
+        if (action == null) return;
+
+        var sourceCreature = FindSourceCreatureForPlayerDamage(action);
+        if (sourceCreature == null) return;
+
+        var targetPlayer = action.GetTargetPlayer();
+        if (targetPlayer == null) return;
+
+        var arrow = ArrowIndicator.Create(parentTransform);
+        Vector3 startPos = GetCreaturePosition(sourceCreature);
+        Vector3 endPos = GetPlayerTargetPosition(targetPlayer);
+
+        startPos.z = 0;
+        endPos.z = 0;
+
+        arrow.Show(startPos, endPos);
+        activeArrows[sourceCreature.TargetId] = arrow;
+
+        Log($"Created arrow from {sourceCreature.Name} to Player {(targetPlayer.IsPlayer1() ? "1" : "2")}",
+            LogTag.Actions | LogTag.UI);
+    }
+
+    private ICreature FindSourceCreatureForPlayerDamage(DamagePlayerAction action) {
+        // Look through the battlefield to find the attacking creature
+        var attackingCreature = gameManager.Player1.Battlefield
+            .FirstOrDefault(c => gameManager.CombatHandler.HasCreatureAttacked(c.TargetId));
+
+        if (attackingCreature == null) {
+            attackingCreature = gameManager.Player2.Battlefield
+                .FirstOrDefault(c => gameManager.CombatHandler.HasCreatureAttacked(c.TargetId));
+        }
+
+        return attackingCreature;
     }
 
     private Vector3 GetCreaturePosition(ICreature creature) {
@@ -116,6 +147,19 @@ public class BattlefieldArrowManager {
         }
 
         LogWarning($"Could not find CardController for creature {creature.Name} with ID {creature.TargetId}", LogTag.Actions);
+        return Vector3.zero;
+    }
+
+    private Vector3 GetPlayerTargetPosition(IPlayer player) {
+        var playerUI = player.IsPlayer1() ?
+            gameReferences.GetPlayer1UI() :
+            gameReferences.GetPlayer2UI();
+
+        if (playerUI != null) {
+            return playerUI.transform.position;
+        }
+
+        LogWarning($"Could not find UI for Player {(player.IsPlayer1() ? "1" : "2")}", LogTag.Actions);
         return Vector3.zero;
     }
 

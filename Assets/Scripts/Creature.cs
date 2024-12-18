@@ -6,28 +6,29 @@ public interface ICreature : ICard {
     int Attack { get; }
     int Health { get; }
     void TakeDamage(int damage);
+    IPlayer Owner { get; }
 }
 
 public class Creature : Card, ICreature {
     public int Attack { get; private set; }
     public int Health { get; private set; }
     private bool isDead = false;
-    private IPlayer owner;
+    public IPlayer Owner { get; private set; }
     private ICreature lastAttacker;
 
     public Creature(string name, int attack, int health, IPlayer owner = null) : base(name) {
         Attack = attack;
         Health = health;
-        this.owner = owner;
+        Owner = owner;
     }
 
     public void SetOwner(IPlayer newOwner) {
-        this.owner = newOwner;
+        Owner = newOwner;
     }
 
     public override void Play(IPlayer owner, ActionsQueue context) {
         Log($"Playing {Name} with {Effects.Count} effects", LogTag.Creatures | LogTag.Cards | LogTag.Actions);
-        this.owner = owner;
+        Owner = owner;
 
         // Add summon action to the queue
         var summonAction = new SummonCreatureAction(this, owner);
@@ -50,11 +51,11 @@ public class Creature : Card, ICreature {
         Log($"{Name} took {damage} damage, health now: {Health}. Has {Effects.Count} effects", LogTag.Creatures | LogTag.Combat);
 
         var gameManager = GameManager.Instance;
-        if (gameManager != null && owner != null) {
+        if (gameManager != null && Owner != null) {
             Log($"Processing OnDamage effects for {Name}", LogTag.Creatures | LogTag.Effects);
             HandleEffect(EffectTrigger.OnDamage, gameManager.ActionsQueue);
         } else {
-            LogError($"Cannot process damage effects - GameManager: {gameManager != null}, Owner: {owner != null}", LogTag.Creatures | LogTag.Effects);
+            LogError($"Cannot process damage effects - GameManager: {gameManager != null}, Owner: {Owner != null}", LogTag.Creatures | LogTag.Effects);
         }
 
         var gameMediator = GameMediator.Instance;
@@ -63,8 +64,8 @@ public class Creature : Card, ICreature {
 
             if (Health <= 0 && !isDead) {
                 isDead = true;
-                if (owner != null) {
-                    owner.RemoveFromBattlefield(this);
+                if (Owner != null) {
+                    Owner.RemoveFromBattlefield(this);
                 }
                 gameMediator.NotifyCreatureDied(this);
             }
@@ -91,8 +92,8 @@ public class Creature : Card, ICreature {
     }
 
     private void HandleDamageEffect(EffectAction action, ActionsQueue actionsQueue) {
-        if (owner == null) {
-            LogError($"Cannot handle damage effect for {Name} - owner is null", LogTag.Creatures | LogTag.Effects);
+        if (Owner == null) {
+            LogError($"Cannot handle damage effect for {Name} - Owner is null", LogTag.Creatures | LogTag.Effects);
             return;
         }
 
@@ -106,7 +107,7 @@ public class Creature : Card, ICreature {
         }
 
         // Normal targeting for other effects
-        var targets = TargetingSystem.GetValidTargets(owner, action.targetType);
+        var targets = TargetingSystem.GetValidTargets(Owner, action.targetType);
         Log($"Found {targets.Count} targets for {Name}'s damage effect", LogTag.Creatures | LogTag.Actions);
 
         foreach (var target in targets) {

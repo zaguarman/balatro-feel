@@ -49,6 +49,9 @@ public class DamagePlayerAction : IGameAction {
         target.TakeDamage(damage);
         Log($"{damage} damage dealt to {target}", LogTag.Actions | LogTag.Players | LogTag.Combat);
     }
+
+    public IPlayer GetTargetPlayer() => target;
+    public int GetDamage() => damage;
 }
 
 public class DamageCreatureAction : IGameAction {
@@ -174,4 +177,34 @@ public class PlayCardAction : IGameAction {
 
         Log($"Executed PlayCardAction for {card.Name}", LogTag.Actions | LogTag.Cards);
     }
+}
+
+public class MarkCombatTargetAction : IGameAction {
+    private readonly ICreature attacker;
+    private readonly BattlefieldSlot targetSlot;
+
+    public MarkCombatTargetAction(ICreature attacker, BattlefieldSlot targetSlot) {
+        this.attacker = attacker;
+        this.targetSlot = targetSlot;
+    }
+
+    public void Execute() {
+        if (targetSlot.IsOccupied) {
+            var targetCreature = targetSlot.OccupyingCard?.GetLinkedCreature();
+            if (targetCreature != null) {
+                var damageAction = new DamageCreatureAction(targetCreature, attacker.Attack, attacker);
+                GameManager.Instance.ActionsQueue.AddAction(damageAction);
+            }
+        } else {
+            var targetPlayer = attacker.Owner?.Opponent;
+            if (targetPlayer != null) {
+                GameManager.Instance.ActionsQueue.AddAction(
+                    new DamagePlayerAction(targetPlayer, attacker.Attack)
+                );
+            }
+        }
+    }
+
+    public ICreature GetAttacker() => attacker;
+    public BattlefieldSlot GetTargetSlot() => targetSlot;
 }
