@@ -50,7 +50,11 @@ public class BattlefieldArrowManager {
             return;
         }
 
-        foreach (var action in gameManager.ActionsQueue.GetPendingActions()) {
+        var pendingActions = gameManager.ActionsQueue.GetPendingActions();
+        Log($"Number of pending actions: {pendingActions.Count}", LogTag.Actions);
+
+        foreach (var action in pendingActions) {
+            Log($"Processing action: {action.GetType().Name}", LogTag.Actions);
             ProcessAction(action);
         }
     }
@@ -65,12 +69,19 @@ public class BattlefieldArrowManager {
     }
 
     private void ProcessAction(IGameAction action) {
-        if (action is DamageCreatureAction damageAction) {
-            CreateArrowForDamageAction(damageAction);
-        } else if (action is DamagePlayerAction playerDamageAction) {
-            CreateArrowForPlayerDamageAction(playerDamageAction);
-        } else if (action is MarkCombatTargetAction markCombatAction) {
-            CreateArrowForMarkCombatAction(markCombatAction);
+        Log($"Attempting to process action: {action.GetType().Name}", LogTag.Actions);
+
+        switch (action) {
+            case DamageCreatureAction damageAction:
+                CreateArrowForDamageAction(damageAction);
+                break;
+            case DamagePlayerAction playerDamageAction:
+                CreateArrowForPlayerDamageAction(playerDamageAction);
+                break;
+            case MarkCombatTargetAction markCombatAction:
+                Log("Creating arrow for MarkCombatTargetAction", LogTag.Actions);
+                CreateArrowForMarkCombatAction(markCombatAction);
+                break;
         }
     }
 
