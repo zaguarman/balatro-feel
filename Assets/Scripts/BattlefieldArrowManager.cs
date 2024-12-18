@@ -69,7 +69,28 @@ public class BattlefieldArrowManager {
             CreateArrowForDamageAction(damageAction);
         } else if (action is DamagePlayerAction playerDamageAction) {
             CreateArrowForPlayerDamageAction(playerDamageAction);
+        } else if (action is MarkCombatTargetAction markCombatAction) {
+            CreateArrowForMarkCombatAction(markCombatAction);
         }
+    }
+
+    private void CreateArrowForMarkCombatAction(MarkCombatTargetAction action) {
+        var attacker = action.GetAttacker();
+        var targetSlot = action.GetTargetSlot();
+
+        if (attacker == null || targetSlot == null) return;
+
+        var arrow = ArrowIndicator.Create(parentTransform);
+        Vector3 startPos = GetCreaturePosition(attacker);
+        Vector3 endPos = targetSlot.transform.position;
+
+        startPos.z = 0;
+        endPos.z = 0;
+
+        arrow.Show(startPos, endPos);
+        activeArrows[attacker.TargetId] = arrow;
+
+        Log($"Created combat targeting arrow from {attacker.Name} to slot {targetSlot.Index}", LogTag.Actions | LogTag.UI);
     }
 
     private void CreateArrowForDamageAction(DamageCreatureAction damageAction) {
