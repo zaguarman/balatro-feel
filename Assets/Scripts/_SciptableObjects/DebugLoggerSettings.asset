@@ -20,82 +20,82 @@ MonoBehaviour:
     isEnabled: 1
     color: {r: 1, g: 0.8784314, b: 0.4, a: 1}
   - tagValue: 4
-    isEnabled: 1
+    isEnabled: 0
     color: {r: 1, g: 0.6, b: 1, a: 1}
   - tagValue: 8
     isEnabled: 1
     color: {r: 0.5647059, g: 0.93333334, b: 0.5647059, a: 1}
   - tagValue: 16
-    isEnabled: 1
+    isEnabled: 0
     color: {r: 0.6784314, g: 0.84705883, b: 0.9019608, a: 1}
   - tagValue: 32
     isEnabled: 1
     color: {r: 0.8784314, g: 0.8784314, b: 0.8784314, a: 1}
   - tagValue: 64
-    isEnabled: 1
+    isEnabled: 0
     color: {r: 1, g: 0.6, b: 0.6, a: 1}
   - tagValue: 128
-    isEnabled: 1
+    isEnabled: 0
     color: {r: 0.87058824, g: 0.72156864, b: 0.5294118, a: 1}
   classFilters:
   - className: ActionsQueue
     isEnabled: 1
   - className: ArrowIndicator
-    isEnabled: 1
+    isEnabled: 0
   - className: BattlefieldArrowManager
-    isEnabled: 1
+    isEnabled: 0
   - className: BattlefieldCombatHandler
-    isEnabled: 1
+    isEnabled: 0
   - className: BattlefieldUI
     isEnabled: 1
   - className: Card
     isEnabled: 1
   - className: CardContainer
-    isEnabled: 1
+    isEnabled: 0
   - className: CardController
-    isEnabled: 1
+    isEnabled: 0
   - className: CardData
-    isEnabled: 1
+    isEnabled: 0
   - className: CardDealingService
-    isEnabled: 1
+    isEnabled: 0
   - className: CardDropZone
-    isEnabled: 1
+    isEnabled: 0
   - className: CardFactory
     isEnabled: 1
   - className: ContainerSettings
-    isEnabled: 1
+    isEnabled: 0
   - className: Creature
     isEnabled: 1
   - className: Deck
-    isEnabled: 1
+    isEnabled: 0
   - className: Entity
-    isEnabled: 1
+    isEnabled: 0
   - className: GameActions
     isEnabled: 1
   - className: GameBootstrap
-    isEnabled: 1
+    isEnabled: 0
   - className: GameManager
-    isEnabled: 1
+    isEnabled: 0
   - className: GameMediator
-    isEnabled: 1
+    isEnabled: 0
   - className: GameReferences
-    isEnabled: 1
+    isEnabled: 0
   - className: GameUI
-    isEnabled: 1
+    isEnabled: 0
   - className: HandUI
-    isEnabled: 1
+    isEnabled: 0
   - className: HealthHandler
-    isEnabled: 1
+    isEnabled: 0
   - className: Player
-    isEnabled: 1
+    isEnabled: 0
   - className: PlayerUI
-    isEnabled: 1
+    isEnabled: 0
   - className: Target
-    isEnabled: 1
+    isEnabled: 0
   - className: TestSetup
-    isEnabled: 1
+    isEnabled: 0
   - className: UIComponent
-    isEnabled: 1
+    isEnabled: 0
   showStackTrace: 0
   whitelistMode: 1
   tagWhitelistMode: 1
