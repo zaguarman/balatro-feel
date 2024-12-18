@@ -9,6 +9,11 @@ public class BattlefieldArrowManager {
     private ArrowIndicator dragArrowIndicator;
     private Dictionary<string, ArrowIndicator> activeArrows = new Dictionary<string, ArrowIndicator>();
 
+    // Deep green for player 1's arrows (#20853E)
+    private static readonly Color player1ArrowColor = new Color(0.125f, 0.522f, 0.243f, 0.9f);
+    // Deep red for player 2's arrows (#820807)
+    private static readonly Color player2ArrowColor = new Color(0.510f, 0.031f, 0.027f, 0.9f);
+
     public BattlefieldArrowManager(Transform parent, GameManager gameManager) {
         this.parentTransform = parent;
         this.gameManager = gameManager;
@@ -18,11 +23,13 @@ public class BattlefieldArrowManager {
 
     private void SetupDragArrow() {
         dragArrowIndicator = ArrowIndicator.Create(parentTransform);
+        dragArrowIndicator.SetColor(player1ArrowColor); // Default to player 1 color
         dragArrowIndicator.Hide();
     }
 
-    public void ShowDragArrow(Vector3 startPos) {
+    public void ShowDragArrow(Vector3 startPos, bool isPlayer1 = true) {
         startPos.z = 0;
+        dragArrowIndicator.SetColor(isPlayer1 ? player1ArrowColor : player2ArrowColor);
         dragArrowIndicator.Show(startPos, startPos);
     }
 
@@ -82,6 +89,9 @@ public class BattlefieldArrowManager {
         startPos.z = 0;
         endPos.z = 0;
 
+        // Determine if the attacker belongs to player 1
+        bool isPlayer1Attacker = gameManager.Player1.Battlefield.Contains(attacker);
+        arrow.SetColor(isPlayer1Attacker ? player1ArrowColor : player2ArrowColor);
         arrow.Show(startPos, endPos);
         activeArrows[attacker.TargetId] = arrow;
     }

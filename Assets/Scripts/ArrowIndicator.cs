@@ -11,7 +11,8 @@ public class ArrowIndicator : MonoBehaviour {
     private Vector3 endPosition;
     private float arrowWidth = 0.2f;
     private float headLength = 0.5f;
-    private float headAngle = 25f; // Reduced angle for pointier shape
+    private float headAngle = 25f;
+    private Color currentColor;
 
     private void Awake() {
         SetupArrow();
@@ -36,12 +37,6 @@ public class ArrowIndicator : MonoBehaviour {
         SetupHeadLine(headLine1);
         SetupHeadLine(headLine2);
 
-        // Set material and color
-        Color arrowColor = new Color(1f, 0f, 0f, 0.9f); // Red with 0.9 alpha
-        SetupLineMaterial(mainLine, arrowColor);
-        SetupLineMaterial(headLine1, arrowColor);
-        SetupLineMaterial(headLine2, arrowColor);
-
         // Set sorting order to appear above cards
         mainLine.sortingOrder = 100;
         headLine1.sortingOrder = 100;
@@ -56,12 +51,6 @@ public class ArrowIndicator : MonoBehaviour {
         line.endWidth = 0f; // Sharp point at tip
     }
 
-    private void SetupLineMaterial(LineRenderer line, Color color) {
-        Material material = new Material(Shader.Find("Sprites/Default"));
-        material.color = color;
-        line.material = material;
-    }
-
     public static ArrowIndicator Create(Transform parent = null) {
         GameObject arrowObj = new GameObject("AttackArrow");
         if (parent != null) {
@@ -71,9 +60,27 @@ public class ArrowIndicator : MonoBehaviour {
         return arrowObj.AddComponent<ArrowIndicator>();
     }
 
+    public void SetColor(Color newColor) {
+        currentColor = newColor;
+        if (mainLine != null && mainLine.material != null) {
+            mainLine.material.color = newColor;
+        }
+        if (headLine1 != null && headLine1.material != null) {
+            headLine1.material.color = newColor;
+        }
+        if (headLine2 != null && headLine2.material != null) {
+            headLine2.material.color = newColor;
+        }
+    }
+
     public void Show(Vector3 start, Vector3 end) {
         startPosition = start;
         endPosition = end;
+
+        // Set material and color for all lines
+        SetupLineMaterial(mainLine, currentColor);
+        SetupLineMaterial(headLine1, currentColor);
+        SetupLineMaterial(headLine2, currentColor);
 
         // Update main line
         if (mainLine != null) {
@@ -84,6 +91,14 @@ public class ArrowIndicator : MonoBehaviour {
 
         UpdateArrowHead();
         isVisible = true;
+    }
+
+    private void SetupLineMaterial(LineRenderer line, Color color) {
+        if (line != null) {
+            Material material = new Material(Shader.Find("Sprites/Default"));
+            material.color = color;
+            line.material = material;
+        }
     }
 
     private void UpdateArrowHead() {
