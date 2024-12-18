@@ -1,8 +1,8 @@
-using static DebugLogger;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine.EventSystems;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using static DebugLogger;
 
 public class BattlefieldUI : CardContainer {
     private const int MAX_SLOTS = 5;
@@ -73,7 +73,6 @@ public class BattlefieldUI : CardContainer {
     }
 
     private bool IsCardFromHand(CardController card) {
-        // Check if the original parent is part of a HandUI
         if (card.OriginalParent == null) return false;
 
         Transform parent = card.OriginalParent;
@@ -84,28 +83,6 @@ public class BattlefieldUI : CardContainer {
             parent = parent.parent;
         }
         return false;
-    }
-
-    private CardContainer GetSourceContainer(CardController card) {
-        if (card == null) return null;
-
-        // Use the original parent stored during drag start
-        var originalParent = card.OriginalParent;
-        if (originalParent == null) {
-            Log($"Original parent is null for card: {card.name}", LogTag.UI | LogTag.Cards);
-            return null;
-        }
-
-        // The card's original parent should be a slot, so we need to get its parent which would be the container
-        var containerObject = originalParent.parent?.gameObject;
-        if (containerObject == null) {
-            Log($"Container object is null for card: {card.name}", LogTag.UI | LogTag.Cards);
-            return null;
-        }
-
-        var container = containerObject.GetComponent<CardContainer>();
-        Log($"Found source container: {(container != null ? container.GetType().Name : "null")}", LogTag.UI | LogTag.Cards);
-        return container;
     }
 
     private void HandleCardFromHand(CardController card, BattlefieldSlot targetSlot) {
@@ -121,17 +98,25 @@ public class BattlefieldUI : CardContainer {
     }
 
     private void HandleCardFromBattlefield(CardController card, BattlefieldSlot targetSlot) {
-        if (targetSlot != null && targetSlot.IsOccupied) {
-            var targetCard = targetSlot.OccupyingCard;
-            if (card.IsPlayer1Card() == targetCard.IsPlayer1Card()) {
-                // Same player creatures - handle swap
-                HandleCreatureSwap(card, targetSlot);
+        if (targetSlot != null) {
+            if (targetSlot.IsOccupied) {
+                var targetCard = targetSlot.OccupyingCard;
+                if (card.IsPlayer1Card() == targetCard.IsPlayer1Card()) {
+                    // Same player creatures - handle swap
+                    HandleCreatureSwap(card, targetSlot);
+                } else {
+                    // Enemy creature - handle combat
+                    gameManager.CombatHandler.HandleCreatureCombat(card);
+                }
             } else {
-                // Enemy creature - handle combat
-                gameManager.CombatHandler.HandleCreatureCombat(card);
+                // Empty slot - attack player
+                var attackingCreature = FindCreatureByTargetId(card);
+                if (attackingCreature != null && !gameManager.CombatHandler.HasCreatureAttacked(attackingCreature.TargetId)) {
+                    var targetPlayer = card.IsPlayer1Card() ? gameManager.Player2 : gameManager.Player1;
+                    gameManager.ActionsQueue.AddAction(new DamagePlayerAction(targetPlayer, attackingCreature.Attack));
+                    Log($"{attackingCreature.Name} attacks player directly for {attackingCreature.Attack} damage", LogTag.Creatures | LogTag.Combat);
+                }
             }
-        } else {
-            gameManager.CombatHandler.HandleCreatureCombat(card);
         }
     }
 
@@ -217,7 +202,24 @@ public class BattlefieldUI : CardContainer {
         if (cardController == null) return null;
 
         string targetId = cardController.GetLinkedCreatureId();
-        return player.Battlefield.FirstOrDefault(c => c.TargetId == targetId);
+        if (string.IsNullOrEmpty(targetId)) {
+            LogWarning($"No linked creature ID found for card {cardController.GetCardData()?.cardName}", LogTag.Cards | LogTag.Creatures);
+            return null;
+        }
+
+        // First check the current player's battlefield
+        var creature = player?.Battlefield.FirstOrDefault(c => c.TargetId == targetId);
+        if (creature != null) return creature;
+
+        // If not found, check the opponent's battlefield
+        creature = gameManager?.Player1.Battlefield.FirstOrDefault(c => c.TargetId == targetId) ??
+                  gameManager?.Player2.Battlefield.FirstOrDefault(c => c.TargetId == targetId);
+
+        if (creature == null) {
+            LogWarning($"Could not find creature with ID {targetId}", LogTag.Cards | LogTag.Creatures);
+        }
+
+        return creature;
     }
 
     #endregion
