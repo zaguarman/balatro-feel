@@ -54,15 +54,16 @@ public class BattlefieldArrowManager {
         var pendingActions = gameManager.ActionsQueue.GetPendingActions();
         Log($"Number of pending actions: {pendingActions.Count}", LogTag.Actions);
 
-        // Process only the most recent combat-related action
-        var combatAction = pendingActions
+        // Process the most recent action of specific types
+        var actionToProcess = pendingActions
             .LastOrDefault(action =>
                 action is MarkCombatTargetAction ||
                 action is DamageCreatureAction ||
-                action is DamagePlayerAction);
+                action is DamagePlayerAction ||
+                action is SwapCreaturesAction);
 
-        if (combatAction != null) {
-            ProcessAction(combatAction);
+        if (actionToProcess != null) {
+            ProcessAction(actionToProcess);
         }
     }
 
@@ -88,7 +89,45 @@ public class BattlefieldArrowManager {
             case DamagePlayerAction playerDamageAction:
                 CreateArrowForPlayerDamageAction(playerDamageAction);
                 break;
+            case SwapCreaturesAction swapAction:
+                CreateArrowForSwapAction(swapAction);
+                break;
         }
+    }
+
+    private void CreateArrowForSwapAction(SwapCreaturesAction swapAction) {
+        if (swapAction == null) return;
+
+        // Directly find creatures from the action
+        var creature1 = FindCreatureByTargetId(swapAction.GetCreature1()?.TargetId);
+        var creature2 = FindCreatureByTargetId(swapAction.GetCreature2()?.TargetId);
+
+        if (creature1 == null || creature2 == null) return;
+
+        var arrow = ArrowIndicator.Create(parentTransform);
+        Vector3 startPos1 = GetCreaturePosition(creature1);
+        Vector3 startPos2 = GetCreaturePosition(creature2);
+
+        startPos1.z = 0;
+        startPos2.z = 0;
+
+        arrow.Show(startPos1, startPos2);
+        arrow.SetColor(Color.yellow);
+
+        // Use a combined key to track the swap arrow
+        activeArrows[creature1.TargetId + "_" + creature2.TargetId] = arrow;
+
+        Log($"Created swap arrow between {creature1.Name} and {creature2.Name}", LogTag.Actions | LogTag.UI);
+    }
+
+    private ICreature FindCreatureByTargetId(string targetId) {
+        if (string.IsNullOrEmpty(targetId)) return null;
+
+        var gameManager = GameManager.Instance;
+        if (gameManager == null) return null;
+
+        return gameManager.Player1.Battlefield.FirstOrDefault(c => c.TargetId == targetId) ??
+               gameManager.Player2.Battlefield.FirstOrDefault(c => c.TargetId == targetId);
     }
 
     private void CreateArrowForMarkCombatAction(MarkCombatTargetAction action) {

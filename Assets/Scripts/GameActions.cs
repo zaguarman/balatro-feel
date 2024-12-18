@@ -149,6 +149,10 @@ public class SwapCreaturesAction : IGameAction {
 
         Log($"Executed swap between {creature1.Name} and {creature2.Name}", LogTag.Actions | LogTag.Creatures);
     }
+
+    // Added methods to help with arrow creation
+    public ICreature GetCreature1() => creature1;
+    public ICreature GetCreature2() => creature2;
 }
 
 public class PlayCardAction : IGameAction {

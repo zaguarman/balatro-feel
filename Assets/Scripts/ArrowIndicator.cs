@@ -142,6 +142,69 @@ public class ArrowIndicator : MonoBehaviour {
         mainLine.SetPosition(1, arrowBase);
     }
 
+    public void ShowSwapAction(Vector3 start1, Vector3 start2) {
+        // Create a swap-style arrow between two positions
+        startPosition = start1;
+        endPosition = start2;
+
+        Log($"Showing swap arrow from {start1} to {start2}", LogTag.UI);
+
+        // Ensure lines are not null
+        if (mainLine == null || headLine1 == null || headLine2 == null) {
+            LogWarning("Arrow lines are null when trying to show swap", LogTag.UI);
+            SetupArrow();
+        }
+
+        // Use a distinct yellow color for swap actions
+        SetColor(Color.yellow);
+
+        // Create a curved/wavy arrow to indicate swap
+        Vector3 midPoint1 = Vector3.Lerp(start1, start2, 0.4f);
+        Vector3 midPoint2 = Vector3.Lerp(start1, start2, 0.6f);
+
+        midPoint1.y += 50f; // Add some arc to the arrow
+        midPoint2.y += 50f;
+
+        // Main line will be a curved line
+        mainLine.positionCount = 3;
+        mainLine.SetPosition(0, start1);
+        mainLine.SetPosition(1, midPoint1);
+        mainLine.SetPosition(2, start2);
+
+        // Arrowheads will point from start to end
+        UpdateSwapArrowHead(start1, start2);
+
+        // Ensure visibility
+        mainLine.gameObject.SetActive(true);
+        headObject1.SetActive(true);
+        headObject2.SetActive(true);
+
+        isVisible = true;
+    }
+
+    private void UpdateSwapArrowHead(Vector3 start, Vector3 end) {
+        if (headLine1 == null || headLine2 == null) return;
+
+        Vector3 direction = (end - start).normalized;
+        Vector3 right = Quaternion.Euler(0, 0, 90) * direction;
+
+        // Calculate points for the arrowhead
+        Vector3 arrowTip1 = end;
+        Vector3 arrowBase1 = arrowTip1 - (direction * headLength);
+        float baseWidth = headLength * Mathf.Tan(headAngle * Mathf.Deg2Rad);
+        Vector3 arrowBaseLeft1 = arrowBase1 + (right * baseWidth);
+        Vector3 arrowBaseRight1 = arrowBase1 - (right * baseWidth);
+
+        // Set the positions for the first arrowhead lines
+        headLine1.SetPosition(0, arrowBaseLeft1);
+        headLine1.SetPosition(1, arrowTip1);
+        headLine1.enabled = true;
+
+        headLine2.SetPosition(0, arrowBaseRight1);
+        headLine2.SetPosition(1, arrowTip1);
+        headLine2.enabled = true;
+    }
+
     public void Hide() {
         if (mainLine != null) mainLine.enabled = false;
         if (headLine1 != null) headLine1.enabled = false;
