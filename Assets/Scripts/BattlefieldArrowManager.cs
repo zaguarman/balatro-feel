@@ -54,17 +54,8 @@ public class BattlefieldArrowManager {
         var pendingActions = gameManager.ActionsQueue.GetPendingActions();
         Log($"Number of pending actions: {pendingActions.Count}", LogTag.Actions);
 
-        // Process the most recent action of specific types
-        var actionToProcess = pendingActions
-            .LastOrDefault(action =>
-                action is MarkCombatTargetAction ||
-                action is DamageCreatureAction ||
-                action is DamagePlayerAction ||
-                action is SwapCreaturesAction);
-
-        if (actionToProcess != null) {
-            ProcessAction(actionToProcess);
-        }
+        // Process all pending actions instead of just the last one
+        ProcessQueuedActions(pendingActions);
     }
 
     private void ClearExistingArrows() {
@@ -76,26 +67,58 @@ public class BattlefieldArrowManager {
         activeArrows.Clear();
     }
 
-    private void ProcessAction(IGameAction action) {
-        Log($"Processing action: {action.GetType().Name}", LogTag.Actions);
+    private void ProcessQueuedActions(IReadOnlyCollection<IGameAction> actions) {
+        // Remove arrows for actions no longer in queue
+        var currentArrowKeys = activeArrows.Keys.ToList();
+        foreach (var key in currentArrowKeys) {
+            if (!actions.Any(a => GetActionKey(a) == key)) {
+                if (activeArrows[key] != null) {
+                    Object.Destroy(activeArrows[key].gameObject);
+                }
+                activeArrows.Remove(key);
+            }
+        }
 
-        switch (action) {
-            case MarkCombatTargetAction markCombatAction:
-                CreateArrowForMarkCombatAction(markCombatAction);
-                break;
-            case DamageCreatureAction damageAction:
-                CreateArrowForDamageAction(damageAction);
-                break;
-            case DamagePlayerAction playerDamageAction:
-                CreateArrowForPlayerDamageAction(playerDamageAction);
-                break;
-            case SwapCreaturesAction swapAction:
-                CreateArrowForSwapAction(swapAction);
-                break;
+        // Process each action
+        foreach (var action in actions) {
+            ProcessAction(action);
         }
     }
 
-    private void CreateArrowForSwapAction(SwapCreaturesAction swapAction) {
+    private string GetActionKey(IGameAction action) {
+        return action switch {
+            MarkCombatTargetAction markCombatAction => $"combat_{markCombatAction.GetAttacker()?.TargetId}",
+            DamageCreatureAction damageAction => $"damage_{damageAction.GetAttacker()?.TargetId}",
+            DamagePlayerAction playerDamageAction => $"playerDamage_{FindSourceCreatureForPlayerDamage(playerDamageAction)?.TargetId}",
+            SwapCreaturesAction swapAction => $"swap_{swapAction.GetCreature1()?.TargetId}_{swapAction.GetCreature2()?.TargetId}",
+            _ => null
+        };
+    }
+
+    private void ProcessAction(IGameAction action) {
+        string actionKey = GetActionKey(action);
+        if (actionKey == null) return;
+
+        // Only create new arrow if one doesn't exist for this action
+        if (!activeArrows.ContainsKey(actionKey)) {
+            switch (action) {
+                case MarkCombatTargetAction markCombatAction:
+                    CreateArrowForMarkCombatAction(markCombatAction, actionKey);
+                    break;
+                case DamageCreatureAction damageAction:
+                    CreateArrowForDamageAction(damageAction, actionKey);
+                    break;
+                case DamagePlayerAction playerDamageAction:
+                    CreateArrowForPlayerDamageAction(playerDamageAction, actionKey);
+                    break;
+                case SwapCreaturesAction swapAction:
+                    CreateArrowForSwapAction(swapAction, actionKey);
+                    break;
+            }
+        }
+    }
+
+    private void CreateArrowForSwapAction(SwapCreaturesAction swapAction, string actionKey) {
         if (swapAction == null) return;
 
         // Directly find creatures from the action
@@ -115,7 +138,7 @@ public class BattlefieldArrowManager {
         arrow.SetColor(Color.yellow);
 
         // Use a combined key to track the swap arrow
-        activeArrows[creature1.TargetId + "_" + creature2.TargetId] = arrow;
+        activeArrows[actionKey] = arrow;
 
         Log($"Created swap arrow between {creature1.Name} and {creature2.Name}", LogTag.Actions | LogTag.UI);
     }
@@ -130,7 +153,7 @@ public class BattlefieldArrowManager {
                gameManager.Player2.Battlefield.FirstOrDefault(c => c.TargetId == targetId);
     }
 
-    private void CreateArrowForMarkCombatAction(MarkCombatTargetAction action) {
+    private void CreateArrowForMarkCombatAction(MarkCombatTargetAction action, string actionKey) {
         var attacker = action.GetAttacker();
         var targetSlot = action.GetTargetSlot();
 
@@ -144,12 +167,12 @@ public class BattlefieldArrowManager {
         endPos.z = 0;
 
         arrow.Show(startPos, endPos);
-        activeArrows[attacker.TargetId] = arrow;
+        activeArrows[actionKey] = arrow;
 
         Log($"Created combat targeting arrow from {attacker.Name} to slot {targetSlot.Index}", LogTag.Actions | LogTag.UI);
     }
 
-    private void CreateArrowForDamageAction(DamageCreatureAction damageAction) {
+    private void CreateArrowForDamageAction(DamageCreatureAction damageAction, string actionKey) {
         var attacker = damageAction.GetAttacker();
         var target = damageAction.GetTarget();
 
@@ -163,12 +186,12 @@ public class BattlefieldArrowManager {
         endPos.z = 0;
 
         arrow.Show(startPos, endPos);
-        activeArrows[attacker.TargetId] = arrow;
+        activeArrows[actionKey] = arrow;
 
         Log($"Created arrow from {attacker.Name} to {target.Name}", LogTag.Actions | LogTag.UI);
     }
 
-    private void CreateArrowForPlayerDamageAction(DamagePlayerAction action) {
+    private void CreateArrowForPlayerDamageAction(DamagePlayerAction action, string actionKey) {
         if (action == null) return;
 
         var sourceCreature = FindSourceCreatureForPlayerDamage(action);
@@ -185,7 +208,7 @@ public class BattlefieldArrowManager {
         endPos.z = 0;
 
         arrow.Show(startPos, endPos);
-        activeArrows[sourceCreature.TargetId] = arrow;
+        activeArrows[actionKey] = arrow;
 
         Log($"Created arrow from {sourceCreature.Name} to Player {(targetPlayer.IsPlayer1() ? "1" : "2")}",
             LogTag.Actions | LogTag.UI);
