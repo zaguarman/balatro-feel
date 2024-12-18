@@ -1,4 +1,5 @@
 using UnityEngine;
+using static DebugLogger;
 
 public class ArrowIndicator : MonoBehaviour {
     private LineRenderer mainLine;
@@ -12,18 +13,26 @@ public class ArrowIndicator : MonoBehaviour {
     private float arrowWidth = 0.2f;
     private float headLength = 0.5f;
     private float headAngle = 25f;
-    private Color currentColor;
+    private Color currentColor = Color.red; // Default to red for visibility
 
     private void Awake() {
         SetupArrow();
     }
 
     private void SetupArrow() {
+        // Ensure the arrow is part of the UI canvas
+        Canvas parentCanvas = GetComponentInParent<Canvas>();
+        if (parentCanvas == null) {
+            LogWarning("ArrowIndicator must be a child of a Canvas", LogTag.UI);
+        }
+
         // Setup main line
         mainLine = gameObject.AddComponent<LineRenderer>();
         mainLine.positionCount = 2;
         mainLine.startWidth = arrowWidth;
         mainLine.endWidth = arrowWidth;
+        mainLine.material = new Material(Shader.Find("Sprites/Default"));
+        mainLine.material.color = currentColor;
 
         // Create separate GameObjects for the arrowheads
         headObject1 = new GameObject("ArrowHead1");
@@ -42,6 +51,7 @@ public class ArrowIndicator : MonoBehaviour {
         headLine1.sortingOrder = 100;
         headLine2.sortingOrder = 100;
 
+        // Ensure the arrow starts hidden
         Hide();
     }
 
@@ -49,6 +59,8 @@ public class ArrowIndicator : MonoBehaviour {
         line.positionCount = 2;
         line.startWidth = arrowWidth * 1.2f; // Slightly wider at base
         line.endWidth = 0f; // Sharp point at tip
+        line.material = new Material(Shader.Find("Sprites/Default"));
+        line.material.color = currentColor;
     }
 
     public static ArrowIndicator Create(Transform parent = null) {
@@ -62,14 +74,18 @@ public class ArrowIndicator : MonoBehaviour {
 
     public void SetColor(Color newColor) {
         currentColor = newColor;
+        UpdateColors();
+    }
+
+    private void UpdateColors() {
         if (mainLine != null && mainLine.material != null) {
-            mainLine.material.color = newColor;
+            mainLine.material.color = currentColor;
         }
         if (headLine1 != null && headLine1.material != null) {
-            headLine1.material.color = newColor;
+            headLine1.material.color = currentColor;
         }
         if (headLine2 != null && headLine2.material != null) {
-            headLine2.material.color = newColor;
+            headLine2.material.color = currentColor;
         }
     }
 
@@ -77,28 +93,27 @@ public class ArrowIndicator : MonoBehaviour {
         startPosition = start;
         endPosition = end;
 
-        // Set material and color for all lines
-        SetupLineMaterial(mainLine, currentColor);
-        SetupLineMaterial(headLine1, currentColor);
-        SetupLineMaterial(headLine2, currentColor);
+        Log($"Showing arrow from {start} to {end}", LogTag.UI);
+
+        // Ensure lines are not null
+        if (mainLine == null || headLine1 == null || headLine2 == null) {
+            LogWarning("Arrow lines are null when trying to show", LogTag.UI);
+            SetupArrow();
+        }
 
         // Update main line
-        if (mainLine != null) {
-            mainLine.SetPosition(0, start);
-            mainLine.SetPosition(1, end);
-            mainLine.enabled = true;
-        }
+        mainLine.SetPosition(0, start);
+        mainLine.SetPosition(1, end);
+        mainLine.enabled = true;
 
         UpdateArrowHead();
-        isVisible = true;
-    }
 
-    private void SetupLineMaterial(LineRenderer line, Color color) {
-        if (line != null) {
-            Material material = new Material(Shader.Find("Sprites/Default"));
-            material.color = color;
-            line.material = material;
-        }
+        // Ensure visibility
+        mainLine.gameObject.SetActive(true);
+        headObject1.SetActive(true);
+        headObject2.SetActive(true);
+
+        isVisible = true;
     }
 
     private void UpdateArrowHead() {
@@ -131,6 +146,12 @@ public class ArrowIndicator : MonoBehaviour {
         if (mainLine != null) mainLine.enabled = false;
         if (headLine1 != null) headLine1.enabled = false;
         if (headLine2 != null) headLine2.enabled = false;
+
+        // Also deactivate GameObjects to ensure they're not visible
+        if (mainLine != null) mainLine.gameObject.SetActive(false);
+        if (headObject1 != null) headObject1.SetActive(false);
+        if (headObject2 != null) headObject2.SetActive(false);
+
         isVisible = false;
     }
 
@@ -149,6 +170,7 @@ public class ArrowIndicator : MonoBehaviour {
     }
 
     private void OnDestroy() {
+        // Ensure clean destruction of arrow components
         if (headObject1 != null) Destroy(headObject1);
         if (headObject2 != null) Destroy(headObject2);
 

@@ -43,6 +43,7 @@ public class BattlefieldArrowManager {
     public void UpdateArrowsFromActionsQueue() {
         Log("Starting update of arrows from actions queue", LogTag.Actions);
 
+        // Clear existing arrows before recreating
         ClearExistingArrows();
 
         if (gameManager.ActionsQueue == null) {
@@ -53,9 +54,15 @@ public class BattlefieldArrowManager {
         var pendingActions = gameManager.ActionsQueue.GetPendingActions();
         Log($"Number of pending actions: {pendingActions.Count}", LogTag.Actions);
 
-        foreach (var action in pendingActions) {
-            Log($"Processing action: {action.GetType().Name}", LogTag.Actions);
-            ProcessAction(action);
+        // Process only the most recent combat-related action
+        var combatAction = pendingActions
+            .LastOrDefault(action =>
+                action is MarkCombatTargetAction ||
+                action is DamageCreatureAction ||
+                action is DamagePlayerAction);
+
+        if (combatAction != null) {
+            ProcessAction(combatAction);
         }
     }
 
@@ -69,18 +76,17 @@ public class BattlefieldArrowManager {
     }
 
     private void ProcessAction(IGameAction action) {
-        Log($"Attempting to process action: {action.GetType().Name}", LogTag.Actions);
+        Log($"Processing action: {action.GetType().Name}", LogTag.Actions);
 
         switch (action) {
+            case MarkCombatTargetAction markCombatAction:
+                CreateArrowForMarkCombatAction(markCombatAction);
+                break;
             case DamageCreatureAction damageAction:
                 CreateArrowForDamageAction(damageAction);
                 break;
             case DamagePlayerAction playerDamageAction:
                 CreateArrowForPlayerDamageAction(playerDamageAction);
-                break;
-            case MarkCombatTargetAction markCombatAction:
-                Log("Creating arrow for MarkCombatTargetAction", LogTag.Actions);
-                CreateArrowForMarkCombatAction(markCombatAction);
                 break;
         }
     }
