@@ -1,33 +1,138 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine.Events;
 using static DebugLogger;
 
 public class GameMediator : Singleton<GameMediator> {
-    private class GameEvents {
-        public readonly UnityEvent<IPlayer, int> PlayerDamaged = new UnityEvent<IPlayer, int>();
-        public readonly UnityEvent<ICreature, int> CreatureDamaged = new UnityEvent<ICreature, int>();
-        public readonly UnityEvent<ICreature> CreatureDied = new UnityEvent<ICreature>();
-        public readonly UnityEvent<IPlayer> GameOver = new UnityEvent<IPlayer>();
-        public readonly UnityEvent GameStateChanged = new UnityEvent();
-        public readonly UnityEvent GameInitialized = new UnityEvent();
-        public readonly UnityEvent<ICreature, IPlayer> CreatureSummoned = new UnityEvent<ICreature, IPlayer>();
-        public readonly UnityEvent<ICreature> CreaturePreSummon = new UnityEvent<ICreature>();
+    private readonly List<IGameObserver> observers = new List<IGameObserver>();
+    private readonly HashSet<IPlayer> registeredPlayers = new HashSet<IPlayer>();
+    private bool gameInitialized = false;
+    private readonly GameEvents events = new GameEvents();
 
-        public void ClearAllListeners() {
-            PlayerDamaged.RemoveAllListeners();
-            CreatureDamaged.RemoveAllListeners();
-            CreatureDied.RemoveAllListeners();
-            GameOver.RemoveAllListeners();
-            GameStateChanged.RemoveAllListeners();
-            GameInitialized.RemoveAllListeners();
-            CreatureSummoned.RemoveAllListeners();
-            CreaturePreSummon.RemoveAllListeners();
+    public void AddObserver(IGameObserver observer) {
+        if (!observers.Contains(observer)) {
+            observers.Add(observer);
         }
     }
 
-    private readonly GameEvents events = new GameEvents();
-    private readonly HashSet<IPlayer> registeredPlayers = new HashSet<IPlayer>();
-    private bool gameInitialized = false;
+    public void RemoveObserver(IGameObserver observer) {
+        observers.Remove(observer);
+    }
+
+    public void NotifyGameStateChanged() {
+        ValidateInitialization();
+        events.GameStateChanged.Invoke();
+        foreach (var observer in observers) {
+            observer.OnGameStateChanged();
+        }
+    }
+
+    public void NotifyGameInitialized() {
+        ValidateInitialization();
+        if (!gameInitialized) {
+            gameInitialized = true;
+            Log("Game initialized", LogTag.Initialization);
+            events.GameInitialized.Invoke();
+            foreach (var observer in observers) {
+                observer.OnGameInitialized();
+            }
+        }
+    }
+
+    public void NotifyPlayerDamaged(IPlayer player, int damage) {
+        ValidateInitialization();
+        if (player == null) throw new System.ArgumentNullException(nameof(player));
+
+        events.PlayerDamaged.Invoke(player, damage);
+        foreach (var observer in observers) {
+            observer.OnPlayerDamaged(player, damage);
+        }
+        Log($"{damage} damage to {(player.IsPlayer1() ? "Player 1" : "Player 2")}", LogTag.Players | LogTag.Combat);
+
+        if (player.Health <= 0) {
+            NotifyGameOver(player.Opponent);
+        }
+    }
+
+    public void NotifyCreatureDamaged(ICreature creature, int damage) {
+        ValidateInitialization();
+        if (creature == null) throw new System.ArgumentNullException(nameof(creature));
+
+        events.CreatureDamaged.Invoke(creature, damage);
+        foreach (var observer in observers) {
+            observer.OnCreatureDamaged(creature, damage);
+        }
+        Log($"{damage} damage to {creature.Name}", LogTag.Creatures | LogTag.Combat);
+
+        if (creature.Health <= 0) {
+            NotifyCreatureDied(creature);
+        }
+    }
+
+    public void NotifyCreatureDied(ICreature creature) {
+        ValidateInitialization();
+        if (creature == null) throw new System.ArgumentNullException(nameof(creature));
+
+        events.CreatureDied.Invoke(creature);
+        foreach (var observer in observers) {
+            observer.OnCreatureDied(creature);
+        }
+        Log($"Creature died: {creature.Name}", LogTag.Creatures);
+        NotifyGameStateChanged();
+    }
+
+    public void NotifyGameOver(IPlayer winner) {
+        ValidateInitialization();
+        if (winner == null) throw new System.ArgumentNullException(nameof(winner));
+
+        Log($"Game over: {(winner.IsPlayer1() ? "Player 1" : "Player 2")} wins", LogTag.Players);
+        events.GameOver.Invoke(winner);
+        foreach (var observer in observers) {
+            observer.OnGameOver(winner);
+        }
+    }
+
+    public void NotifyCreaturePreSummon(ICreature creature) {
+        ValidateInitialization();
+        if (creature == null) throw new System.ArgumentNullException(nameof(creature));
+
+        events.CreaturePreSummon.Invoke(creature);
+        foreach (var observer in observers) {
+            observer.OnCreaturePreSummon(creature);
+        }
+        Log($"Creature pre-summon: {creature.Name}", LogTag.Creatures);
+    }
+
+    public void NotifyCreatureSummoned(ICreature creature, IPlayer owner) {
+        ValidateInitialization();
+        if (creature == null) throw new System.ArgumentNullException(nameof(creature));
+        if (owner == null) throw new System.ArgumentNullException(nameof(owner));
+
+        events.CreatureSummoned.Invoke(creature, owner);
+        foreach (var observer in observers) {
+            observer.OnCreatureSummoned(creature, owner);
+        }
+        Log($"Creature summoned: {creature.Name} by {(owner.IsPlayer1() ? "Player 1" : "Player 2")}", LogTag.Creatures);
+        NotifyGameStateChanged();
+    }
+
+    protected override void OnDestroy() {
+        if (this == Instance) {
+            foreach (var observer in observers.ToList()) {
+                RemoveObserver(observer);
+            }
+            events.ClearAllListeners();
+            registeredPlayers.Clear();
+            observers.Clear();
+        }
+        base.OnDestroy();
+    }
+
+    private void ValidateInitialization() {
+        if (!IsInitialized) {
+            throw new System.InvalidOperationException("GameMediator is not initialized");
+        }
+    }
 
     #region Event Registration Methods
     public void AddGameStateChangedListener(UnityAction listener) {
@@ -66,15 +171,6 @@ public class GameMediator : Singleton<GameMediator> {
         events.CreatureDied.RemoveListener(listener);
     }
 
-    public void AddGameOverListener(UnityAction<IPlayer> listener) {
-        ValidateInitialization();
-        events.GameOver.AddListener(listener);
-    }
-
-    public void RemoveGameOverListener(UnityAction<IPlayer> listener) {
-        events.GameOver.RemoveListener(listener);
-    }
-
     public void AddGameInitializedListener(UnityAction listener) {
         ValidateInitialization();
         events.GameInitialized.AddListener(listener);
@@ -82,24 +178,6 @@ public class GameMediator : Singleton<GameMediator> {
 
     public void RemoveGameInitializedListener(UnityAction listener) {
         events.GameInitialized.RemoveListener(listener);
-    }
-
-    public void AddCreatureSummonedListener(UnityAction<ICreature, IPlayer> listener) {
-        ValidateInitialization();
-        events.CreatureSummoned.AddListener(listener);
-    }
-
-    public void RemoveCreatureSummonedListener(UnityAction<ICreature, IPlayer> listener) {
-        events.CreatureSummoned.RemoveListener(listener);
-    }
-
-    public void AddCreaturePreSummonListener(UnityAction<ICreature> listener) {
-        ValidateInitialization();
-        events.CreaturePreSummon.AddListener(listener);
-    }
-
-    public void RemoveCreaturePreSummonListener(UnityAction<ICreature> listener) {
-        events.CreaturePreSummon.RemoveListener(listener);
     }
     #endregion
 
@@ -121,93 +199,4 @@ public class GameMediator : Singleton<GameMediator> {
         }
     }
     #endregion
-
-    #region Notification Methods
-    public void NotifyGameStateChanged() {
-        ValidateInitialization();
-        events.GameStateChanged.Invoke();
-    }
-
-    public void NotifyGameInitialized() {
-        ValidateInitialization();
-        if (!gameInitialized) {
-            gameInitialized = true;
-            Log("Game initialized", LogTag.Initialization);
-            events.GameInitialized.Invoke();
-        }
-    }
-
-    public void NotifyPlayerDamaged(IPlayer player, int damage) {
-        ValidateInitialization();
-        if (player == null) throw new System.ArgumentNullException(nameof(player));
-
-        events.PlayerDamaged.Invoke(player, damage);
-        Log($"{damage} damage to {(player.IsPlayer1() ? "Player 1" : "Player 2")}", LogTag.Players | LogTag.Combat);
-
-        if (player.Health <= 0) {
-            NotifyGameOver(player.Opponent);
-        }
-    }
-
-    public void NotifyCreatureDamaged(ICreature creature, int damage) {
-        ValidateInitialization();
-        if (creature == null) throw new System.ArgumentNullException(nameof(creature));
-
-        events.CreatureDamaged.Invoke(creature, damage);
-        Log($"{damage} damage to {creature.Name}", LogTag.Creatures | LogTag.Combat);
-
-        if (creature.Health <= 0) {
-            NotifyCreatureDied(creature);
-        }
-    }
-
-    public void NotifyCreatureDied(ICreature creature) {
-        ValidateInitialization();
-        if (creature == null) throw new System.ArgumentNullException(nameof(creature));
-
-        events.CreatureDied.Invoke(creature);
-        Log($"Creature died: {creature.Name}", LogTag.Creatures);
-        NotifyGameStateChanged();
-    }
-
-    public void NotifyGameOver(IPlayer winner) {
-        ValidateInitialization();
-        if (winner == null) throw new System.ArgumentNullException(nameof(winner));
-
-        Log($"Game over: {(winner.IsPlayer1() ? "Player 1" : "Player 2")} wins", LogTag.Players);
-        events.GameOver.Invoke(winner);
-    }
-
-    public void NotifyCreaturePreSummon(ICreature creature) {
-        ValidateInitialization();
-        if (creature == null) throw new System.ArgumentNullException(nameof(creature));
-
-        events.CreaturePreSummon.Invoke(creature);
-        Log($"Creature pre-summon: {creature.Name}", LogTag.Creatures);
-    }
-
-    public void NotifyCreatureSummoned(ICreature creature, IPlayer owner) {
-        ValidateInitialization();
-        if (creature == null) throw new System.ArgumentNullException(nameof(creature));
-        if (owner == null) throw new System.ArgumentNullException(nameof(owner));
-
-        events.CreatureSummoned.Invoke(creature, owner);
-        Log($"Creature summoned: {creature.Name} by {(owner.IsPlayer1() ? "Player 1" : "Player 2")}", LogTag.Creatures);
-        NotifyGameStateChanged();
-    }
-    #endregion
-
-    private void ValidateInitialization() {
-        if (!IsInitialized) {
-            throw new System.InvalidOperationException("GameMediator is not initialized");
-        }
-    }
-
-    protected override void OnDestroy() {
-        if (this == Instance) {
-            events.ClearAllListeners();
-            registeredPlayers.Clear();
-        }
-        base.OnDestroy();
-    }
 }

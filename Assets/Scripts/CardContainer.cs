@@ -180,8 +180,8 @@ public abstract class CardContainer : UIComponent, IDropHandler, IPointerEnterHa
         card.OnBeginDragEvent.AddListener(OnCardBeginDrag);
         card.OnEndDragEvent.AddListener(OnCardEndDrag);
         card.OnCardDropped.AddListener(OnCardDropped);
-        card.OnPointerEnterHandler += () => OnCardHoverEnter(card);
-        card.OnPointerExitHandler += () => OnCardHoverExit(card);
+        card.OnPointerEnterHandler = () => OnCardPointerEnter(card);
+        card.OnPointerExitHandler = () => OnCardPointerExit(card);
     }
 
     protected virtual void CleanupCardEventHandlers(CardController card) {
@@ -194,18 +194,26 @@ public abstract class CardContainer : UIComponent, IDropHandler, IPointerEnterHa
         card.OnPointerExitHandler = null;
     }
 
-    protected virtual void OnCardBeginDrag(CardController card) {
+    public virtual void OnCardPointerEnter(CardController card) {
+        OnCardHoverEnter(card);
+    }
+
+    public virtual void OnCardPointerExit(CardController card) {
+        OnCardHoverExit(card);
+    }
+
+    public virtual void OnCardBeginDrag(CardController card) {
         card.transform.SetAsLastSibling();
         card.transform.localScale = Vector3.one;
     }
 
-    protected virtual void OnCardEndDrag(CardController card) {
+    public virtual void OnCardEndDrag(CardController card) {
         card.transform.localScale = Vector3.one;
         UpdateLayout();
     }
 
-    protected virtual void OnCardDropped(CardController card) {
-        // Override in derived classes
+    public virtual void OnCardDropped(CardController card) {
+        HandleCardDropped(card);
     }
 
     protected virtual void OnCardHoverEnter(CardController card) {
@@ -245,6 +253,18 @@ public abstract class CardContainer : UIComponent, IDropHandler, IPointerEnterHa
         return cardData;
     }
 
+    protected virtual CardData CreateCardData(ICard card)
+    {
+        if (card is ICreature creature)
+        {
+            return CreateCardData(creature);
+        }
+        
+        var cardData = ScriptableObject.CreateInstance<CardData>();
+        cardData.cardName = card.Name;
+        return cardData;
+    }
+
     public virtual void AddCard(CardController card) {
         if (card == null) return;
         cards.Add(card);
@@ -270,5 +290,25 @@ public abstract class CardContainer : UIComponent, IDropHandler, IPointerEnterHa
         }
         cards.Clear();
         base.OnDestroy();
+    }
+
+    public override void OnGameStateChanged() {
+        UpdateUI();
+    }
+
+    public override void OnCreatureDied(ICreature creature) {
+        UpdateUI();
+    }
+
+    public virtual void RegisterEvents() {
+        if (gameMediator != null) {
+            gameMediator.AddGameStateChangedListener(UpdateUI);
+        }
+    }
+
+    public virtual void UnregisterEvents() {
+        if (gameMediator != null) {
+            gameMediator.RemoveGameStateChangedListener(UpdateUI);
+        }
     }
 }

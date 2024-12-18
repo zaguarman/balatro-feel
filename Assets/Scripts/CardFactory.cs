@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using System;
 using System.Linq;
+using UnityEngine.EventSystems;
 
 public static class CardFactory {
     private static Dictionary<string, CardData> cardDataCache = new Dictionary<string, CardData>();
@@ -88,8 +89,8 @@ public static class CardFactory {
         UnityAction<CardController> onBeginDrag = null,
         UnityAction<CardController> onEndDrag = null,
         UnityAction<CardController> onDrop = null,
-        System.Action onPointerEnter = null,
-        System.Action onPointerExit = null) {
+        UnityAction<CardController> onPointerEnter = null,
+        UnityAction<CardController> onPointerExit = null) {
         if (controller == null) return;
 
         CleanupCardEventHandlers(controller);
@@ -104,10 +105,10 @@ public static class CardFactory {
             controller.OnCardDropped.AddListener(onDrop);
 
         if (onPointerEnter != null)
-            controller.OnPointerEnterHandler += onPointerEnter;
+            controller.OnPointerEnterEvent.AddListener(onPointerEnter);
 
         if (onPointerExit != null)
-            controller.OnPointerExitHandler += onPointerExit;
+            controller.OnPointerExitEvent.AddListener(onPointerExit);
 
         Log($"Set up event handlers for card {controller.name}", LogTag.Cards | LogTag.UI);
     }
@@ -118,9 +119,19 @@ public static class CardFactory {
         controller.OnBeginDragEvent.RemoveAllListeners();
         controller.OnEndDragEvent.RemoveAllListeners();
         controller.OnCardDropped.RemoveAllListeners();
-        controller.OnPointerEnterHandler = null;
-        controller.OnPointerExitHandler = null;
+        controller.OnPointerEnterEvent.RemoveAllListeners();
+        controller.OnPointerExitEvent.RemoveAllListeners();
 
         Log($"Cleaned up event handlers for card {controller.name}", LogTag.Cards | LogTag.UI);
+    }
+
+    public static void SetupCardEvents(CardController card, CardContainer container) {
+        if (card == null || container == null) return;
+        
+        card.OnCardDropped.AddListener(new UnityAction<CardController>(container.OnCardDropped));
+        card.OnPointerEnterEvent.AddListener(new UnityAction<CardController>(container.OnCardPointerEnter));
+        card.OnPointerExitEvent.AddListener(new UnityAction<CardController>(container.OnCardPointerExit));
+        card.OnBeginDragEvent.AddListener(new UnityAction<CardController>(container.OnCardBeginDrag));
+        card.OnEndDragEvent.AddListener(new UnityAction<CardController>(container.OnCardEndDrag));
     }
 }

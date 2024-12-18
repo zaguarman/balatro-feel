@@ -31,14 +31,17 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
     public CardUnityEvent OnBeginDragEvent = new CardUnityEvent();
     public CardUnityEvent OnEndDragEvent = new CardUnityEvent();
     public CardUnityEvent OnCardDropped = new CardUnityEvent();
-    public Action OnPointerEnterHandler;
-    public Action OnPointerExitHandler;
+    public UnityEvent<CardController> OnPointerEnterEvent = new UnityEvent<CardController>();
+    public UnityEvent<CardController> OnPointerExitEvent = new UnityEvent<CardController>();
+
+    public UnityAction OnPointerEnterHandler { get; set; }
+    public UnityAction OnPointerExitHandler { get; set; }
 
     public Transform OriginalParent => originalParent;
     public ICreature GetLinkedCreature() => linkedCreature;
     public bool IsPlayer1Card() => player?.IsPlayer1() ?? false;
     public CardData GetCardData() => cardData;
-
+    public string GetLinkedCreatureId() => linkedCreatureId;
 
     protected override void Awake() {
         base.Awake();
@@ -59,14 +62,10 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
         cardData = data;
         player = owner;
         linkedCreatureId = creatureId;
-        if (cardData is CreatureData creatureData) {
-            Log($"Setting up {cardData.cardName} with {cardData.effects.Count} effects", LogTag.Cards | LogTag.Initialization);
-        }
         if (cardData is CreatureData) {
             linkedCreature = FindLinkedCreature();
             if (linkedCreature != null) {
                 linkedCreatureId = linkedCreature.TargetId;
-                Log($"Linked to creature: {linkedCreature.Name} with ID: {linkedCreatureId}", LogTag.Cards);
             }
         }
         UpdateUI();
@@ -83,87 +82,22 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
         return null;
     }
 
-    public string GetLinkedCreatureId() => linkedCreatureId;
-
-    protected override void RegisterEvents() {
-        if (gameMediator != null) {
-            gameMediator.AddGameStateChangedListener(UpdateUI);
-            gameMediator.AddCreatureDamagedListener(OnCreatureDamaged);
-            gameMediator.AddCreatureDiedListener(OnCreatureDied);
-        }
-    }
-
-    protected override void UnregisterEvents() {
-        if (gameMediator != null) {
-            gameMediator.RemoveGameStateChangedListener(UpdateUI);
-            gameMediator.RemoveCreatureDamagedListener(OnCreatureDamaged);
-            gameMediator.RemoveCreatureDiedListener(OnCreatureDied);
-        }
-    }
-
-    private void OnCreatureDamaged(ICreature creature, int damage) {
+    public override void OnCreatureDamaged(ICreature creature, int damage) {
         if (linkedCreature != null && creature.TargetId == linkedCreature.TargetId) {
-            Log($"Creature {creature.Name} took {damage} damage, updating UI", LogTag.Creatures | LogTag.UI);
             linkedCreature = creature;
             UpdateUI();
         }
     }
 
-    private void OnCreatureDied(ICreature creature) {
+    public override void OnCreatureDied(ICreature creature) {
         if (linkedCreature != null && creature.TargetId == linkedCreature.TargetId) {
-            Log($"Creature {creature.Name} died, updating UI", LogTag.Creatures | LogTag.UI);
             linkedCreature = null;
             UpdateUI();
         }
     }
 
-    public override void UpdateUI() {
-        if (cardData == null) {
-            LogWarning("Attempted to update UI with null card data", LogTag.UI | LogTag.Cards);
-            return;
-        }
-
-        UpdateCardText();
-        UpdateCardVisuals();
-    }
-
-    private void UpdateCardText() {
-        nameText.text = cardData.cardName;
-        descriptionText.text = cardData.description ?? string.Empty;
-
-        if (cardData is CreatureData creatureData) {
-            statsText.gameObject.SetActive(true);
-
-            if (linkedCreature != null) {
-                if (linkedCreature.Health <= 0) {
-                    Log($"Creature {linkedCreature.Name} is dead, should be removed", LogTag.Creatures);
-                    statsText.text = $"{creatureData.attack}/{creatureData.health}";
-                } else {
-                    statsText.text = $"{linkedCreature.Attack}/{linkedCreature.Health}";
-                }
-            } else {
-                statsText.text = $"{creatureData.attack}/{creatureData.health}";
-            }
-        } else {
-            statsText.gameObject.SetActive(false);
-        }
-    }
-
-    private void UpdateCardVisuals() {
-        if (cardImage != null && player != null) {
-            cardImage.color = player.IsPlayer1()
-                ? gameReferences.GetPlayer1CardColor()
-                : gameReferences.GetPlayer2CardColor();
-        }
-    }
-
     public void OnBeginDrag(PointerEventData eventData) {
         if (eventData.button != PointerEventData.InputButton.Left) return;
-
-        if (canvasGroup == null) {
-            LogWarning("CanvasGroup is missing, adding it now", LogTag.UI);
-            canvasGroup = gameObject.AddComponent<CanvasGroup>();
-        }
 
         originalPosition = transform.position;
         originalParent = transform.parent;
@@ -187,44 +121,55 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
     }
 
     public void OnEndDrag(PointerEventData eventData) {
-        if (!isDragging) return;
-
         isDragging = false;
         canvasGroup.blocksRaycasts = true;
-
         OnEndDragEvent.Invoke(this);
-        OnCardDropped.Invoke(this);
-
-        gameMediator?.NotifyGameStateChanged();
     }
 
     public void OnPointerEnter(PointerEventData eventData) {
-        if (!isDragging) {
-            OnPointerEnterHandler?.Invoke();
-        }
+        OnPointerEnterEvent?.Invoke(this);
+        OnPointerEnterHandler?.Invoke();
     }
 
     public void OnPointerExit(PointerEventData eventData) {
-        if (!isDragging) {
-            OnPointerExitHandler?.Invoke();
+        OnPointerExitEvent?.Invoke(this);
+        OnPointerExitHandler?.Invoke();
+    }
+
+    public override void UpdateUI() {
+        if (cardData == null) return;
+        UpdateCardText();
+        UpdateCardVisuals();
+    }
+
+    private void UpdateCardText() {
+        nameText.text = cardData.cardName;
+        descriptionText.text = cardData.description ?? string.Empty;
+
+        if (cardData is CreatureData creatureData) {
+            statsText.gameObject.SetActive(true);
+            statsText.text = linkedCreature != null ? 
+                $"{linkedCreature.Attack}/{linkedCreature.Health}" : 
+                $"{creatureData.attack}/{creatureData.health}";
+        } else {
+            statsText.gameObject.SetActive(false);
+        }
+    }
+
+    private void UpdateCardVisuals() {
+        if (cardImage != null && player != null) {
+            cardImage.color = player.IsPlayer1() ? 
+                gameReferences.GetPlayer1CardColor() : 
+                gameReferences.GetPlayer2CardColor();
         }
     }
 
     protected override void OnDestroy() {
-        if (transform != null) {
-            DOTween.Kill(transform);
-        }
-
-        CleanupEvents();
-        base.OnDestroy();
-    }
-
-    private void CleanupEvents() {
         OnBeginDragEvent.RemoveAllListeners();
         OnEndDragEvent.RemoveAllListeners();
         OnCardDropped.RemoveAllListeners();
-        OnPointerEnterHandler = null;
-        OnPointerExitHandler = null;
+        OnPointerEnterEvent.RemoveAllListeners();
+        OnPointerExitEvent.RemoveAllListeners();
+        base.OnDestroy();
     }
-
 }

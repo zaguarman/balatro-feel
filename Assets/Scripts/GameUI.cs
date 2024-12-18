@@ -2,17 +2,7 @@ using UnityEngine;
 
 public class GameUI : UIComponent {
     private static GameUI instance;
-    public static GameUI Instance {
-        get {
-            if (instance == null) {
-                instance = FindObjectOfType<GameUI>();
-                if (instance == null) {
-                    Debug.LogError("GameUI not found in scene!");
-                }
-            }
-            return instance;
-        }
-    }
+    public static GameUI Instance => instance;
 
     private PlayerUI player1UI;
     private PlayerUI player2UI;
@@ -33,7 +23,6 @@ public class GameUI : UIComponent {
         if (IsInitialized) return;
 
         gameManager = GameManager.Instance;
-
         GetReferences();
         InitializeUI();
         base.Initialize();
@@ -49,30 +38,16 @@ public class GameUI : UIComponent {
     private void InitializeUI() {
         if (player1UI != null) player1UI.Initialize(gameManager.Player1);
         if (player2UI != null) player2UI.Initialize(gameManager.Player2);
-
-        if (player1BattlefieldUI != null) {
-            player1BattlefieldUI.Initialize(gameManager.Player1);
-        }
-        if (player2BattlefieldUI != null) {
-            player2BattlefieldUI.Initialize(gameManager.Player2);
-        }
+        if (player1BattlefieldUI != null) player1BattlefieldUI.Initialize(gameManager.Player1);
+        if (player2BattlefieldUI != null) player2BattlefieldUI.Initialize(gameManager.Player2);
     }
 
-    protected override void RegisterEvents() {
-        if (gameMediator != null) {
-            gameMediator.AddGameStateChangedListener(UpdateUI);
-            gameMediator.AddGameInitializedListener(OnGameInitialized);
-        }
+    public override void OnGameStateChanged() {
+        UpdateUI();
     }
 
-    protected override void UnregisterEvents() {
-        if (gameMediator != null) {
-            gameMediator.RemoveGameStateChangedListener(UpdateUI);
-            gameMediator.RemoveGameInitializedListener(OnGameInitialized);
-        }
-    }
-
-    private void OnGameInitialized() {
+    public override void OnGameInitialized() {
+        InitializeUI();
         UpdateUI();
     }
 

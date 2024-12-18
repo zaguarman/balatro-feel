@@ -250,21 +250,21 @@ public class BattlefieldUI : CardContainer {
 
     #region Event Handling
 
-    protected override void RegisterEvents() {
+    public override void RegisterEvents() {
         if (gameMediator != null) {
             gameMediator.AddGameStateChangedListener(UpdateUI);
             gameMediator.AddCreatureDiedListener(OnCreatureDied);
         }
     }
 
-    protected override void UnregisterEvents() {
+    public override void UnregisterEvents() {
         if (gameMediator != null) {
             gameMediator.RemoveGameStateChangedListener(UpdateUI);
             gameMediator.RemoveCreatureDiedListener(OnCreatureDied);
         }
     }
 
-    private void OnCreatureDied(ICreature creature) {
+    public override void OnCreatureDied(ICreature creature) {
         if (!IsInitialized) return;
 
         if (creatureCards.TryGetValue(creature.TargetId, out CardController card)) {
@@ -286,7 +286,7 @@ public class BattlefieldUI : CardContainer {
 
     #region Drag Handling
 
-    protected override void OnCardBeginDrag(CardController card) {
+    public override void OnCardBeginDrag(CardController card) {
         if (card == null) return;
 
         var startSlot = slots.FirstOrDefault(s => s.OccupyingCard == card);
@@ -298,14 +298,14 @@ public class BattlefieldUI : CardContainer {
         card.transform.SetAsLastSibling();
     }
 
+    public override void OnCardEndDrag(CardController card) {
+        arrowManager.HideDragArrow();
+        UpdateUI();
+    }
+
     public void OnCardDrag(PointerEventData eventData) {
         Vector3 worldPos = Camera.main.ScreenToWorldPoint(eventData.position);
         arrowManager.UpdateDragArrow(worldPos);
-    }
-
-    protected override void OnCardEndDrag(CardController card) {
-        arrowManager.HideDragArrow();
-        UpdateUI();
     }
 
     #endregion

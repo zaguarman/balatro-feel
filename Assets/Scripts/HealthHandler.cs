@@ -3,18 +3,10 @@ using TMPro;
 public class HealthHandler {
     private readonly TextMeshProUGUI healthText;
     private readonly IPlayer player;
-    private readonly GameMediator gameMediator;
 
-    public HealthHandler(TextMeshProUGUI healthText, IPlayer player, GameMediator gameMediator) {
+    public HealthHandler(TextMeshProUGUI healthText, IPlayer player) {
         this.healthText = healthText;
         this.player = player;
-        this.gameMediator = gameMediator;
-
-        // Register for events
-        if (gameMediator != null) {
-            gameMediator.AddGameStateChangedListener(UpdateUI);
-            gameMediator.AddPlayerDamagedListener(HandlePlayerDamaged);
-        }
     }
 
     public void UpdateUI() {
@@ -23,16 +15,7 @@ public class HealthHandler {
         }
     }
 
-    private void HandlePlayerDamaged(IPlayer damagedPlayer, int damage) {
-        if (damagedPlayer == player) {
-            UpdateUI();
-        }
-    }
-
     public void Cleanup() {
-        if (gameMediator != null) {
-            gameMediator.RemoveGameStateChangedListener(UpdateUI);
-            gameMediator.RemovePlayerDamagedListener(HandlePlayerDamaged);
-        }
+        // No need for cleanup since we're not using observer pattern anymore
     }
 }

@@ -54,6 +54,10 @@ public class GameReferences : Singleton<GameReferences> {
     [SerializeField] private Color player1CardColor = new Color(0.8f, 0.9f, 1f);
     [SerializeField] private Color player2CardColor = new Color(1f, 0.8f, 0.8f);
 
+    [Header("UI Text References")]
+    [SerializeField] private TextMeshProUGUI player1HealthText;
+    [SerializeField] private TextMeshProUGUI player2HealthText;
+
     private bool referencesValidated = false;
 
     public override void Initialize() {
@@ -94,6 +98,8 @@ public class GameReferences : Singleton<GameReferences> {
     public Button GetResolveActionsButton() => resolveActionsButton;
     public Color GetPlayer1CardColor() => player1CardColor;
     public Color GetPlayer2CardColor() => player2CardColor;
+    public TextMeshProUGUI GetPlayer1HealthText() => player1HealthText;
+    public TextMeshProUGUI GetPlayer2HealthText() => player2HealthText;
 
     public bool AreReferencesValid() => referencesValidated;
 }
