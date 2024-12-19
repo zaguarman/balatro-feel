@@ -1,4 +1,5 @@
 using UnityEngine;
+using static DebugLogger;
 
 public abstract class Singleton<T> : InitializableComponent where T : InitializableComponent {
     protected static T instance;
@@ -7,7 +8,7 @@ public abstract class Singleton<T> : InitializableComponent where T : Initializa
     public static T Instance {
         get {
             if (isQuitting) {
-                //Debug.LogWarning($"[Singleton] Instance '{typeof(T)}' already destroyed on application quit. Won't create again - returning null.");
+                LogWarning($"[Singleton] Instance '{typeof(T)}' already destroyed on application quit. Won't create again - returning null.", LogTag.Initialization);
                 return null;
             }
 
@@ -15,7 +16,7 @@ public abstract class Singleton<T> : InitializableComponent where T : Initializa
                 instance = FindObjectOfType<T>();
 
                 if (instance == null) {
-                    Debug.LogError($"{typeof(T).Name} not found in scene!");
+                    LogError($"{typeof(T).Name} not found in scene!", LogTag.Initialization);
                 }
             }
             return instance;
@@ -25,7 +26,6 @@ public abstract class Singleton<T> : InitializableComponent where T : Initializa
     protected override void Awake() {
         base.Awake();
 
-        // Reset the quitting flag when a new instance is created
         isQuitting = false;
 
         if (instance != null && instance != this) {
@@ -45,7 +45,7 @@ public abstract class Singleton<T> : InitializableComponent where T : Initializa
         isQuitting = true;
     }
 
-    // Optional: Add this if you want to reset when entering play mode in editor
+    // This is to reset when entering play mode in editor
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics() {
         isQuitting = false;

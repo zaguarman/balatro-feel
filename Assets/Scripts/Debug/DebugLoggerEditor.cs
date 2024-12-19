@@ -2,6 +2,7 @@
 using UnityEditor;
 using UnityEngine;
 using System.Linq;
+using static DebugLogger;
 
 [CustomEditor(typeof(DebugLogger))]
 public class DebugLoggerEditor : Editor {
@@ -73,7 +74,7 @@ public class DebugLoggerSettingsEditor : Editor {
     }
 
     private bool AreAllClassesEnabled() {
-        foreach (var className in DebugLogger.AvailableClasses) {
+        foreach (var className in AvailableClasses) {
             if (!IsClassEnabled(className)) {
                 return false;
             }
@@ -82,7 +83,7 @@ public class DebugLoggerSettingsEditor : Editor {
     }
 
     private bool AreAllClassesDisabled() {
-        foreach (var className in DebugLogger.AvailableClasses) {
+        foreach (var className in AvailableClasses) {
             if (IsClassEnabled(className)) {
                 return false;
             }
@@ -113,24 +114,24 @@ public class DebugLoggerSettingsEditor : Editor {
 
         var orderedTags = new[]
         {
-            DebugLogger.LogTag.UI,
-            DebugLogger.LogTag.Actions,
-            DebugLogger.LogTag.Effects,
-            DebugLogger.LogTag.Creatures,
-            DebugLogger.LogTag.Players,
-            DebugLogger.LogTag.Cards,
-            DebugLogger.LogTag.Combat,
-            DebugLogger.LogTag.Initialization
+            LogTag.UI,
+            LogTag.Actions,
+            LogTag.Effects,
+            LogTag.Creatures,
+            LogTag.Players,
+            LogTag.Cards,
+            LogTag.Combat,
+            LogTag.Initialization
         };
 
         foreach (var tag in orderedTags) {
-            if (DebugLogger.DefaultColors.ContainsKey(tag)) {
+            if (DefaultColors.ContainsKey(tag)) {
                 tagSettingsProp.InsertArrayElementAtIndex(tagSettingsProp.arraySize);
                 var element = tagSettingsProp.GetArrayElementAtIndex(tagSettingsProp.arraySize - 1);
 
                 element.FindPropertyRelative("tagValue").intValue = (int)tag;
                 element.FindPropertyRelative("isEnabled").boolValue = true;
-                element.FindPropertyRelative("color").colorValue = DebugLogger.DefaultColors[tag];
+                element.FindPropertyRelative("color").colorValue = DefaultColors[tag];
             }
         }
 
@@ -293,8 +294,8 @@ public class DebugLoggerSettingsEditor : Editor {
 
             if (tagValueProp == null || colorProp == null) continue;
 
-            var currentTag = (DebugLogger.LogTag)tagValueProp.intValue;
-            if (DebugLogger.DefaultColors.TryGetValue(currentTag, out Color defaultColor)) {
+            var currentTag = (LogTag)tagValueProp.intValue;
+            if (DefaultColors.TryGetValue(currentTag, out Color defaultColor)) {
                 colorProp.colorValue = defaultColor;
             }
         }

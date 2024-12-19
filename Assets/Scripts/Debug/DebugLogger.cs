@@ -41,8 +41,7 @@ public class DebugLogger : MonoBehaviour {
         All = ~0
     }
 
-    public static readonly Dictionary<LogTag, Color> DefaultColors = new Dictionary<LogTag, Color>()
-    {
+    public static readonly Dictionary<LogTag, Color> DefaultColors = new Dictionary<LogTag, Color>() {
         { LogTag.UI, GetColorFromHex("#80FFFF") },
         { LogTag.Actions, GetColorFromHex("#FFE066") },
         { LogTag.Effects, GetColorFromHex("#FF99FF") },
@@ -53,8 +52,7 @@ public class DebugLogger : MonoBehaviour {
         { LogTag.Initialization, GetColorFromHex("#DEB887") },
     };
 
-    public static readonly string[] AvailableClasses = new string[]
-    {
+    public static readonly string[] AvailableClasses = new string[] {
         "ActionsQueue",
         "ArrowIndicator",
         "BattlefieldArrowManager",
@@ -74,7 +72,7 @@ public class DebugLogger : MonoBehaviour {
         "GameActions",
         "GameBootstrap",
         "GameManager",
-        "GameMediator",
+        "GameEvents",
         "GameReferences",
         "GameUI",
         "HandUI",

@@ -52,7 +52,6 @@ public class BattlefieldArrowManager {
         }
 
         var pendingActions = gameManager.ActionsQueue.GetPendingActions();
-        Log($"Number of pending actions: {pendingActions.Count}", LogTag.Actions);
 
         // Process all pending actions instead of just the last one
         ProcessQueuedActions(pendingActions);

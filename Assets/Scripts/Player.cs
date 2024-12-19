@@ -28,12 +28,12 @@ public class Player : Entity, IPlayer {
     public List<ICreature> Battlefield { get; private set; }
     public PlayerDamagedUnityEvent OnDamaged { get; } = new PlayerDamagedUnityEvent();
 
-    private readonly GameMediator gameMediator;
+    private readonly GameEvents gameEvents;
 
     public Player(string name = "Player") : base(name) {
         Hand = new List<ICard>();
         Battlefield = new List<ICreature>();
-        gameMediator = GameMediator.Instance;
+        gameEvents = GameEvents.Instance;
     }
 
     public bool IsPlayer1() {
@@ -49,7 +49,7 @@ public class Player : Entity, IPlayer {
     public void AddToHand(ICard card) {
         if (card == null) return;
         Hand.Add(card);
-        gameMediator?.NotifyGameStateChanged();
+        gameEvents.OnGameStateChanged.Invoke();
     }
 
     public void AddToBattlefield(ICreature creature) {
@@ -66,7 +66,7 @@ public class Player : Entity, IPlayer {
 
         // Validate slot index
         if (slotIndex < 0 || slotIndex >= MAX_BATTLEFIELD_SLOTS) {
-            DebugLogger.LogWarning($"Invalid slot index {slotIndex}", LogTag.Creatures);
+            LogWarning($"Invalid slot index {slotIndex}", LogTag.Creatures);
             return;
         }
 
@@ -89,10 +89,10 @@ public class Player : Entity, IPlayer {
 
         // Notify if creature is newly added to battlefield
         if (currentIndex == -1) {
-            gameMediator?.NotifyCreatureSummoned(creature, this);
+            gameEvents?.OnCreatureSummoned.Invoke(creature, this);
         }
 
-        gameMediator?.NotifyGameStateChanged();
+        gameEvents?.OnGameStateChanged.Invoke();
     }
 
     private int FindFirstEmptySlot() {
@@ -111,8 +111,8 @@ public class Player : Entity, IPlayer {
         if (index != -1) {
             battlefieldSlots[index] = null;
             Battlefield.Remove(creature);
-            DebugLogger.Log($"Removed creature from battlefield: {creature.Name}", LogTag.Creatures);
-            gameMediator?.NotifyGameStateChanged();
+            Log($"Removed creature from battlefield: {creature.Name}", LogTag.Creatures);
+            gameEvents?.OnGameStateChanged.Invoke();
         }
     }
 

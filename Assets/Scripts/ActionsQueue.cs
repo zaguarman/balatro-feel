@@ -7,18 +7,20 @@ public class ActionsQueue {
     private int maxIterationDepth = 3;
     private int currentIterationDepth = 0;
     private Dictionary<string, IGameAction> activeCreatureActions = new Dictionary<string, IGameAction>();
-    private readonly GameMediator gameMediator;
+    private readonly GameEvents gameEvents;
     private readonly BattlefieldCombatHandler combatHandler;
 
     public readonly UnityEvent OnActionsQueued = new UnityEvent();
     public readonly UnityEvent OnActionsResolved = new UnityEvent();
 
-    public ActionsQueue(GameMediator gameMediator, BattlefieldCombatHandler combatHandler) {
-        this.gameMediator = gameMediator;
+    public ActionsQueue(BattlefieldCombatHandler combatHandler) {
         this.combatHandler = combatHandler;
+        this.gameEvents = GameEvents.Instance;
     }
 
     private int GetActionPriority(IGameAction action) {
+        if (action == null) return int.MaxValue;
+
         return action switch {
             DirectDamageAction => 0,
             SwapCreaturesAction => 1,
@@ -28,6 +30,8 @@ public class ActionsQueue {
     }
 
     private string GetActiveCreatureId(IGameAction action) {
+        if (action == null) return null;
+
         return action switch {
             DamageCreatureAction damageAction => damageAction.GetAttacker()?.TargetId,
             SwapCreaturesAction swapAction => swapAction.GetCreature1()?.TargetId,
@@ -37,14 +41,20 @@ public class ActionsQueue {
     }
 
     public void AddAction(IGameAction action) {
+        if (action == null) {
+            LogError("Attempted to add null action to queue", LogTag.Actions);
+            return;
+        }
+
         if (currentIterationDepth >= maxIterationDepth) {
             LogWarning("Maximum iteration depth reached, skipping action", LogTag.Actions);
             return;
         }
 
         string activeCreatureId = GetActiveCreatureId(action);
-        
-        if (activeCreatureId != null) {
+        Log($"Adding action for creature ID: {activeCreatureId}", LogTag.Actions);
+
+        if (!string.IsNullOrEmpty(activeCreatureId)) {
             if (activeCreatureActions.ContainsKey(activeCreatureId)) {
                 Log($"Replacing existing action for creature {activeCreatureId}", LogTag.Actions);
                 actionsList.Remove(activeCreatureActions[activeCreatureId]);
@@ -55,8 +65,8 @@ public class ActionsQueue {
         InsertActionWithPriority(action);
         Log($"Added action to queue: {action.GetType()}", LogTag.Actions);
 
-        OnActionsQueued.Invoke();
-        gameMediator.NotifyGameStateChanged();
+        OnActionsQueued?.Invoke();
+        gameEvents?.OnGameStateChanged?.Invoke();
     }
 
     private void InsertActionWithPriority(IGameAction action) {
@@ -97,7 +107,7 @@ public class ActionsQueue {
         }
 
         OnActionsResolved.Invoke();
-        gameMediator.NotifyGameStateChanged();
+        gameEvents.OnGameStateChanged.Invoke();
     }
 
     public bool HasActiveAction(string creatureId) {

@@ -18,6 +18,19 @@ public abstract class CardContainer : UIComponent, IDropHandler, IPointerEnterHa
     protected RectTransform containerRect;
     protected CardDropZone dropZoneHandler;
 
+    public virtual void Initialize(IPlayer player) {
+        this.player = player;
+        containerRect = GetComponent<RectTransform>();
+        if (containerRect == null) {
+            containerRect = gameObject.AddComponent<RectTransform>();
+        }
+
+        SetupDropZone();
+        UpdateLayout();
+        IsInitialized = true;
+        UpdateUI();
+    }
+
     protected virtual void SetupDropZone() {
         var dropZoneImage = GetComponent<Image>();
         if (dropZoneImage == null) {
@@ -69,19 +82,6 @@ public abstract class CardContainer : UIComponent, IDropHandler, IPointerEnterHa
 
     protected virtual void HandlePointerExit(PointerEventData eventData) {
         // Override in derived classes if needed
-    }
-
-    public virtual void Initialize(IPlayer player) {
-        this.player = player;
-        containerRect = GetComponent<RectTransform>();
-        if (containerRect == null) {
-            containerRect = gameObject.AddComponent<RectTransform>();
-        }
-
-        SetupDropZone();
-        UpdateLayout();
-        IsInitialized = true;
-        UpdateUI();
     }
 
     protected void UpdateLayout() {
@@ -240,7 +240,7 @@ public abstract class CardContainer : UIComponent, IDropHandler, IPointerEnterHa
         var controller = cardObj.GetComponent<CardController>();
         if (controller != null) {
             var data = CreateCardData(creature);
-            controller.Setup(data, player, creature.TargetId);
+            controller.Initialize(data, player, creature.TargetId);
         }
         return controller;
     }
@@ -279,6 +279,28 @@ public abstract class CardContainer : UIComponent, IDropHandler, IPointerEnterHa
         UpdateLayout();
     }
 
+    protected override void SubscribeToEvents() {
+        base.SubscribeToEvents();
+        if (gameEvents != null) {
+            gameEvents.OnCreatureDied.AddListener(OnCreatureDied);
+        }
+    }
+
+    protected override void UnsubscribeFromEvents() {
+        base.UnsubscribeFromEvents();
+        if (gameEvents != null) {
+            gameEvents.OnCreatureDied.RemoveListener(OnCreatureDied);
+        }
+    }
+
+    public virtual void OnGameStateChanged() {
+        UpdateUI();
+    }
+
+    public virtual void OnCreatureDied(ICreature creature) {
+        UpdateUI();
+    }
+
     protected override void OnDestroy() {
         dropZoneHandler?.Cleanup();
         dropZoneHandler = null;
@@ -290,25 +312,5 @@ public abstract class CardContainer : UIComponent, IDropHandler, IPointerEnterHa
         }
         cards.Clear();
         base.OnDestroy();
-    }
-
-    public override void OnGameStateChanged() {
-        UpdateUI();
-    }
-
-    public override void OnCreatureDied(ICreature creature) {
-        UpdateUI();
-    }
-
-    public virtual void RegisterEvents() {
-        if (gameMediator != null) {
-            gameMediator.AddGameStateChangedListener(UpdateUI);
-        }
-    }
-
-    public virtual void UnregisterEvents() {
-        if (gameMediator != null) {
-            gameMediator.RemoveGameStateChangedListener(UpdateUI);
-        }
     }
 }

@@ -58,16 +58,16 @@ public class Creature : Card, ICreature {
             LogError($"Cannot process damage effects - GameManager: {gameManager != null}, Owner: {Owner != null}", LogTag.Creatures | LogTag.Effects);
         }
 
-        var gameMediator = GameMediator.Instance;
-        if (gameMediator != null) {
-            gameMediator.NotifyCreatureDamaged(this, damage);
+        var gameEvents = GameEvents.Instance;
+        if (gameEvents != null) {
+            gameEvents.OnCreatureDamaged.Invoke(this, damage);
 
             if (Health <= 0 && !isDead) {
                 isDead = true;
                 if (Owner != null) {
                     Owner.RemoveFromBattlefield(this);
                 }
-                gameMediator.NotifyCreatureDied(this);
+                gameEvents.OnCreatureDied.Invoke(this);
             }
         }
 

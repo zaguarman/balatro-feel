@@ -120,6 +120,8 @@ public class TestSetup : MonoBehaviour {
         warChief.effects.Add(warChiefEffect);
         cards.Add(warChief);
 
+        Log("All cards created", LogTag.Cards | LogTag.Initialization);
+
         return cards;
     }
 }

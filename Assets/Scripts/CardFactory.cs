@@ -4,7 +4,6 @@ using UnityEngine;
 using UnityEngine.Events;
 using System;
 using System.Linq;
-using UnityEngine.EventSystems;
 
 public static class CardFactory {
     private static Dictionary<string, CardData> cardDataCache = new Dictionary<string, CardData>();
@@ -53,7 +52,7 @@ public static class CardFactory {
         var controller = cardObj.GetComponent<CardController>();
         if (controller != null) {
             var data = CreateCardDataFromCard(cardData);
-            controller.Setup(data, owner);
+            controller.Initialize(data, owner);
             Log($"Created card controller for {cardData.Name}", LogTag.Cards | LogTag.Initialization);
         }
         return controller;

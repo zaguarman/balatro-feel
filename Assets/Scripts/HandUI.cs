@@ -1,38 +1,21 @@
-using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using static DebugLogger;
 
 public class HandUI : CardContainer {
-    private void Start() {
-        if (InitializationManager.Instance.IsComponentInitialized<GameMediator>()) {
-            Initialize(player);
-        } else {
-            InitializationManager.Instance.OnSystemInitialized.AddListener(Initialize);
-        }
-    }
-
-    private void InitializeReferences() {
-        if (!InitializationManager.Instance.IsComponentInitialized<GameManager>()) {
+    public override void Initialize(IPlayer assignedPlayer) {
+        if (GameManager.Instance == null) {
             LogWarning("GameManager not initialized yet, will retry later", LogTag.UI | LogTag.Initialization);
             return;
         }
-
-        if (player != null) {
-            Initialize(player);
-        }
-    }
-
-    public override void Initialize(IPlayer assignedPlayer) {
-        player = assignedPlayer;
-        base.Initialize(player);
+        base.Initialize(assignedPlayer);
     }
 
     public override void OnGameStateChanged() {
         UpdateUI();
     }
 
-    public override void OnGameInitialized() {
+    public void OnGameInitialized() {
         UpdateUI();
     }
 
@@ -66,7 +49,7 @@ public class HandUI : CardContainer {
         if (controller != null) {
             var data = CreateCardData(cardData);
             Log($"Creating card {cardData.Name} with {cardData.Effects.Count} effects", LogTag.UI | LogTag.Cards);
-            controller.Setup(data, player);
+            controller.Initialize(data, player);
             SetupCardEventHandlers(controller);
         }
         return controller;
@@ -75,6 +58,21 @@ public class HandUI : CardContainer {
     protected override void SetupCardEventHandlers(CardController card) {
         base.SetupCardEventHandlers(card);
         // Additional setup if needed
+    }
+
+    protected override void SubscribeToEvents() {
+        base.SubscribeToEvents();
+        if (gameEvents != null) {
+            gameEvents.OnGameStateChanged.AddListener(UpdateUI);
+            gameEvents.OnCardDrawn.AddListener(OnCardDrawn);
+            gameEvents.OnGameInitialized.AddListener(OnGameInitialized);
+        }
+    }
+
+    private void OnCardDrawn(ICard card, IPlayer cardPlayer) {
+        if (player == cardPlayer) {
+            UpdateUI();
+        }
     }
 
     public override void OnCardBeginDrag(CardController card) {

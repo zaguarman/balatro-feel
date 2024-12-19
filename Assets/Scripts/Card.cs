@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using UnityEngine;
+using static DebugLogger;
 
 public interface ICard : IEntity {
     List<CardEffect> Effects { get; }
@@ -14,10 +14,10 @@ public class Card : Entity, ICard {
     }
 
     public virtual void Play(IPlayer owner, ActionsQueue context) {
-        DebugLogger.Log($"[Card] Playing {Name} with {Effects.Count} effects");
+        Log($"[Card] Playing {Name} with {Effects.Count} effects");
         // Base implementation for non-creature cards
         foreach (var effect in Effects) {
-            DebugLogger.Log($"[Card] Processing effect with trigger {effect.trigger}");
+            Log($"[Card] Processing effect with trigger {effect.trigger}");
         }
     }
 }

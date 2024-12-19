@@ -1,47 +1,108 @@
 using UnityEngine;
+using System.Collections;
+using static DebugLogger;
 
-public abstract class UIComponent : InitializableComponent, IGameObserver {
-    protected GameMediator gameMediator => GameMediator.Instance;
+public abstract class UIComponent : InitializableComponent {
+    private bool isInitializationPending = false;
+    private const float INITIALIZATION_TIMEOUT = 10f; // Increased timeout
+    private const float RETRY_INTERVAL = 0.2f;
+    private const int MAX_RETRIES = 3;
+    private int currentRetry = 0;
+
+    protected GameManager gameManager => GameManager.Instance;
     protected GameReferences gameReferences => GameReferences.Instance;
-    private bool hasBeenDestroyed = false;
+    protected GameEvents gameEvents => GameEvents.Instance;
+
+    protected virtual void Start() {
+        if (!IsInitialized && !isInitializationPending) {
+            isInitializationPending = true;
+            StartCoroutine(WaitForInitialization());
+        }
+    }
+
+    private IEnumerator WaitForInitialization() {
+        while (InitializationManager.Instance == null) {
+            yield return new WaitForSeconds(0.1f);
+        }
+
+        float startTime = Time.time;
+        bool success = false;
+
+        while (Time.time - startTime < INITIALIZATION_TIMEOUT && currentRetry < MAX_RETRIES) {
+            if (CheckDependencies()) {
+                Initialize();
+                if (IsInitialized) {
+                    success = true;
+                    break;
+                }
+            }
+
+            // Log what dependencies are missing
+            LogDependencyStatus();
+
+            currentRetry++;
+            yield return new WaitForSeconds(RETRY_INTERVAL);
+        }
+
+        isInitializationPending = false;
+
+        if (!success) {
+            LogError($"{GetType().Name} initialization timed out after {currentRetry} retries!",
+                LogTag.Initialization);
+        }
+    }
+
+    private void LogDependencyStatus() {
+        var initManager = InitializationManager.Instance;
+        if (initManager == null) return;
+
+        bool hasRefs = initManager.IsComponentInitialized<GameReferences>();
+        bool hasEvents = initManager.IsComponentInitialized<GameEvents>();
+        bool hasManager = initManager.IsComponentInitialized<GameManager>();
+
+        Log($"{GetType().Name} waiting for dependencies - References: {hasRefs}, " +
+            $"Events: {hasEvents}, Manager: {hasManager} (Retry {currentRetry + 1}/{MAX_RETRIES})",
+            LogTag.Initialization);
+    }
+
+    protected virtual bool CheckDependencies() {
+        var initManager = InitializationManager.Instance;
+        if (initManager == null) return false;
+
+        return initManager.IsComponentInitialized<GameReferences>() &&
+               initManager.IsComponentInitialized<GameEvents>() &&
+               initManager.IsComponentInitialized<GameManager>();
+    }
 
     public override void Initialize() {
         if (IsInitialized) return;
 
-        if (!InitializationManager.Instance.IsComponentInitialized<GameMediator>()) {
-            Debug.LogWarning($"{GetType().Name}: GameMediator not initialized yet");
+        if (!CheckDependencies()) {
             return;
         }
 
-        gameMediator.AddObserver(this);
+        Log($"Initializing {GetType().Name}", LogTag.Initialization);
+        SubscribeToEvents();
         UpdateUI();
-        base.Initialize();
+        IsInitialized = true;
+        Log($"{GetType().Name} initialized successfully", LogTag.Initialization);
     }
 
-    protected virtual void OnEnable() {
-        if (IsInitialized && !hasBeenDestroyed) {
-            UpdateUI();
+    protected virtual void SubscribeToEvents() {
+        if (gameEvents != null) {
+            gameEvents.OnGameStateChanged.AddListener(UpdateUI);
+        }
+    }
+
+    protected virtual void UnsubscribeFromEvents() {
+        if (gameEvents != null) {
+            gameEvents.OnGameStateChanged.RemoveListener(UpdateUI);
         }
     }
 
     protected virtual void OnDestroy() {
-        hasBeenDestroyed = true;
-        if (IsInitialized && gameMediator != null) {
-            gameMediator.RemoveObserver(this);
-            CleanupComponent();
-        }
+        UnsubscribeFromEvents();
     }
 
-    protected virtual void CleanupComponent() { }
     public abstract void UpdateUI();
-
-    // IGameObserver default implementations
-    public virtual void OnGameStateChanged() { }
-    public virtual void OnGameInitialized() { }
-    public virtual void OnPlayerDamaged(IPlayer player, int damage) { }
-    public virtual void OnCreatureDamaged(ICreature creature, int damage) { }
-    public virtual void OnCreatureDied(ICreature creature) { }
-    public virtual void OnGameOver(IPlayer winner) { }
-    public virtual void OnCreaturePreSummon(ICreature creature) { }
-    public virtual void OnCreatureSummoned(ICreature creature, IPlayer owner) { }
 }

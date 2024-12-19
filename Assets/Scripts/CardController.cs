@@ -4,7 +4,6 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
 using System;
-using DG.Tweening;
 using static DebugLogger;
 
 [Serializable]
@@ -58,40 +57,83 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
         cardImage = GetComponent<Image>();
     }
 
-    public void Setup(CardData data, IPlayer owner, string creatureId = null) {
+    public void Initialize(CardData data, IPlayer owner, string creatureId = null) {
+        Log($"Setting up card: {data?.cardName}", LogTag.Cards | LogTag.Initialization);
         cardData = data;
         player = owner;
         linkedCreatureId = creatureId;
+
         if (cardData is CreatureData) {
-            linkedCreature = FindLinkedCreature();
-            if (linkedCreature != null) {
-                linkedCreatureId = linkedCreature.TargetId;
+            if (!string.IsNullOrEmpty(creatureId)) {
+                linkedCreature = FindLinkedCreature();
+                if (linkedCreature != null) {
+                    linkedCreatureId = linkedCreature.TargetId;
+                    Log($"Linked creature found: {linkedCreature.Name} (ID: {linkedCreatureId})",
+                        LogTag.Cards | LogTag.Creatures);
+                } else {
+                    Log($"No linked creature found for ID: {creatureId}",
+                        LogTag.Cards | LogTag.Creatures);
+                }
             }
+            // If no creatureId provided, this is a hand card and should not log a warning
+            // TODO: In the future the cards in the hand should also have an ID
         }
         UpdateUI();
     }
 
-    private ICreature FindLinkedCreature() {
-        if (cardData == null || player == null) return null;
 
-        if (!string.IsNullOrEmpty(linkedCreatureId)) {
-            return player.Battlefield.Find(c => c.TargetId == linkedCreatureId) ??
-                   player.Opponent.Battlefield.Find(c => c.TargetId == linkedCreatureId);
-        }
+    private ICreature FindLinkedCreature() {
+        if (cardData == null || player == null || string.IsNullOrEmpty(linkedCreatureId))
+            return null;
+
+        // Try to find in player's battlefield first
+        var creature = player?.Battlefield.Find(c => c.TargetId == linkedCreatureId);
+        if (creature != null) return creature;
+
+        // Try opponent's battlefield if not found
+        creature = player?.Opponent?.Battlefield.Find(c => c.TargetId == linkedCreatureId);
+        if (creature != null) return creature;
 
         return null;
     }
 
-    public override void OnCreatureDamaged(ICreature creature, int damage) {
+    protected override void SubscribeToEvents() {
+        base.SubscribeToEvents();
+        if (gameEvents != null) {
+            gameEvents.OnCreatureDamaged.AddListener(HandleCreatureDamaged);
+            gameEvents.OnCreatureDied.AddListener(HandleCreatureDied);
+            gameEvents.OnCreatureStatChanged.AddListener(HandleCreatureStatChanged);
+        }
+    }
+
+    protected override void UnsubscribeFromEvents() {
+        base.UnsubscribeFromEvents();
+        if (gameEvents != null) {
+            gameEvents.OnCreatureDamaged.RemoveListener(HandleCreatureDamaged);
+            gameEvents.OnCreatureDied.RemoveListener(HandleCreatureDied);
+            gameEvents.OnCreatureStatChanged.RemoveListener(HandleCreatureStatChanged);
+        }
+    }
+
+    private void HandleCreatureDamaged(ICreature creature, int damage) {
         if (linkedCreature != null && creature.TargetId == linkedCreature.TargetId) {
+            Log($"Linked creature {creature.Name} took {damage} damage", LogTag.Combat | LogTag.Creatures);
             linkedCreature = creature;
             UpdateUI();
         }
     }
 
-    public override void OnCreatureDied(ICreature creature) {
+    private void HandleCreatureDied(ICreature creature) {
         if (linkedCreature != null && creature.TargetId == linkedCreature.TargetId) {
             linkedCreature = null;
+            UpdateUI();
+        }
+    }
+
+    private void HandleCreatureStatChanged(ICreature creature, int value) {
+        if (linkedCreature != null && creature.TargetId == linkedCreature.TargetId) {
+            Log($"Linked creature {creature.Name} stats changed. New value: {value}", LogTag.Creatures | LogTag.Effects);
+            linkedCreature = creature;
             UpdateUI();
         }
     }
@@ -99,6 +141,7 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
     public void OnBeginDrag(PointerEventData eventData) {
         if (eventData.button != PointerEventData.InputButton.Left) return;
 
+        Log($"Begin dragging card: {cardData?.cardName}", LogTag.UI | LogTag.Cards);
         originalPosition = transform.position;
         originalParent = transform.parent;
         isDragging = true;
@@ -148,8 +191,8 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
 
         if (cardData is CreatureData creatureData) {
             statsText.gameObject.SetActive(true);
-            statsText.text = linkedCreature != null ? 
-                $"{linkedCreature.Attack}/{linkedCreature.Health}" : 
+            statsText.text = linkedCreature != null ?
+                $"{linkedCreature.Attack}/{linkedCreature.Health}" :
                 $"{creatureData.attack}/{creatureData.health}";
         } else {
             statsText.gameObject.SetActive(false);
@@ -158,8 +201,8 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
 
     private void UpdateCardVisuals() {
         if (cardImage != null && player != null) {
-            cardImage.color = player.IsPlayer1() ? 
-                gameReferences.GetPlayer1CardColor() : 
+            cardImage.color = player.IsPlayer1() ?
+                gameReferences.GetPlayer1CardColor() :
                 gameReferences.GetPlayer2CardColor();
         }
     }

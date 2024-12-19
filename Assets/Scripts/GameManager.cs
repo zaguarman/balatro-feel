@@ -1,65 +1,90 @@
 using System.Linq;
-using UnityEngine;
 using static DebugLogger;
 
-public class GameManager : InitializableComponent {
-    private static GameManager instance;
-    public static GameManager Instance {
-        get {
-            if (instance == null) {
-                var go = new GameObject("GameManager");
-                instance = go.AddComponent<GameManager>();
-                DontDestroyOnLoad(go);
-            }
-            return instance;
-        }
-    }
-
+public class GameManager : Singleton<GameManager> {
     public IPlayer Player1 { get; private set; }
     public IPlayer Player2 { get; private set; }
     public ActionsQueue ActionsQueue { get; private set; }
     private BattlefieldCombatHandler combatHandler;
 
-    private GameMediator gameMediator;
     private GameReferences gameReferences;
+    private GameEvents gameEvents;
     private ICardDealingService cardDealingService;
     private System.Random random = new System.Random();
 
-    // Public accessor for the combat handler
     public BattlefieldCombatHandler CombatHandler => combatHandler;
+    private bool isInitializing = false;
 
     protected override void Awake() {
         base.Awake();
-        if (instance != null && instance != this) {
-            Destroy(gameObject);
-            return;
+        Log("GameManager Awake", LogTag.Initialization);
+        var initManager = InitializationManager.Instance;
+        if (initManager != null) {
+            initManager.RegisterComponent(this);
         }
-        instance = this;
-        DontDestroyOnLoad(gameObject);
     }
 
     public override void Initialize() {
-        if (IsInitialized) return;
+        if (IsInitialized || isInitializing) return;
 
+        isInitializing = true;
+        Log("Starting GameManager initialization", LogTag.Initialization);
+
+        // Get and verify dependencies
+        gameReferences = GameReferences.Instance;
+        gameEvents = GameEvents.Instance;
         var initManager = InitializationManager.Instance;
-        if (!initManager.IsComponentInitialized<GameReferences>() ||
-            !initManager.IsComponentInitialized<GameMediator>()) {
-            throw new System.InvalidOperationException("Required dependencies not initialized");
+
+        if (!ValidateDependencies()) {
+            LogError("Cannot initialize GameManager - missing dependencies", LogTag.Initialization);
+            isInitializing = false;
+            return;
         }
 
-        gameMediator = GameMediator.Instance;
-        gameReferences = GameReferences.Instance;
-        cardDealingService = new CardDealingService(gameMediator);
+        try {
+            cardDealingService = new CardDealingService();
+            combatHandler = new BattlefieldCombatHandler(this);
+            ActionsQueue = new ActionsQueue(combatHandler);
 
-        // Initialize combat handler first
-        combatHandler = new BattlefieldCombatHandler(this);
+            InitializeGameSystem();
+            IsInitialized = true;
+            Log("GameManager initialization completed successfully", LogTag.Initialization);
+        } catch (System.Exception e) {
+            LogError($"Error during GameManager initialization: {e}", LogTag.Initialization);
+        } finally {
+            isInitializing = false;
+        }
+    }
 
-        // Then initialize actions queue with combat handler
-        ActionsQueue = new ActionsQueue(gameMediator, combatHandler);
+    private bool ValidateDependencies() {
+        var initManager = InitializationManager.Instance;
+        if (initManager == null) {
+            LogError("InitializationManager missing", LogTag.Initialization);
+            return false;
+        }
 
-        InitializeGameSystem();
+        if (gameReferences == null) {
+            LogError("GameReferences missing", LogTag.Initialization);
+            return false;
+        }
 
-        base.Initialize();
+        if (!gameReferences.IsInitialized) {
+            LogError("GameReferences not initialized", LogTag.Initialization);
+            return false;
+        }
+
+        if (gameEvents == null) {
+            LogError("GameEvents missing", LogTag.Initialization);
+            return false;
+        }
+
+        if (!gameEvents.IsInitialized) {
+            LogError("GameEvents not initialized", LogTag.Initialization);
+            return false;
+        }
+
+        Log("All GameManager dependencies validated", LogTag.Initialization);
+        return true;
     }
 
     private void InitializeGameSystem() {
@@ -68,16 +93,17 @@ public class GameManager : InitializableComponent {
         PlaceInitialCreatures();
         SetupInitialGameState();
         SetupResolveButton();
+
+        Log("Game systems initialized", LogTag.Initialization);
     }
 
     private void InitializePlayers() {
-        Player1 = new Player();
-        Player2 = new Player();
+        Player1 = new Player("Player 1");
+        Player2 = new Player("Player 2");
         Player1.Opponent = Player2;
         Player2.Opponent = Player1;
 
-        gameMediator.RegisterPlayer(Player1);
-        gameMediator.RegisterPlayer(Player2);
+        Log("Players initialized", LogTag.Initialization);
     }
 
     private void InitializeCards() {
@@ -123,7 +149,8 @@ public class GameManager : InitializableComponent {
     private void SetupInitialGameState() {
         cardDealingService.DealInitialHands(Player1, Player2);
         LogGameState("Game Initialized");
-        gameMediator.NotifyGameInitialized();
+        gameEvents.OnGameInitialized.Invoke();
+        gameEvents.OnGameStateChanged.Invoke();
     }
 
     private void SetupResolveButton() {
@@ -147,7 +174,7 @@ public class GameManager : InitializableComponent {
 
         ICard card = CardFactory.CreateCard(cardData);
         card.Play(player, ActionsQueue);
-        gameMediator.NotifyGameStateChanged();
+        gameEvents.OnGameStateChanged.Invoke();
     }
 
     public void ResolveActions() {
@@ -180,26 +207,16 @@ public class GameManager : InitializableComponent {
         Log(state, LogTag.Players | LogTag.Creatures | LogTag.Actions);
     }
 
-    private void OnDestroy() {
-        if (instance == this) {
-            var resolveButton = gameReferences?.GetResolveActionsButton();
-            if (resolveButton != null) {
-                resolveButton.onClick.RemoveListener(OnResolveButtonClicked);
-            }
-
-            if (Player1 != null) {
-                gameMediator?.UnregisterPlayer(Player1);
-            }
-
-            if (Player2 != null) {
-                gameMediator?.UnregisterPlayer(Player2);
-            }
-
-            if (ActionsQueue != null) {
-                ActionsQueue.Cleanup();
-            }
-
-            instance = null;
+    protected override void OnDestroy() {
+        var resolveButton = gameReferences?.GetResolveActionsButton();
+        if (resolveButton != null) {
+            resolveButton.onClick.RemoveListener(OnResolveButtonClicked);
         }
+
+        if (ActionsQueue != null) {
+            ActionsQueue.Cleanup();
+        }
+
+        base.OnDestroy();
     }
 }
