@@ -91,14 +91,6 @@ public class DebugLoggerSettingsEditor : Editor {
 
         EditorGUILayout.BeginHorizontal();
 
-        if (GUILayout.Button("Cycle All Tags", GUILayout.Width(columnWidth))) {
-            CycleAllFiltersInCategory();
-        }
-
-        if (GUILayout.Button("Cycle All Classes", GUILayout.Width(columnWidth))) {
-            CycleAllClassFilters();
-        }
-
         EditorGUILayout.EndHorizontal();
         EditorGUILayout.Space();
     }
@@ -111,9 +103,11 @@ public class DebugLoggerSettingsEditor : Editor {
         tagSearchString = EditorGUILayout.TextField("Search", tagSearchString ?? "");
         EditorGUILayout.LabelField("Available Tags");
 
-        tagListScrollPosition = EditorGUILayout.BeginScrollView(tagListScrollPosition);
+        if (GUILayout.Button("Cycle All Tags")) {
+            CycleAllTagsStates();
+        }
+
         DrawTagList();
-        EditorGUILayout.EndScrollView();
 
         if (GUILayout.Button("Reset Colors")) {
             ResetTagColors();
@@ -144,15 +138,15 @@ public class DebugLoggerSettingsEditor : Editor {
 
             EditorGUILayout.BeginHorizontal();
 
-            // Left column - Filter state button
+            // Column 1 - Filter state button
             var currentState = (TriStateFilter)filterStateProp.enumValueIndex;
             DrawTriStateButton(ref currentState, filterStateProp);
 
-            // Right column - Name and color
-            EditorGUILayout.BeginVertical();
-            EditorGUILayout.LabelField(tagName, nameStyle);
+            // Column 2 - Tag name (with fixed width)
+            EditorGUILayout.LabelField(tagName, nameStyle, GUILayout.Width(90));
+
+            // Column 3 - Color picker
             EditorGUILayout.PropertyField(colorProp, GUIContent.none);
-            EditorGUILayout.EndVertical();
 
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space(2);
@@ -167,9 +161,11 @@ public class DebugLoggerSettingsEditor : Editor {
         classSearchString = EditorGUILayout.TextField("Search", classSearchString ?? "");
         EditorGUILayout.LabelField("Available Classes");
 
-        classListScrollPosition = EditorGUILayout.BeginScrollView(classListScrollPosition);
+        if (GUILayout.Button("Cycle All Classes")) {
+            CycleAllClassStates();
+        }
+
         DrawClassList();
-        EditorGUILayout.EndScrollView();
         EditorGUI.indentLevel--;
     }
 
@@ -229,7 +225,7 @@ public class DebugLoggerSettingsEditor : Editor {
         _ => TriStateFilter.Neutral
     };
 
-    private void CycleAllFiltersInCategory() {
+    private void CycleAllTagsStates() {
         bool hasInclude = false;
         bool hasExclude = false;
         bool hasNeutral = false;
@@ -264,7 +260,7 @@ public class DebugLoggerSettingsEditor : Editor {
         SetAllTagStates(targetState);
     }
 
-    private void CycleAllClassFilters() {
+    private void CycleAllClassStates() {
         bool hasInclude = false;
         bool hasExclude = false;
         bool hasNeutral = false;
