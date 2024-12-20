@@ -82,7 +82,7 @@ public class HandUI : CardContainer {
         return controller;
     }
 
-    private void SetupCardEventHandlers(CardController controller) {
+    protected override void SetupCardEventHandlers(CardController controller) {
         controller.OnBeginDragEvent.AddListener(OnCardBeginDrag);
         controller.OnEndDragEvent.AddListener(OnCardEndDrag);
         controller.OnCardDropped.AddListener(OnCardDropped);

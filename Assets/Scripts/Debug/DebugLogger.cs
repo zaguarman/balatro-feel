@@ -9,12 +9,17 @@ using static DebugLogger;
 [Serializable]
 public class TagSettings {
     [SerializeField] private int tagValue;
-    public bool isEnabled = true;
+    [SerializeField] private TriStateFilter filterState = TriStateFilter.Neutral;
     public Color color;
 
     public LogTag tag {
         get => (LogTag)tagValue;
         set => tagValue = (int)value;
+    }
+
+    public TriStateFilter FilterState {
+        get => filterState;
+        set => filterState = value;
     }
 
     public string HexColor => "#" + ColorUtility.ToHtmlStringRGB(color);
@@ -23,7 +28,12 @@ public class TagSettings {
 [Serializable]
 public class ClassFilter {
     public string className;
-    public bool isEnabled = true;
+    [SerializeField] private TriStateFilter filterState = TriStateFilter.Neutral;
+
+    public TriStateFilter FilterState {
+        get => filterState;
+        set => filterState = value;
+    }
 }
 
 public class DebugLogger : MonoBehaviour {
@@ -39,6 +49,12 @@ public class DebugLogger : MonoBehaviour {
         Combat = 64,
         Initialization = 128,
         All = ~0
+    }
+
+    public enum TriStateFilter {
+        Include,    // Explicitly include items with this flag
+        Neutral,    // Don't consider this flag in filtering
+        Exclude     // Explicitly exclude items with this flag
     }
 
     public static readonly Dictionary<LogTag, Color> DefaultColors = new Dictionary<LogTag, Color>() {
@@ -173,7 +189,6 @@ public class DebugLogger : MonoBehaviour {
 
         settings.Initialize();
 
-        // Create tag color map ensuring no duplicates
         _tagColorMap = new Dictionary<LogTag, string>();
         foreach (var setting in settings.TagSettings) {
             if (!_tagColorMap.ContainsKey(setting.tag)) {
@@ -181,37 +196,25 @@ public class DebugLogger : MonoBehaviour {
             }
         }
 
-        // Create enabled classes set
-        _enabledClasses = new HashSet<string>(
-            settings.ClassFilters
-                .Where(cf => cf.isEnabled && !string.IsNullOrEmpty(cf.className))
-                .Select(cf => cf.className)
-        );
-
         InitializeStackTraceLogTypes();
     }
 
     private bool ShouldLog(LogTag tags, string sourceFilePath) {
-        // Safety check for initialization
-        if (_tagColorMap == null || _enabledClasses == null) {
+        if (_tagColorMap == null) {
             InitializeLogger();
         }
 
         string className = GetClassName(sourceFilePath);
 
-        // First check class filtering
-        bool classAllowed;
-        if (settings.WhitelistMode) {
-            // In whitelist mode, class must be in the enabled set
-            classAllowed = _enabledClasses.Count > 0 && _enabledClasses.Contains(className);
-        } else {
-            // In blacklist mode, class must NOT be in the enabled set
-            classAllowed = !_enabledClasses.Contains(className);
+        // Check class filtering
+        var classFilter = settings.ClassFilters.FirstOrDefault(cf => cf.className == className);
+        if (classFilter != null) {
+            if (classFilter.FilterState == TriStateFilter.Exclude) return false;
+            if (classFilter.FilterState == TriStateFilter.Include) return true;
+            // If Neutral, continue with tag filtering
         }
 
-        if (!classAllowed) return false;
-
-        // Then check tag filtering - skip if LogTag.All is specified
+        // Skip tag filtering if LogTag.All is specified
         if (tags == LogTag.All) return true;
 
         // Get all the active tags from the input (excluding None and All)
@@ -219,24 +222,33 @@ public class DebugLogger : MonoBehaviour {
             .Cast<LogTag>()
             .Where(tag => tag != LogTag.None && tag != LogTag.All && (tags & tag) != 0);
 
-        if (settings.TagWhitelistMode) {
-            // In whitelist mode, check if any of the active tags are enabled
-            bool hasEnabledTags = settings.TagSettings.Any(setting => setting.isEnabled);
-            if (!hasEnabledTags) return false;
+        bool hasIncludedTags = false;
+        bool hasExcludedTags = false;
 
-            return activeTags.Any(tag =>
-                settings.TagSettings.Any(setting =>
-                    setting.tag == tag && setting.isEnabled
-                )
-            );
-        } else {
-            // In blacklist mode, block if any active tag is selected in the list
-            return !activeTags.Any(tag =>
-                settings.TagSettings.Any(setting =>
-                    setting.tag == tag && setting.isEnabled // Block if the tag is enabled in blacklist mode
-                )
-            );
+        foreach (var tag in activeTags) {
+            var tagSetting = settings.TagSettings.FirstOrDefault(ts => ts.tag == tag);
+            if (tagSetting != null) {
+                switch (tagSetting.FilterState) {
+                    case TriStateFilter.Include:
+                        hasIncludedTags = true;
+                        break;
+                    case TriStateFilter.Exclude:
+                        hasExcludedTags = true;
+                        break;
+                        // Neutral tags don't affect the decision
+                }
+            }
         }
+
+        // If any tag is explicitly excluded, don't log
+        if (hasExcludedTags) return false;
+
+        // If we have any included tags, log
+        if (hasIncludedTags) return true;
+
+        // If we only have neutral tags, log
+        return !activeTags.Any() || activeTags.All(tag =>
+            settings.TagSettings.FirstOrDefault(ts => ts.tag == tag)?.FilterState == TriStateFilter.Neutral);
     }
 
     private string FormatMessage(

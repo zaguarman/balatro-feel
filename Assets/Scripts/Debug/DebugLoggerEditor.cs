@@ -15,14 +15,11 @@ public class DebugLoggerEditor : Editor {
 
     public override void OnInspectorGUI() {
         serializedObject.Update();
-
         EditorGUILayout.PropertyField(settingsProp);
-
         if (settingsProp.objectReferenceValue != null) {
             CreateCachedEditor(settingsProp.objectReferenceValue, null, ref settingsEditor);
             settingsEditor.OnInspectorGUI();
         }
-
         serializedObject.ApplyModifiedProperties();
     }
 }
@@ -32,80 +29,331 @@ public class DebugLoggerSettingsEditor : Editor {
     private SerializedProperty tagSettingsProp;
     private SerializedProperty classFiltersProp;
     private SerializedProperty showStackTraceProp;
-    private SerializedProperty whitelistModeProp;
-    private SerializedProperty tagWhitelistModeProp;
     private bool showTagSettings = true;
     private bool showClassFilters = true;
     private Vector2 classListScrollPosition;
     private Vector2 tagListScrollPosition;
     private string classSearchString = "";
     private string tagSearchString = "";
-    private bool allTagsSelected = false;
-    private bool allClassesSelected = false;
+    private GUIStyle buttonStyle;
+    private GUIStyle nameStyle;
+    private float columnWidth;
 
-    private bool AreAllTagsEnabled() {
-        if (tagSettingsProp == null || tagSettingsProp.arraySize == 0) return false;
-
-        for (int i = 0; i < tagSettingsProp.arraySize; i++) {
-            var tagSetting = tagSettingsProp.GetArrayElementAtIndex(i);
-            if (tagSetting != null) {
-                var isEnabledProp = tagSetting.FindPropertyRelative("isEnabled");
-                if (isEnabledProp != null && !isEnabledProp.boolValue) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    private bool AreAllTagsDisabled() {
-        if (tagSettingsProp == null || tagSettingsProp.arraySize == 0) return true;
-
-        for (int i = 0; i < tagSettingsProp.arraySize; i++) {
-            var tagSetting = tagSettingsProp.GetArrayElementAtIndex(i);
-            if (tagSetting != null) {
-                var isEnabledProp = tagSetting.FindPropertyRelative("isEnabled");
-                if (isEnabledProp != null && isEnabledProp.boolValue) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    private bool AreAllClassesEnabled() {
-        foreach (var className in AvailableClasses) {
-            if (!IsClassEnabled(className)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private bool AreAllClassesDisabled() {
-        foreach (var className in AvailableClasses) {
-            if (IsClassEnabled(className)) {
-                return false;
-            }
-        }
-        return true;
-    }
+    private readonly Color includeColor = new Color(0.5f, 1f, 0.5f);
+    private readonly Color neutralColor = new Color(0.8f, 0.8f, 0.8f);
+    private readonly Color excludeColor = new Color(1f, 0.5f, 0.5f);
 
     private void OnEnable() {
         tagSettingsProp = serializedObject.FindProperty("tagSettings");
         classFiltersProp = serializedObject.FindProperty("classFilters");
         showStackTraceProp = serializedObject.FindProperty("showStackTrace");
-        whitelistModeProp = serializedObject.FindProperty("whitelistMode");
-        tagWhitelistModeProp = serializedObject.FindProperty("tagWhitelistMode");
+        InitializeStyles();
 
-        // Initialize default tag settings if empty
-        if (!Application.isPlaying && (tagSettingsProp.arraySize == 0 || tagSettingsProp == null)) {
+        if (!Application.isPlaying && (tagSettingsProp == null || tagSettingsProp.arraySize == 0)) {
             InitializeDefaultTagSettings();
         }
+    }
 
-        // Sync initial states
-        allTagsSelected = AreAllTagsEnabled();
-        allClassesSelected = AreAllClassesEnabled();
+    private void InitializeStyles() {
+        if (buttonStyle == null) {
+            buttonStyle = new GUIStyle(GUI.skin.button) {
+                fixedWidth = 80
+            };
+        }
+
+        if (nameStyle == null) {
+            nameStyle = new GUIStyle(EditorStyles.label) {
+                alignment = TextAnchor.MiddleLeft
+            };
+        }
+    }
+
+    public override void OnInspectorGUI() {
+        serializedObject.Update();
+        columnWidth = EditorGUIUtility.currentViewWidth / 2 - 10;
+
+        DrawHeader();
+        DrawStackTraceAndButtons();
+        DrawTagSettings();
+        DrawClassFilters();
+
+        serializedObject.ApplyModifiedProperties();
+    }
+
+    private void DrawHeader() {
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Debug Logger Settings", EditorStyles.boldLabel);
+    }
+
+    private void DrawStackTraceAndButtons() {
+        EditorGUILayout.PropertyField(showStackTraceProp);
+        EditorGUILayout.Space();
+
+        EditorGUILayout.BeginHorizontal();
+
+        if (GUILayout.Button("Cycle All Tags", GUILayout.Width(columnWidth))) {
+            CycleAllFiltersInCategory();
+        }
+
+        if (GUILayout.Button("Cycle All Classes", GUILayout.Width(columnWidth))) {
+            CycleAllClassFilters();
+        }
+
+        EditorGUILayout.EndHorizontal();
+        EditorGUILayout.Space();
+    }
+
+    private void DrawTagSettings() {
+        showTagSettings = EditorGUILayout.Foldout(showTagSettings, "Tag Settings", true);
+        if (!showTagSettings) return;
+
+        EditorGUI.indentLevel++;
+        tagSearchString = EditorGUILayout.TextField("Search", tagSearchString ?? "");
+        EditorGUILayout.LabelField("Available Tags");
+
+        tagListScrollPosition = EditorGUILayout.BeginScrollView(tagListScrollPosition);
+        DrawTagList();
+        EditorGUILayout.EndScrollView();
+
+        if (GUILayout.Button("Reset Colors")) {
+            ResetTagColors();
+        }
+        EditorGUI.indentLevel--;
+    }
+
+    private void DrawTagList() {
+        if (tagSettingsProp == null) return;
+
+        for (int i = 0; i < tagSettingsProp.arraySize; i++) {
+            SerializedProperty tagSetting = tagSettingsProp.GetArrayElementAtIndex(i);
+            if (tagSetting == null) continue;
+
+            SerializedProperty tagValueProp = tagSetting.FindPropertyRelative("tagValue");
+            SerializedProperty filterStateProp = tagSetting.FindPropertyRelative("filterState");
+            SerializedProperty colorProp = tagSetting.FindPropertyRelative("color");
+
+            if (tagValueProp == null || filterStateProp == null || colorProp == null) continue;
+
+            var currentTag = (LogTag)tagValueProp.intValue;
+            string tagName = currentTag.ToString();
+
+            if (!string.IsNullOrEmpty(tagSearchString) &&
+                !tagName.ToLower().Contains(tagSearchString.ToLower())) {
+                continue;
+            }
+
+            EditorGUILayout.BeginHorizontal();
+
+            // Left column - Filter state button
+            var currentState = (TriStateFilter)filterStateProp.enumValueIndex;
+            DrawTriStateButton(ref currentState, filterStateProp);
+
+            // Right column - Name and color
+            EditorGUILayout.BeginVertical();
+            EditorGUILayout.LabelField(tagName, nameStyle);
+            EditorGUILayout.PropertyField(colorProp, GUIContent.none);
+            EditorGUILayout.EndVertical();
+
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space(2);
+        }
+    }
+
+    private void DrawClassFilters() {
+        showClassFilters = EditorGUILayout.Foldout(showClassFilters, "Class Filters", true);
+        if (!showClassFilters) return;
+
+        EditorGUI.indentLevel++;
+        classSearchString = EditorGUILayout.TextField("Search", classSearchString ?? "");
+        EditorGUILayout.LabelField("Available Classes");
+
+        classListScrollPosition = EditorGUILayout.BeginScrollView(classListScrollPosition);
+        DrawClassList();
+        EditorGUILayout.EndScrollView();
+        EditorGUI.indentLevel--;
+    }
+
+    private void DrawClassList() {
+        var filteredClasses = AvailableClasses
+            .Where(c => string.IsNullOrEmpty(classSearchString) ||
+                       c.ToLower().Contains(classSearchString.ToLower()));
+
+        foreach (var className in filteredClasses) {
+            EditorGUILayout.BeginHorizontal();
+
+            // Left column - Filter state button
+            var currentState = GetClassFilterState(className);
+            DrawTriStateButton(ref currentState, null);
+            if (GUI.changed) {
+                SetClassFilterState(className, currentState);
+            }
+
+            // Right column - Class name
+            EditorGUILayout.LabelField(className, nameStyle);
+
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space(2);
+        }
+    }
+
+    private void DrawTriStateButton(ref TriStateFilter state, SerializedProperty filterStateProp) {
+        Color originalColor = GUI.backgroundColor;
+        GUI.backgroundColor = GetFilterStateColor(state);
+
+        if (GUILayout.Button(GetFilterStateText(state), buttonStyle)) {
+            state = GetNextState(state);
+            if (filterStateProp != null) {
+                filterStateProp.enumValueIndex = (int)state;
+            }
+        }
+
+        GUI.backgroundColor = originalColor;
+    }
+
+    private string GetFilterStateText(TriStateFilter state) => state switch {
+        TriStateFilter.Include => "Include",
+        TriStateFilter.Exclude => "Exclude",
+        _ => "Neutral"
+    };
+
+    private Color GetFilterStateColor(TriStateFilter state) => state switch {
+        TriStateFilter.Include => includeColor,
+        TriStateFilter.Exclude => excludeColor,
+        _ => neutralColor
+    };
+
+    private TriStateFilter GetNextState(TriStateFilter currentState) => currentState switch {
+        TriStateFilter.Neutral => TriStateFilter.Include,
+        TriStateFilter.Include => TriStateFilter.Exclude,
+        TriStateFilter.Exclude => TriStateFilter.Neutral,
+        _ => TriStateFilter.Neutral
+    };
+
+    private void CycleAllFiltersInCategory() {
+        bool hasInclude = false;
+        bool hasExclude = false;
+        bool hasNeutral = false;
+
+        for (int i = 0; i < tagSettingsProp.arraySize; i++) {
+            var tagSetting = tagSettingsProp.GetArrayElementAtIndex(i);
+            var filterStateProp = tagSetting.FindPropertyRelative("filterState");
+            var currentState = (TriStateFilter)filterStateProp.enumValueIndex;
+
+            switch (currentState) {
+                case TriStateFilter.Include:
+                    hasInclude = true;
+                    break;
+                case TriStateFilter.Exclude:
+                    hasExclude = true;
+                    break;
+                case TriStateFilter.Neutral:
+                    hasNeutral = true;
+                    break;
+            }
+        }
+
+        TriStateFilter targetState;
+        if (hasInclude || (!hasExclude && !hasNeutral)) {
+            targetState = TriStateFilter.Exclude;
+        } else if (hasExclude) {
+            targetState = TriStateFilter.Neutral;
+        } else {
+            targetState = TriStateFilter.Include;
+        }
+
+        SetAllTagStates(targetState);
+    }
+
+    private void CycleAllClassFilters() {
+        bool hasInclude = false;
+        bool hasExclude = false;
+        bool hasNeutral = false;
+
+        foreach (var className in AvailableClasses) {
+            var state = GetClassFilterState(className);
+            switch (state) {
+                case TriStateFilter.Include:
+                    hasInclude = true;
+                    break;
+                case TriStateFilter.Exclude:
+                    hasExclude = true;
+                    break;
+                case TriStateFilter.Neutral:
+                    hasNeutral = true;
+                    break;
+            }
+        }
+
+        TriStateFilter targetState;
+        if (hasInclude || (!hasExclude && !hasNeutral)) {
+            targetState = TriStateFilter.Exclude;
+        } else if (hasExclude) {
+            targetState = TriStateFilter.Neutral;
+        } else {
+            targetState = TriStateFilter.Include;
+        }
+
+        SetAllClassStates(targetState);
+    }
+
+    private void SetAllTagStates(TriStateFilter state) {
+        if (tagSettingsProp == null) return;
+
+        for (int i = 0; i < tagSettingsProp.arraySize; i++) {
+            var tagSetting = tagSettingsProp.GetArrayElementAtIndex(i);
+            if (tagSetting != null) {
+                var filterStateProp = tagSetting.FindPropertyRelative("filterState");
+                if (filterStateProp != null) {
+                    filterStateProp.enumValueIndex = (int)state;
+                }
+            }
+        }
+    }
+
+    private void SetAllClassStates(TriStateFilter state) {
+        foreach (var className in AvailableClasses) {
+            SetClassFilterState(className, state);
+        }
+    }
+
+    private TriStateFilter GetClassFilterState(string className) {
+        if (classFiltersProp == null) return TriStateFilter.Neutral;
+
+        for (int i = 0; i < classFiltersProp.arraySize; i++) {
+            var filter = classFiltersProp.GetArrayElementAtIndex(i);
+            var classNameProp = filter.FindPropertyRelative("className");
+            var filterStateProp = filter.FindPropertyRelative("filterState");
+
+            if (classNameProp.stringValue == className) {
+                return (TriStateFilter)filterStateProp.enumValueIndex;
+            }
+        }
+
+        return TriStateFilter.Neutral;
+    }
+
+    private void SetClassFilterState(string className, TriStateFilter state) {
+        if (classFiltersProp == null) return;
+
+        // Try to find existing filter
+        for (int i = 0; i < classFiltersProp.arraySize; i++) {
+            var filter = classFiltersProp.GetArrayElementAtIndex(i);
+            var classNameProp = filter.FindPropertyRelative("className");
+
+            if (classNameProp.stringValue == className) {
+                var filterStateProp = filter.FindPropertyRelative("filterState");
+                filterStateProp.enumValueIndex = (int)state;
+                return;
+            }
+        }
+
+        // If not found and state is not neutral, add new filter
+        if (state != TriStateFilter.Neutral) {
+            classFiltersProp.InsertArrayElementAtIndex(classFiltersProp.arraySize);
+            var newFilter = classFiltersProp.GetArrayElementAtIndex(classFiltersProp.arraySize - 1);
+            newFilter.FindPropertyRelative("className").stringValue = className;
+            newFilter.FindPropertyRelative("filterState").enumValueIndex = (int)state;
+        }
     }
 
     private void InitializeDefaultTagSettings() {
@@ -129,156 +377,12 @@ public class DebugLoggerSettingsEditor : Editor {
                 var element = tagSettingsProp.GetArrayElementAtIndex(tagSettingsProp.arraySize - 1);
 
                 element.FindPropertyRelative("tagValue").intValue = (int)tag;
-                element.FindPropertyRelative("isEnabled").boolValue = true;
+                element.FindPropertyRelative("filterState").enumValueIndex = (int)TriStateFilter.Neutral;
                 element.FindPropertyRelative("color").colorValue = DefaultColors[tag];
             }
         }
 
         serializedObject.ApplyModifiedProperties();
-    }
-
-    public override void OnInspectorGUI() {
-        serializedObject.Update();
-
-        EditorGUILayout.Space();
-        EditorGUILayout.LabelField("Debug Logger Settings", EditorStyles.boldLabel);
-
-        // Stack Trace Toggle
-        EditorGUILayout.PropertyField(showStackTraceProp);
-
-        // Tag Settings
-        EditorGUILayout.Space();
-        showTagSettings = EditorGUILayout.Foldout(showTagSettings, "Tag Settings", true);
-        if (showTagSettings) {
-            EditorGUI.indentLevel++;
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.PropertyField(tagWhitelistModeProp, new GUIContent("Whitelist"));
-
-            string buttonText = "Select All";
-            if (AreAllTagsEnabled()) {
-                buttonText = "Deselect All";
-            } else if (!AreAllTagsDisabled()) {
-                // Keep current state if in mixed state
-                buttonText = allTagsSelected ? "Deselect All" : "Select All";
-            }
-
-            if (GUILayout.Button(buttonText, GUILayout.Width(100))) {
-                ToggleAllTags();
-            }
-            EditorGUILayout.EndHorizontal();
-
-            // Tag search bar
-            tagSearchString = EditorGUILayout.TextField("Search", tagSearchString ?? "");
-
-            // Tag list with scrollview
-            EditorGUILayout.LabelField("Available Tags");
-            tagListScrollPosition = EditorGUILayout.BeginScrollView(tagListScrollPosition, GUILayout.Height(200));
-            if (tagSettingsProp != null) {
-                for (int i = 0; i < tagSettingsProp.arraySize; i++) {
-                    SerializedProperty tagSetting = tagSettingsProp.GetArrayElementAtIndex(i);
-                    if (tagSetting == null) continue;
-
-                    SerializedProperty tagValueProp = tagSetting.FindPropertyRelative("tagValue");
-                    SerializedProperty isEnabledProp = tagSetting.FindPropertyRelative("isEnabled");
-                    SerializedProperty colorProp = tagSetting.FindPropertyRelative("color");
-                    if (tagValueProp == null || isEnabledProp == null || colorProp == null) continue;
-
-                    var currentTag = (LogTag)tagValueProp.intValue;
-                    string tagName = currentTag.ToString();
-
-                    if (!string.IsNullOrEmpty(tagSearchString) &&
-                        !tagName.ToLower().Contains(tagSearchString.ToLower())) {
-                        continue;
-                    }
-
-                    EditorGUILayout.BeginHorizontal();
-                    float minTextWidth = GUI.skin.toggle.CalcSize(new GUIContent(tagName)).x + 15;
-                    bool newEnabled = EditorGUILayout.ToggleLeft(tagName, isEnabledProp.boolValue, GUILayout.Width(minTextWidth));
-                    if (newEnabled != isEnabledProp.boolValue) {
-                        isEnabledProp.boolValue = newEnabled;
-                    }
-
-                    GUILayout.FlexibleSpace();
-                    EditorGUILayout.PropertyField(colorProp, GUIContent.none, GUILayout.Width(100));
-                    EditorGUILayout.EndHorizontal();
-                }
-            }
-            EditorGUILayout.EndScrollView();
-
-            if (GUILayout.Button("Reset Colors")) {
-                ResetTagColors();
-            }
-            EditorGUI.indentLevel--;
-        }
-
-        // Class Filters
-        EditorGUILayout.Space();
-        showClassFilters = EditorGUILayout.Foldout(showClassFilters, "Class Filters", true);
-        if (showClassFilters) {
-            EditorGUI.indentLevel++;
-
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.PropertyField(whitelistModeProp, new GUIContent("Whitelist"));
-
-            string buttonText = "Select All";
-            if (AreAllClassesEnabled()) {
-                buttonText = "Deselect All";
-            } else if (!AreAllClassesDisabled()) {
-                // Keep current state if in mixed state
-                buttonText = allClassesSelected ? "Deselect All" : "Select All";
-            }
-
-            if (GUILayout.Button(buttonText, GUILayout.Width(100))) {
-                ToggleAllClasses();
-            }
-            EditorGUILayout.EndHorizontal();
-
-            classSearchString = EditorGUILayout.TextField("Search", classSearchString ?? "");
-
-            EditorGUILayout.LabelField("Available Classes");
-            classListScrollPosition = EditorGUILayout.BeginScrollView(classListScrollPosition, GUILayout.Height(300));
-
-            var filteredClasses = AvailableClasses
-                .Where(c => string.IsNullOrEmpty(classSearchString) ||
-                           c.ToLower().Contains(classSearchString.ToLower()));
-
-            foreach (var className in filteredClasses) {
-                bool isEnabled = IsClassEnabled(className);
-                bool newEnabled = EditorGUILayout.ToggleLeft(className, isEnabled);
-
-                if (newEnabled != isEnabled) {
-                    if (newEnabled) {
-                        AddClassFilter(className);
-                    } else {
-                        RemoveClassFilter(className);
-                    }
-                }
-            }
-
-            EditorGUILayout.EndScrollView();
-
-            EditorGUI.indentLevel--;
-        }
-
-        serializedObject.ApplyModifiedProperties();
-    }
-
-    private void ToggleAllTags() {
-        if (tagSettingsProp == null) return;
-
-        // Set the target state based on current actual state
-        bool targetState = !AreAllTagsEnabled();
-        allTagsSelected = targetState;
-
-        for (int i = 0; i < tagSettingsProp.arraySize; i++) {
-            var tagSetting = tagSettingsProp.GetArrayElementAtIndex(i);
-            if (tagSetting != null) {
-                var isEnabledProp = tagSetting.FindPropertyRelative("isEnabled");
-                if (isEnabledProp != null) {
-                    isEnabledProp.boolValue = targetState;
-                }
-            }
-        }
     }
 
     private void ResetTagColors() {
@@ -296,91 +400,6 @@ public class DebugLoggerSettingsEditor : Editor {
             var currentTag = (LogTag)tagValueProp.intValue;
             if (DefaultColors.TryGetValue(currentTag, out Color defaultColor)) {
                 colorProp.colorValue = defaultColor;
-            }
-        }
-    }
-
-    private bool IsClassEnabled(string className) {
-        if (classFiltersProp == null) return false;
-
-        for (int i = 0; i < classFiltersProp.arraySize; i++) {
-            var filter = classFiltersProp.GetArrayElementAtIndex(i);
-            var classNameProp = filter.FindPropertyRelative("className");
-            var isEnabledProp = filter.FindPropertyRelative("isEnabled");
-
-            if (classNameProp.stringValue == className) {
-                return isEnabledProp.boolValue;
-            }
-        }
-
-        // If we're in whitelist mode and the class isn't found, it should be disabled
-        // If we're in blacklist mode and the class isn't found, it should be enabled
-        return !whitelistModeProp.boolValue;
-    }
-
-    private void AddClassFilter(string className) {
-        // Check if class filter already exists
-        for (int i = 0; i < classFiltersProp.arraySize; i++) {
-            var filter = classFiltersProp.GetArrayElementAtIndex(i);
-            if (filter.FindPropertyRelative("className").stringValue == className) {
-                filter.FindPropertyRelative("isEnabled").boolValue = true;
-                return;
-            }
-        }
-
-        // Add new filter only if it doesn't exist
-        classFiltersProp.InsertArrayElementAtIndex(classFiltersProp.arraySize);
-        var newFilter = classFiltersProp.GetArrayElementAtIndex(classFiltersProp.arraySize - 1);
-        newFilter.FindPropertyRelative("className").stringValue = className;
-        newFilter.FindPropertyRelative("isEnabled").boolValue = true;
-    }
-
-    private void RemoveClassFilter(string className) {
-        for (int i = 0; i < classFiltersProp.arraySize; i++) {
-            var filter = classFiltersProp.GetArrayElementAtIndex(i);
-            if (filter.FindPropertyRelative("className").stringValue == className) {
-                filter.FindPropertyRelative("isEnabled").boolValue = false;
-                return;
-            }
-        }
-
-        // Only add a disabled filter in whitelist mode
-        if (whitelistModeProp.boolValue) {
-            classFiltersProp.InsertArrayElementAtIndex(classFiltersProp.arraySize);
-            var newFilter = classFiltersProp.GetArrayElementAtIndex(classFiltersProp.arraySize - 1);
-            newFilter.FindPropertyRelative("className").stringValue = className;
-            newFilter.FindPropertyRelative("isEnabled").boolValue = false;
-        }
-    }
-
-    private void ToggleAllClasses() {
-        // Set the target state based on current actual state
-        bool targetState = !AreAllClassesEnabled();
-        allClassesSelected = targetState;
-
-        // Instead of clearing the array, we'll update existing entries
-        // and only add new ones if necessary
-        foreach (var className in DebugLogger.AvailableClasses) {
-            bool found = false;
-
-            // First try to find and update existing entry
-            for (int i = 0; i < classFiltersProp.arraySize; i++) {
-                var filter = classFiltersProp.GetArrayElementAtIndex(i);
-                var classNameProp = filter.FindPropertyRelative("className");
-
-                if (classNameProp.stringValue == className) {
-                    filter.FindPropertyRelative("isEnabled").boolValue = targetState;
-                    found = true;
-                    break;
-                }
-            }
-
-            // If entry wasn't found, add it only if necessary
-            if (!found && targetState != !whitelistModeProp.boolValue) {
-                classFiltersProp.InsertArrayElementAtIndex(classFiltersProp.arraySize);
-                var newFilter = classFiltersProp.GetArrayElementAtIndex(classFiltersProp.arraySize - 1);
-                newFilter.FindPropertyRelative("className").stringValue = className;
-                newFilter.FindPropertyRelative("isEnabled").boolValue = targetState;
             }
         }
     }
