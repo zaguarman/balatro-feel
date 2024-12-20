@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using System.Linq;
+using static DebugLogger;
 
 public interface IInitializable {
     bool IsInitialized { get; }
@@ -47,13 +48,13 @@ public class InitializationManager : MonoBehaviour {
     public void RegisterComponent(IInitializable component) {
         if (!components.ContainsKey(component)) {
             components[component] = false;
-            //DebugLogger.Log($"Registered component: {component.GetType().Name}");
+            Log($"Registered component: {component.GetType().Name}", LogTag.Initialization);
         }
     }
 
     public void InitializeComponents() {
         if (GameReferences.Instance == null) {
-            Debug.LogError("GameReferences not found in scene! Please add it to the scene first.");
+            LogError("GameReferences not found in scene! Please add it to the scene first.", LogTag.Initialization);
             return;
         }
 
@@ -76,9 +77,9 @@ public class InitializationManager : MonoBehaviour {
             try {
                 component.Initialize();
                 components[component] = true;
-                //DebugLogger.Log($"Initialized component: {typeof(T).Name}");
+                Log($"Initialized component: {typeof(T).Name}", LogTag.Initialization);
             } catch (System.Exception e) {
-                Debug.LogError($"Failed to initialize {typeof(T).Name}: {e}");
+                LogError($"Failed to initialize {typeof(T).Name}: {e}", LogTag.Initialization);
                 throw; // Rethrow to stop initialization sequence
             }
         }
@@ -88,7 +89,7 @@ public class InitializationManager : MonoBehaviour {
         if (!systemInitialized && components.All(kvp => kvp.Value)) {
             systemInitialized = true;
             OnSystemInitialized.Invoke();
-            //DebugLogger.Log("System initialization complete");
+            Log("System initialization complete", LogTag.Initialization);
         }
     }
 

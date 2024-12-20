@@ -1,5 +1,5 @@
-using UnityEngine;
 using System.Collections.Generic;
+using static DebugLogger;
 
 public interface ICardDealingService {
     void InitializeDecks(List<CardData> player1Cards, List<CardData> player2Cards);
@@ -20,7 +20,7 @@ public class CardDealingService : ICardDealingService {
     public void InitializeDecks(List<CardData> player1Cards, List<CardData> player2Cards) {
         var gameManager = GameManager.Instance;
         if (gameManager == null) {
-            Debug.LogError("GameManager not found when initializing decks");
+            LogError("GameManager not found when initializing decks", LogTag.Cards | LogTag.Initialization);
             return;
         }
 
@@ -34,7 +34,7 @@ public class CardDealingService : ICardDealingService {
         player2Deck.Initialize(player2Cards);
         playerDecks[gameManager.Player2] = player2Deck;
 
-        //DebugLogger.Log("Card dealing service initialized decks successfully");
+        Log("Card dealing service initialized decks successfully", LogTag.Cards | LogTag.Initialization);
     }
 
     public void DealInitialHands(IPlayer player1, IPlayer player2, int handSize = 7) {
@@ -42,12 +42,12 @@ public class CardDealingService : ICardDealingService {
             DrawCardForPlayer(player1);
             DrawCardForPlayer(player2);
         }
-        //DebugLogger.Log($"Dealt initial hands of {handSize} cards to both players");
+        Log($"Dealt initial hands of {handSize} cards to both players", LogTag.Cards | LogTag.Initialization);
     }
 
     public bool CanDrawCard(IPlayer player) {
         if (player == null || !playerDecks.ContainsKey(player)) {
-            Debug.LogWarning($"Cannot check draw capability - player not found in deck registry");
+            LogWarning($"Cannot check draw capability - player not found in deck registry", LogTag.Cards);
             return false;
         }
 
@@ -57,12 +57,12 @@ public class CardDealingService : ICardDealingService {
 
     public void DrawCardForPlayer(IPlayer player) {
         if (player == null) {
-            Debug.LogError("Cannot draw card - player is null");
+            LogError("Cannot draw card - player is null", LogTag.Cards | LogTag.Initialization);
             return;
         }
 
         if (!playerDecks.TryGetValue(player, out var deck)) {
-            Debug.LogError($"Could not find deck for player");
+            LogError($"Could not find deck for player", LogTag.Cards | LogTag.Initialization);
             return;
         }
 
@@ -70,18 +70,18 @@ public class CardDealingService : ICardDealingService {
         if (card != null) {
             player.AddToHand(card);
             gameMediator.NotifyGameStateChanged();
-            //DebugLogger.Log($"Drew card for {(player.IsPlayer1() ? "Player 1" : "Player 2")}: {card.Name}");
+            Log($"Drew card for {(player.IsPlayer1() ? "Player 1" : "Player 2")}: {card.Name}", LogTag.Cards | LogTag.Initialization);
         }
     }
 
     public void ShuffleDeck(IPlayer player) {
         if (!playerDecks.TryGetValue(player, out var deck)) {
-            Debug.LogError($"Could not find deck for player to shuffle");
+            LogError($"Could not find deck for player to shuffle", LogTag.Cards | LogTag.Initialization);
             return;
         }
 
         // Implementation of deck shuffling would go here
         // Note: The current Deck class would need to be modified to support shuffling
-        DebugLogger.Log($"Shuffled deck for {(player.IsPlayer1() ? "Player 1" : "Player 2")}");
+        Log($"Shuffled deck for {(player.IsPlayer1() ? "Player 1" : "Player 2")}", LogTag.Cards | LogTag.Initialization);
     }
 }

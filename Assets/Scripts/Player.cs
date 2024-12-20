@@ -66,7 +66,7 @@ public class Player : Entity, IPlayer {
 
         // Validate slot index
         if (slotIndex < 0 || slotIndex >= MAX_BATTLEFIELD_SLOTS) {
-            DebugLogger.LogWarning($"Invalid slot index {slotIndex}", LogTag.Creatures);
+            LogWarning($"Invalid slot index {slotIndex}", LogTag.Creatures);
             return;
         }
 
@@ -111,7 +111,7 @@ public class Player : Entity, IPlayer {
         if (index != -1) {
             battlefieldSlots[index] = null;
             Battlefield.Remove(creature);
-            DebugLogger.Log($"Removed creature from battlefield: {creature.Name}", LogTag.Creatures);
+            Log($"Removed creature from battlefield: {creature.Name}", LogTag.Creatures);
             gameMediator?.NotifyGameStateChanged();
         }
     }
