@@ -37,7 +37,7 @@ public class DebugLoggerSettingsEditor : Editor {
     private string tagSearchString = "";
     private GUIStyle buttonStyle;
     private GUIStyle nameStyle;
-    private float columnWidth;
+    private float rowHeight = 25;
 
     private readonly Color includeColor = new Color(0.5f, 1f, 0.5f);
     private readonly Color neutralColor = new Color(0.8f, 0.8f, 0.8f);
@@ -70,9 +70,8 @@ public class DebugLoggerSettingsEditor : Editor {
 
     public override void OnInspectorGUI() {
         serializedObject.Update();
-        columnWidth = EditorGUIUtility.currentViewWidth / 2 - 10;
 
-        DrawHeader();
+        DrawHeaderTitle();
         DrawStackTraceAndButtons();
         DrawTagSettings();
         DrawClassFilters();
@@ -80,7 +79,7 @@ public class DebugLoggerSettingsEditor : Editor {
         serializedObject.ApplyModifiedProperties();
     }
 
-    private void DrawHeader() {
+    private void DrawHeaderTitle() {
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Debug Logger Settings", EditorStyles.boldLabel);
     }
@@ -100,18 +99,29 @@ public class DebugLoggerSettingsEditor : Editor {
         if (!showTagSettings) return;
 
         EditorGUI.indentLevel++;
-        tagSearchString = EditorGUILayout.TextField("Search", tagSearchString ?? "");
-        EditorGUILayout.LabelField("Available Tags");
+        tagSearchString = EditorGUILayout.TextField("Search", tagSearchString ?? "", GUILayout.Height(rowHeight));
+        
+        EditorGUILayout.Space(20);
 
-        if (GUILayout.Button("Cycle All Tags")) {
+        if (GUILayout.Button("Cycle All Tags", GUILayout.Height(rowHeight))) {
             CycleAllTagsStates();
         }
 
+        EditorGUILayout.Space();
+
         DrawTagList();
 
-        if (GUILayout.Button("Reset Colors")) {
+        EditorGUILayout.Space();
+
+        EditorGUILayout.BeginHorizontal();
+        GUILayout.FlexibleSpace();
+
+        if (GUILayout.Button("Reset Colors", GUILayout.Width(100))) {
             ResetTagColors();
         }
+
+        EditorGUILayout.EndHorizontal();
+
         EditorGUI.indentLevel--;
     }
 
@@ -143,10 +153,10 @@ public class DebugLoggerSettingsEditor : Editor {
             DrawTriStateButton(ref currentState, filterStateProp);
 
             // Column 2 - Tag name (with fixed width)
-            EditorGUILayout.LabelField(tagName, nameStyle, GUILayout.Width(90));
+            EditorGUILayout.LabelField(tagName, nameStyle, GUILayout.Width(90), GUILayout.Height(rowHeight));
 
             // Column 3 - Color picker
-            EditorGUILayout.PropertyField(colorProp, GUIContent.none);
+            EditorGUILayout.PropertyField(colorProp, GUIContent.none, GUILayout.Height(rowHeight));
 
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space(2);
@@ -158,12 +168,15 @@ public class DebugLoggerSettingsEditor : Editor {
         if (!showClassFilters) return;
 
         EditorGUI.indentLevel++;
-        classSearchString = EditorGUILayout.TextField("Search", classSearchString ?? "");
-        EditorGUILayout.LabelField("Available Classes");
+        classSearchString = EditorGUILayout.TextField("Search", classSearchString ?? "", GUILayout.Height(rowHeight));
 
-        if (GUILayout.Button("Cycle All Classes")) {
+        EditorGUILayout.Space(20);
+
+        if (GUILayout.Button("Cycle All Classes", GUILayout.Height(rowHeight))) {
             CycleAllClassStates();
         }
+
+        EditorGUILayout.Space();
 
         DrawClassList();
         EditorGUI.indentLevel--;
@@ -185,7 +198,7 @@ public class DebugLoggerSettingsEditor : Editor {
             }
 
             // Right column - Class name
-            EditorGUILayout.LabelField(className, nameStyle);
+            EditorGUILayout.LabelField(className, nameStyle, GUILayout.Height(rowHeight));
 
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space(2);
@@ -196,7 +209,7 @@ public class DebugLoggerSettingsEditor : Editor {
         Color originalColor = GUI.backgroundColor;
         GUI.backgroundColor = GetFilterStateColor(state);
 
-        if (GUILayout.Button(GetFilterStateText(state), buttonStyle)) {
+        if (GUILayout.Button(GetFilterStateText(state), buttonStyle, GUILayout.Height(rowHeight))) {
             state = GetNextState(state);
             if (filterStateProp != null) {
                 filterStateProp.enumValueIndex = (int)state;

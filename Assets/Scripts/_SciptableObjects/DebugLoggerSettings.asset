@@ -14,125 +14,86 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   tagSettings:
   - tagValue: 1
-    stateField:
-      currentState: 0
+    filterState: 0
     color: {r: 0.5019608, g: 1, b: 1, a: 1}
   - tagValue: 2
-    stateField:
-      currentState: 0
+    filterState: 0
     color: {r: 1, g: 0.8784314, b: 0.4, a: 1}
   - tagValue: 4
-    stateField:
-      currentState: 0
+    filterState: 0
     color: {r: 1, g: 0.6, b: 1, a: 1}
   - tagValue: 8
-    stateField:
-      currentState: 0
+    filterState: 0
     color: {r: 0.5647059, g: 0.93333334, b: 0.5647059, a: 1}
   - tagValue: 16
-    stateField:
-      currentState: 0
+    filterState: 0
     color: {r: 0.6784314, g: 0.84705883, b: 0.9019608, a: 1}
   - tagValue: 32
-    stateField:
-      currentState: 0
+    filterState: 0
     color: {r: 0.8784314, g: 0.8784314, b: 0.8784314, a: 1}
   - tagValue: 64
-    stateField:
-      currentState: 0
+    filterState: 0
     color: {r: 1, g: 0.6, b: 0.6, a: 1}
   - tagValue: 128
-    stateField:
-      currentState: 0
+    filterState: 0
     color: {r: 0.87058824, g: 0.72156864, b: 0.5294118, a: 1}
   classFilters:
   - className: ActionsQueue
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: ArrowIndicator
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: BattlefieldArrowManager
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: BattlefieldCombatHandler
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: BattlefieldUI
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: Card
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: CardContainer
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: CardController
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: CardData
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: CardDealingService
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: CardDropZone
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: CardFactory
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: ContainerSettings
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: Creature
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: Deck
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: Entity
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: GameActions
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: GameBootstrap
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: GameManager
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: GameMediator
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: GameReferences
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: GameUI
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: HandUI
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: HealthHandler
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: Player
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: PlayerUI
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: Target
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: TestSetup
-    stateField:
-      currentState: 0
+    filterState: 0
   - className: UIComponent
-    stateField:
-      currentState: 0
+    filterState: 0
   showStackTrace: 0
-  whitelistMode: 1
-  tagWhitelistMode: 1
