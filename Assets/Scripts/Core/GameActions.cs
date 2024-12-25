@@ -6,15 +6,17 @@ public interface IGameAction { void Execute(); }
 public class SummonCreatureAction : IGameAction {
     private readonly ICreature creature;
     private readonly IPlayer owner;
+    private readonly int targetSlot;
 
-    public SummonCreatureAction(ICreature creature, IPlayer owner) {
+    public SummonCreatureAction(ICreature creature, IPlayer owner, int targetSlot = -1) {
         this.creature = creature;
         this.owner = owner;
-        Log($"Created for {creature.Name} with {creature.Effects.Count} effects", LogTag.Actions | LogTag.Creatures);
+        this.targetSlot = targetSlot;
+        Log($"Created SummonCreatureAction for {creature.Name} targeting slot {targetSlot} with {creature.Effects.Count} effects", LogTag.Actions | LogTag.Creatures);
     }
 
     public void Execute() {
-        Log($"Executing for {creature.Name}", LogTag.Actions | LogTag.Creatures);
+        Log($"Executing SummonCreatureAction for {creature.Name}", LogTag.Actions | LogTag.Creatures);
 
         if (creature == null || owner == null) {
             LogError("Creature or owner is null", LogTag.Actions | LogTag.Creatures);
@@ -31,7 +33,12 @@ public class SummonCreatureAction : IGameAction {
             c2.HandleEffect(EffectTrigger.OnPlay, actionsQueue);
         }
 
-        owner.AddToBattlefield(creature);
+        // Add to battlefield with specific slot if provided
+        if (targetSlot >= 0) {
+            owner.AddToBattlefield(creature, targetSlot);
+        } else {
+            owner.AddToBattlefield(creature);
+        }
     }
 }
 
@@ -176,7 +183,13 @@ public class PlayCardAction : IGameAction {
         // Remove the card from hand first
         owner.Hand.Remove(card);
 
-        // Play the card (this will handle creature summoning through SummonCreatureAction)
+        // Play the card with the specific slot target
+        if (card is ICreature creature) {
+            var summonAction = new SummonCreatureAction(creature, owner, targetSlot);
+            GameManager.Instance.ActionsQueue.AddAction(summonAction);
+        }
+
+        // Process any immediate effects
         card.Play(owner, GameManager.Instance.ActionsQueue);
 
         Log($"Executed PlayCardAction for {card.Name}", LogTag.Actions | LogTag.Cards);
@@ -211,4 +224,34 @@ public class MarkCombatTargetAction : IGameAction {
 
     public ICreature GetAttacker() => attacker;
     public BattlefieldSlot GetTargetSlot() => targetSlot;
+}
+
+public class MoveCreatureAction : IGameAction {
+    private readonly ICreature creature;
+    private readonly int fromSlot;
+    private readonly int toSlot;
+    private readonly IPlayer player;
+
+    public MoveCreatureAction(ICreature creature, int fromSlot, int toSlot, IPlayer player) {
+        this.creature = creature;
+        this.fromSlot = fromSlot;
+        this.toSlot = toSlot;
+        this.player = player;
+    }
+
+    public void Execute() {
+        if (creature == null || player == null) {
+            LogError("Invalid move action - creature or player is null", LogTag.Actions);
+            return;
+        }
+
+        // Move the creature to the new slot
+        player.AddToBattlefield(creature, toSlot);
+        Log($"Executed move action for {creature.Name} from slot {fromSlot} to slot {toSlot}",
+            LogTag.Actions | LogTag.Creatures);
+    }
+
+    public ICreature GetCreature() => creature;
+    public int GetFromSlot() => fromSlot;
+    public int GetToSlot() => toSlot;
 }

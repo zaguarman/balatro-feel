@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Unity.VisualScripting.Antlr3.Runtime.Misc;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using static DebugLogger;
@@ -86,9 +87,8 @@ public class BattlefieldUI : CardContainer {
         if (cardData != null) {
             var newCard = CardFactory.CreateCard(cardData);
             if (newCard != null) {
-                int slotIndex = targetSlot != null ? targetSlot.Index : -1;
-                Log($"Adding PlayCardAction for {cardData.cardName} to slot {slotIndex}", LogTag.Actions | LogTag.Cards);
-                gameManager.ActionsQueue.AddAction(new PlayCardAction(newCard, player, slotIndex));
+                Log($"Adding PlayCardAction for {cardData.cardName} to slot {targetSlot.Index}", LogTag.Actions | LogTag.Cards);
+                gameManager.ActionsQueue.AddAction(new PlayCardAction(newCard, player, targetSlot.Index));
             }
         }
     }
@@ -98,10 +98,28 @@ public class BattlefieldUI : CardContainer {
             if (card.IsPlayer1Card() != player.IsPlayer1()) {
                 // Enemy slot - handle combat
                 gameManager.CombatHandler.HandleCreatureCombat(card, targetSlot);
-            } else {
-                // Same player slot - handle swap
+            } else if (targetSlot.IsOccupied) {
+                // Same player occupied slot - handle swap
                 HandleCreatureSwap(card, targetSlot);
+            } else {
+                // Same player empty slot - handle movement
+                HandleCreatureMove(card, targetSlot);
             }
+        }
+    }
+
+    private void HandleCreatureMove(CardController card, BattlefieldSlot targetSlot) {
+        var creature = FindCreatureByTargetId(card);
+        if (creature == null) return;
+
+        int fromSlot = player.GetCreatureSlotIndex(creature);
+        if (fromSlot != -1) {
+            Log($"Creating move action for {creature.Name} from slot {fromSlot} to slot {targetSlot.Index}",
+                LogTag.Actions | LogTag.Creatures);
+
+            // Create and add the move action
+            var moveAction = new MoveCreatureAction(creature, fromSlot, targetSlot.Index, player);
+            gameManager.ActionsQueue.AddAction(moveAction);
         }
     }
 
@@ -111,7 +129,7 @@ public class BattlefieldUI : CardContainer {
 
         if (creature1 == null || creature2 == null) return;
 
-        int slot1Index = slots.FindIndex(s => s.OccupyingCard == card1);
+        int slot1Index = player.GetCreatureSlotIndex(creature1);
         int slot2Index = targetSlot.Index;
 
         if (slot1Index != -1 && slot2Index != -1) {
@@ -130,20 +148,12 @@ public class BattlefieldUI : CardContainer {
         var raycastResults = new List<RaycastResult>();
         EventSystem.current.RaycastAll(pointerEventData, raycastResults);
 
-        Log($"UI Raycast found {raycastResults.Count} hits", LogTag.UI);
-
         foreach (var result in raycastResults) {
             var slot = result.gameObject.GetComponent<BattlefieldSlot>();
-            if (slot != null) {
-                Log($"Found slot: {slot.gameObject.name}", LogTag.UI);
-                return slot;
-            }
+            if (slot != null) return slot;
 
             var parentSlot = result.gameObject.GetComponentInParent<BattlefieldSlot>();
-            if (parentSlot != null) {
-                Log($"Found parent slot: {parentSlot.gameObject.name}", LogTag.UI);
-                return parentSlot;
-            }
+            if (parentSlot != null) return parentSlot;
         }
 
         // If no slot found through raycast, find nearest slot
@@ -165,12 +175,10 @@ public class BattlefieldUI : CardContainer {
             }
 
             if (nearestSlot != null) {
-                Log($"Found nearest slot: {nearestSlot.gameObject.name}", LogTag.UI);
                 return nearestSlot;
             }
         }
 
-        Log("No valid slot found", LogTag.UI);
         return null;
     }
 
@@ -209,6 +217,7 @@ public class BattlefieldUI : CardContainer {
     }
 
     private void UpdateCreatureCards() {
+        // Clear all slots
         foreach (var slot in slots) {
             slot.ClearSlot();
         }
@@ -216,6 +225,7 @@ public class BattlefieldUI : CardContainer {
         var currentCreatureIds = new HashSet<string>(player.Battlefield.Select(c => c.TargetId));
         var cardsToRemove = creatureCards.Keys.Where(id => !currentCreatureIds.Contains(id)).ToList();
 
+        // Remove cards that are no longer in the battlefield
         foreach (var id in cardsToRemove) {
             if (creatureCards.TryGetValue(id, out var card)) {
                 if (card != null) Destroy(card.gameObject);
@@ -223,8 +233,11 @@ public class BattlefieldUI : CardContainer {
             }
         }
 
-        for (int i = 0; i < player.Battlefield.Count; i++) {
-            var creature = player.Battlefield[i];
+        // Get the current slot mapping from the player
+        var slotMap = player.GetCreatureSlotMap();
+
+        // Update or create cards for each creature
+        foreach (var creature in player.Battlefield) {
             if (!creatureCards.TryGetValue(creature.TargetId, out var cardController)) {
                 cardController = CreateCreatureCard(creature);
                 if (cardController != null) {
@@ -232,10 +245,11 @@ public class BattlefieldUI : CardContainer {
                 }
             }
 
-            if (cardController != null) {
-                var slot = slots[i];
-                slot.OccupySlot(cardController);
-                cardController.UpdateUI();
+            if (cardController != null && slotMap.TryGetValue(creature.TargetId, out int slotIndex)) {
+                if (slotIndex >= 0 && slotIndex < slots.Count) {
+                    slots[slotIndex].OccupySlot(cardController);
+                    cardController.UpdateUI();
+                }
             }
         }
     }

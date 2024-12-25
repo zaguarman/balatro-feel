@@ -16,11 +16,16 @@ public interface IPlayer : IEntity, IDamageable {
     void AddToBattlefield(ICreature creature, int slotIndex);
     void RemoveFromBattlefield(ICreature creature);
     PlayerDamagedUnityEvent OnDamaged { get; }
+    int GetCreatureSlotIndex(ICreature creature);
+    bool HasEmptyBattlefieldSlot();
+    ICreature GetCreatureInSlot(int slotIndex);
+    Dictionary<string, int> GetCreatureSlotMap();
 }
 
 public class Player : Entity, IPlayer {
     private const int MAX_BATTLEFIELD_SLOTS = 5;
     private readonly ICreature[] battlefieldSlots = new ICreature[MAX_BATTLEFIELD_SLOTS];
+    private readonly Dictionary<string, int> creatureSlotMap = new Dictionary<string, int>();
 
     public int Health { get; private set; } = 20;
     public IPlayer Opponent { get; set; }
@@ -53,16 +58,15 @@ public class Player : Entity, IPlayer {
     }
 
     public void AddToBattlefield(ICreature creature) {
-        AddToBattlefield(creature, -1);
+        // Find first empty slot when no specific slot is provided
+        int emptySlot = FindFirstEmptySlot();
+        if (emptySlot != -1) {
+            AddToBattlefield(creature, emptySlot);
+        }
     }
 
-    public void AddToBattlefield(ICreature creature, int slotIndex = -1) {
+    public void AddToBattlefield(ICreature creature, int slotIndex) {
         if (creature == null) return;
-
-        // If no specific slot is requested, find the first available slot
-        if (slotIndex == -1) {
-            slotIndex = FindFirstEmptySlot();
-        }
 
         // Validate slot index
         if (slotIndex < 0 || slotIndex >= MAX_BATTLEFIELD_SLOTS) {
@@ -70,29 +74,32 @@ public class Player : Entity, IPlayer {
             return;
         }
 
-        // Remove from current slot if already on battlefield
-        int currentIndex = Array.IndexOf(battlefieldSlots, creature);
-        if (currentIndex != -1) {
-            battlefieldSlots[currentIndex] = null;
+        // If creature is already in a slot, clear that slot
+        if (creatureSlotMap.TryGetValue(creature.TargetId, out int currentSlot)) {
+            battlefieldSlots[currentSlot] = null;
+        }
+
+        // If there's already a creature in the target slot, don't allow the placement
+        if (battlefieldSlots[slotIndex] != null) {
+            LogWarning($"Slot {slotIndex} is already occupied", LogTag.Creatures);
+            return;
         }
 
         // Add to new slot
         battlefieldSlots[slotIndex] = creature;
+        creatureSlotMap[creature.TargetId] = slotIndex;
 
         // Update the list representation
-        Battlefield.Clear();
-        foreach (var c in battlefieldSlots) {
-            if (c != null) {
-                Battlefield.Add(c);
-            }
-        }
-
-        // Notify if creature is newly added to battlefield
-        if (currentIndex == -1) {
+        if (!Battlefield.Contains(creature)) {
+            Battlefield.Add(creature);
             gameMediator?.NotifyCreatureSummoned(creature, this);
         }
 
         gameMediator?.NotifyGameStateChanged();
+    }
+
+    public Dictionary<string, int> GetCreatureSlotMap() {
+        return new Dictionary<string, int>(creatureSlotMap);
     }
 
     private int FindFirstEmptySlot() {
@@ -107,17 +114,18 @@ public class Player : Entity, IPlayer {
     public void RemoveFromBattlefield(ICreature creature) {
         if (creature == null) return;
 
-        int index = Array.IndexOf(battlefieldSlots, creature);
-        if (index != -1) {
-            battlefieldSlots[index] = null;
-            Battlefield.Remove(creature);
-            Log($"Removed creature from battlefield: {creature.Name}", LogTag.Creatures);
-            gameMediator?.NotifyGameStateChanged();
+        if (creatureSlotMap.TryGetValue(creature.TargetId, out int slot)) {
+            battlefieldSlots[slot] = null;
+            creatureSlotMap.Remove(creature.TargetId);
         }
+
+        Battlefield.Remove(creature);
+        Log($"Removed creature from battlefield: {creature.Name}", LogTag.Creatures);
+        gameMediator?.NotifyGameStateChanged();
     }
 
     public int GetCreatureSlotIndex(ICreature creature) {
-        return Array.IndexOf(battlefieldSlots, creature);
+        return creatureSlotMap.TryGetValue(creature.TargetId, out int slot) ? slot : -1;
     }
 
     public bool HasEmptyBattlefieldSlot() {
