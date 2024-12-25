@@ -20,10 +20,12 @@ public class ActionsQueue {
 
     private int GetActionPriority(IGameAction action) {
         return action switch {
-            DirectDamageAction => 0,
-            SwapCreaturesAction => 1,
-            DamageCreatureAction => 2,
-            _ => 3
+            MoveCreatureAction or SwapCreaturesAction => 0,  // Highest priority - all positioning actions
+            DirectDamageAction => 1,
+            MarkCombatTargetAction => 2,
+            DamageCreatureAction => 3,
+            DamagePlayerAction => 4,  // Lowest priority
+            _ => 5
         };
     }
 
