@@ -1292,8 +1292,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   resolveActionsButton: {fileID: 776573425}
-  weatherCycleButton: {fileID: 0}
-  weatherText: {fileID: 0}
+  weatherCycleButton: {fileID: 406904718}
+  weatherText: {fileID: 1872031602}
   player1References:
     playerUI: {fileID: 500666786}
     healthText: {fileID: 1544506893}
