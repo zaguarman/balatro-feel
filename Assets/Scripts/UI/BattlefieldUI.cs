@@ -98,11 +98,8 @@ public class BattlefieldUI : CardContainer {
             if (card.IsPlayer1Card() != player.IsPlayer1()) {
                 // Enemy slot - handle combat
                 gameManager.CombatHandler.HandleCreatureCombat(card, targetSlot);
-            } else if (targetSlot.IsOccupied) {
-                // Same player occupied slot - handle swap
-                HandleCreatureSwap(card, targetSlot);
             } else {
-                // Same player empty slot - handle movement
+                // Same player slot - handle movement/swap
                 HandleCreatureMove(card, targetSlot);
             }
         }

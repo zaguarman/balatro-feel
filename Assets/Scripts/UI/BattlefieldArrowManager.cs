@@ -90,7 +90,7 @@ public class BattlefieldArrowManager {
             MarkCombatTargetAction markCombatAction => $"combat_{markCombatAction.GetAttacker()?.TargetId}",
             DamageCreatureAction damageAction => $"damage_{damageAction.GetAttacker()?.TargetId}",
             DamagePlayerAction playerDamageAction => $"playerDamage_{FindSourceCreatureForPlayerDamage(playerDamageAction)?.TargetId}",
-            SwapCreaturesAction swapAction => $"swap_{swapAction.GetCreature1()?.TargetId}_{swapAction.GetCreature2()?.TargetId}",
+            MoveCreatureAction moveAction => $"move_{moveAction.GetCreature()?.TargetId}",
             _ => null
         };
     }
@@ -111,46 +111,48 @@ public class BattlefieldArrowManager {
                 case DamagePlayerAction playerDamageAction:
                     CreateArrowForPlayerDamageAction(playerDamageAction, actionKey);
                     break;
-                case SwapCreaturesAction swapAction:
-                    CreateArrowForSwapAction(swapAction, actionKey);
+                case MoveCreatureAction moveAction:
+                    CreateArrowForMoveAction(moveAction, actionKey);
                     break;
             }
         }
     }
 
-    private void CreateArrowForSwapAction(SwapCreaturesAction swapAction, string actionKey) {
-        if (swapAction == null) return;
-
-        // Directly find creatures from the action
-        var creature1 = FindCreatureByTargetId(swapAction.GetCreature1()?.TargetId);
-        var creature2 = FindCreatureByTargetId(swapAction.GetCreature2()?.TargetId);
-
-        if (creature1 == null || creature2 == null) return;
+    private void CreateArrowForMoveAction(MoveCreatureAction moveAction, string actionKey) {
+        var creature = moveAction.GetCreature();
+        if (creature == null) return;
 
         var arrow = ArrowIndicator.Create(parentTransform);
-        Vector3 startPos1 = GetCreaturePosition(creature1);
-        Vector3 startPos2 = GetCreaturePosition(creature2);
+        Vector3 startPos = GetCreaturePosition(creature);
+        Vector3 endPos = GetSlotPosition(moveAction.GetToSlot());
 
-        startPos1.z = 0;
-        startPos2.z = 0;
+        startPos.z = 0;
+        endPos.z = 0;
 
-        arrow.Show(startPos1, startPos2);
-        arrow.SetColor(Color.yellow);
-
-        // Use a combined key to track the swap arrow
+        arrow.Show(startPos, endPos);
+        arrow.SetColor(Color.green); // Use green for move actions
         activeArrows[actionKey] = arrow;
 
-        Log($"Created swap arrow between {creature1.Name} and {creature2.Name}", LogTag.Actions | LogTag.UI);
+        Log($"Created move arrow for {creature.Name} to slot {moveAction.GetToSlot()}", LogTag.Actions | LogTag.UI);
     }
 
-    private ICreature FindCreatureByTargetId(string targetId) {
-        if (string.IsNullOrEmpty(targetId)) return null;
+    private Vector3 GetSlotPosition(int slotIndex) {
+        var player1Battlefield = gameReferences.GetPlayer1BattlefieldUI();
+        var player2Battlefield = gameReferences.GetPlayer2BattlefieldUI();
 
-        var gameManager = GameManager.Instance;
-        if (gameManager == null) return null;
+        // Try to find the slot in either battlefield
+        Transform slotTransform = null;
+        if (player1Battlefield != null) {
+            var slots = player1Battlefield.GetComponentsInChildren<BattlefieldSlot>();
+            slotTransform = slots.FirstOrDefault(s => s.Index == slotIndex)?.transform;
+        }
 
-        return gameManager.Player1.Battlefield.FirstOrDefault(c => c.TargetId == targetId) ??
-               gameManager.Player2.Battlefield.FirstOrDefault(c => c.TargetId == targetId);
+        if (slotTransform == null && player2Battlefield != null) {
+            var slots = player2Battlefield.GetComponentsInChildren<BattlefieldSlot>();
+            slotTransform = slots.FirstOrDefault(s => s.Index == slotIndex)?.transform;
+        }
+
+        return slotTransform != null ? slotTransform.position : Vector3.zero;
     }
 
     private void CreateArrowForMarkCombatAction(MarkCombatTargetAction action, string actionKey) {

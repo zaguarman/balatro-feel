@@ -245,12 +245,40 @@ public class MoveCreatureAction : IGameAction {
             return;
         }
 
-        // Move the creature to the new slot
-        player.AddToBattlefield(creature, toSlot);
+        // Check if target slot is occupied
+        var targetCreature = player.GetCreatureInSlot(toSlot);
+        if (targetCreature != null) {
+            // Handle swap
+            HandleSwap(targetCreature);
+        } else {
+            // Handle simple move
+            HandleMove();
+        }
+
         Log($"Executed move action for {creature.Name} from slot {fromSlot} to slot {toSlot}",
             LogTag.Actions | LogTag.Creatures);
     }
 
+    private void HandleSwap(ICreature targetCreature) {
+        // Temporarily remove both creatures from battlefield
+        player.RemoveFromBattlefield(creature);
+        player.RemoveFromBattlefield(targetCreature);
+
+        // Re-add them in swapped order
+        if (player is Player p) {
+            p.AddToBattlefield(creature, toSlot);
+            p.AddToBattlefield(targetCreature, fromSlot);
+        }
+    }
+
+    private void HandleMove() {
+        player.RemoveFromBattlefield(creature);
+        if (player is Player p) {
+            p.AddToBattlefield(creature, toSlot);
+        }
+    }
+
+    // Getter methods for arrow visualization
     public ICreature GetCreature() => creature;
     public int GetFromSlot() => fromSlot;
     public int GetToSlot() => toSlot;
