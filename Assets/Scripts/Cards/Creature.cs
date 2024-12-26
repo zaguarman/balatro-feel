@@ -29,99 +29,92 @@ public class Creature : Card, ICreature {
     public override void Play(IPlayer owner, ActionsQueue context) {
         Log($"Playing {Name} with {Effects.Count} effects", LogTag.Creatures | LogTag.Cards | LogTag.Actions);
         Owner = owner;
-
-        // Add summon action to the queue
-        var summonAction = new SummonCreatureAction(this, owner);
-        context.AddAction(summonAction);
-
-        Log($"Added SummonCreatureAction to queue for {Name}", LogTag.Creatures | LogTag.Actions);
+        context.AddAction(new SummonCreatureAction(this, owner));
     }
 
-    // Implement the interface method
     public void TakeDamage(int damage) {
         TakeDamage(damage, null);
     }
 
-    // Internal method with additional functionality
     internal void TakeDamage(int damage, ICreature attacker) {
         if (isDead) return;
 
         lastAttacker = attacker;
         Health = System.Math.Max(0, Health - damage);
-        Log($"{Name} took {damage} damage, health now: {Health}. Has {Effects.Count} effects", LogTag.Creatures | LogTag.Combat);
+        Log($"{Name} took {damage} damage, health now: {Health}. Has {Effects.Count} effects",
+            LogTag.Creatures | LogTag.Combat);
 
         var gameManager = GameManager.Instance;
-        if (gameManager != null && Owner != null) {
+        if (gameManager?.ActionsQueue != null) {
             Log($"Processing OnDamage effects for {Name}", LogTag.Creatures | LogTag.Effects);
             HandleEffect(EffectTrigger.OnDamage, gameManager.ActionsQueue);
-        } else {
-            LogError($"Cannot process damage effects - GameManager: {gameManager != null}, Owner: {Owner != null}", LogTag.Creatures | LogTag.Effects);
         }
 
-        var gameMediator = GameMediator.Instance;
-        if (gameMediator != null) {
-            gameMediator.NotifyCreatureDamaged(this, damage);
-
-            if (Health <= 0 && !isDead) {
-                isDead = true;
-                if (Owner != null) {
-                    Owner.RemoveFromBattlefield(this);
-                }
-                gameMediator.NotifyCreatureDied(this);
-            }
+        if (Health <= 0 && !isDead) {
+            isDead = true;
+            Owner?.RemoveFromBattlefield(this);
+            Log($"Creature died: {Name}", LogTag.Creatures);
+            GameMediator.Instance?.NotifyCreatureDied(this);
         }
 
+        GameMediator.Instance?.NotifyCreatureDamaged(this, damage);
         lastAttacker = null;
     }
 
     public void HandleEffect(EffectTrigger trigger, ActionsQueue actionsQueue) {
+        // Skip if this effect was already handled in current resolution chain
+        if (actionsQueue.IsEffectProcessed(TargetId, trigger)) {
+            Log($"Skipping already processed {trigger} effect for {Name}", LogTag.Effects);
+            return;
+        }
+
         Log($"Handling {trigger} effect for {Name} with {Effects.Count} effects", LogTag.Creatures | LogTag.Effects);
-        foreach (var effect in Effects) {
-            Log($"Checking effect - Trigger: {effect.trigger}, Actions: {effect.actions.Count}", LogTag.Creatures | LogTag.Effects);
-            if (effect.trigger == trigger) {
-                foreach (var action in effect.actions) {
-                    Log($"Processing action - Type: {action.actionType}, Value: {action.value}, Target: {action.targetType}", LogTag.Creatures | LogTag.Actions);
-                    switch (action.actionType) {
-                        case ActionType.Damage:
-                            HandleDamageEffect(action, actionsQueue);
-                            break;
-                    }
+
+        foreach (var effect in Effects.Where(e => e.trigger == trigger)) {
+            Log($"Processing effect - Trigger: {effect.trigger}, Actions: {effect.actions.Count}",
+                LogTag.Creatures | LogTag.Effects);
+
+            foreach (var action in effect.actions) {
+                Log($"Processing action - Type: {action.actionType}, Value: {action.value}, Target: {action.targetType}",
+                    LogTag.Creatures | LogTag.Actions);
+
+                if (action.actionType == ActionType.Damage) {
+                    ProcessDamageEffect(action, actionsQueue);
                 }
             }
         }
+
+        actionsQueue.MarkEffectProcessed(TargetId, trigger);
+        Log($"Marked {trigger} effect as processed for {Name}", LogTag.Effects);
     }
 
-    private void HandleDamageEffect(EffectAction action, ActionsQueue actionsQueue) {
+    private void ProcessDamageEffect(EffectAction action, ActionsQueue actionsQueue) {
         if (Owner == null) {
             LogError($"Cannot handle damage effect for {Name} - Owner is null", LogTag.Creatures | LogTag.Effects);
             return;
         }
 
-        Log($"Getting targets for {Name}'s damage effect. TargetType: {action.targetType}, Damage: {action.value}", LogTag.Creatures | LogTag.Actions);
+        Log($"Processing damage effect for {Name}. TargetType: {action.targetType}, Damage: {action.value}",
+            LogTag.Creatures | LogTag.Actions);
 
-        // Special handling for OnDamage trigger to target the attacker
+        // Handle retaliatory damage
         if (lastAttacker != null && Effects.Any(e => e.trigger == EffectTrigger.OnDamage)) {
-            Log($"Targeting attacker {lastAttacker.Name} for damage effect", LogTag.Creatures | LogTag.Actions);
+            Log($"Targeting attacker {lastAttacker.Name} for retaliation damage",
+                LogTag.Creatures | LogTag.Actions);
             actionsQueue.AddAction(new DirectDamageAction(lastAttacker, action.value, this));
             return;
         }
 
-        // Normal targeting for other effects
+        // Handle normal targeting
         var targets = TargetingSystem.GetValidTargets(Owner, action.targetType);
-        Log($"Found {targets.Count} targets for {Name}'s damage effect", LogTag.Creatures | LogTag.Actions);
+        Log($"Found {targets.Count} targets for {Name}'s damage effect",
+            LogTag.Creatures | LogTag.Actions);
 
         foreach (var target in targets) {
             if (target is ICreature creature) {
-                // Use DirectDamageAction for area effects (OnPlay trigger)
-                if (Effects.Any(e => e.trigger == EffectTrigger.OnPlay)) {
-                    Log($"Adding DirectDamageAction - Source: {Name}, Target: {creature.Name}, Damage: {action.value}",
-                        LogTag.Creatures | LogTag.Actions | LogTag.Combat);
-                    actionsQueue.AddAction(new DirectDamageAction(creature, action.value, this));
-                } else {
-                    Log($"Adding DamageCreatureAction - Source: {Name}, Target: {creature.Name}, Damage: {action.value}",
-                        LogTag.Creatures | LogTag.Actions | LogTag.Combat);
-                    actionsQueue.AddAction(new DamageCreatureAction(creature, action.value, this));
-                }
+                Log($"Adding DirectDamageAction - Source: {Name}, Target: {creature.Name}, Damage: {action.value}",
+                    LogTag.Creatures | LogTag.Actions | LogTag.Combat);
+                actionsQueue.AddAction(new DirectDamageAction(creature, action.value, this));
             } else if (target is IPlayer player) {
                 Log($"Adding DamagePlayerAction - Target: Player {(player.IsPlayer1() ? "1" : "2")}, Damage: {action.value}",
                     LogTag.Creatures | LogTag.Actions | LogTag.Players | LogTag.Combat);

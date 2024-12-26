@@ -1,17 +1,20 @@
-using static DebugLogger;
 using System.Collections.Generic;
 using UnityEngine.Events;
+using System.Linq;
+using static DebugLogger;
+using static Enums;
 
 public class ActionsQueue {
-    private List<IGameAction> actionsList = new List<IGameAction>();
-    private int maxIterationDepth = 3;
+    private readonly List<IGameAction> actionsList = new List<IGameAction>();
+    private readonly HashSet<(string, EffectTrigger)> processedEffects = new HashSet<(string, EffectTrigger)>();
+    private readonly Dictionary<string, IGameAction> activeCreatureActions = new Dictionary<string, IGameAction>();
     private int currentIterationDepth = 0;
-    private Dictionary<string, IGameAction> activeCreatureActions = new Dictionary<string, IGameAction>();
+    private readonly int maxIterationDepth = 3;
     private readonly GameMediator gameMediator;
     private readonly BattlefieldCombatHandler combatHandler;
 
-    public readonly UnityEvent OnActionsQueued = new UnityEvent();
-    public readonly UnityEvent OnActionsResolved = new UnityEvent();
+    public UnityEvent OnActionsQueued { get; } = new UnityEvent();
+    public UnityEvent OnActionsResolved { get; } = new UnityEvent();
 
     public ActionsQueue(GameMediator gameMediator, BattlefieldCombatHandler combatHandler) {
         this.gameMediator = gameMediator;
@@ -45,7 +48,7 @@ public class ActionsQueue {
         }
 
         string activeCreatureId = GetActiveCreatureId(action);
-        
+
         if (activeCreatureId != null) {
             if (activeCreatureActions.ContainsKey(activeCreatureId)) {
                 Log($"Replacing existing action for creature {activeCreatureId}", LogTag.Actions);
@@ -55,7 +58,7 @@ public class ActionsQueue {
         }
 
         InsertActionWithPriority(action);
-        Log($"Added action to queue: {action.GetType()}", LogTag.Actions);
+        Log($"Added action to queue: {action.GetType().Name}", LogTag.Actions);
 
         OnActionsQueued.Invoke();
         gameMediator.NotifyGameStateChanged();
@@ -73,11 +76,28 @@ public class ActionsQueue {
         }
 
         actionsList.Insert(insertIndex, action);
+        Log($"Inserted action {action.GetType().Name} at priority {priority}, position {insertIndex}", LogTag.Actions);
+    }
+
+    public bool IsEffectProcessed(string sourceId, EffectTrigger trigger) {
+        bool isProcessed = processedEffects.Contains((sourceId, trigger));
+        if (isProcessed) {
+            Log($"Effect {trigger} for creature {sourceId} has already been processed", LogTag.Effects);
+        }
+        return isProcessed;
+    }
+
+    public void MarkEffectProcessed(string sourceId, EffectTrigger trigger) {
+        processedEffects.Add((sourceId, trigger));
+        Log($"Marked effect {trigger} for creature {sourceId} as processed", LogTag.Effects);
     }
 
     public void ResolveActions() {
         currentIterationDepth++;
         Log($"Resolving actions. Queue size: {actionsList.Count}", LogTag.Actions);
+
+        processedEffects.Clear();
+        Log("Cleared processed effects for new resolution chain", LogTag.Effects);
 
         while (actionsList.Count > 0) {
             var action = actionsList[0];
@@ -88,18 +108,17 @@ public class ActionsQueue {
                 activeCreatureActions.Remove(activeCreatureId);
             }
 
+            Log($"Executing action: {action.GetType().Name}", LogTag.Actions);
             action.Execute();
         }
 
         currentIterationDepth--;
         activeCreatureActions.Clear();
-
-        if (combatHandler != null) {
-            combatHandler.ResetAttackingCreatures();
-        }
+        combatHandler?.ResetAttackingCreatures();
 
         OnActionsResolved.Invoke();
         gameMediator.NotifyGameStateChanged();
+        Log("Action resolution complete", LogTag.Actions);
     }
 
     public bool HasActiveAction(string creatureId) {
@@ -118,7 +137,9 @@ public class ActionsQueue {
     public void Cleanup() {
         actionsList.Clear();
         activeCreatureActions.Clear();
+        processedEffects.Clear();
         OnActionsQueued.RemoveAllListeners();
         OnActionsResolved.RemoveAllListeners();
+        Log("Actions queue cleaned up", LogTag.Actions);
     }
 }
