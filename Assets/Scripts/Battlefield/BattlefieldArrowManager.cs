@@ -9,7 +9,7 @@ public class BattlefieldArrowManager {
     private readonly GameReferences gameReferences;
     private ArrowIndicator dragArrowIndicator;
     private Dictionary<string, ArrowIndicator> activeArrows = new Dictionary<string, ArrowIndicator>();
-
+    private bool isUpdating = false;
     public BattlefieldArrowManager(Transform parent, GameManager gameManager) {
         this.parentTransform = parent;
         this.gameManager = gameManager;
@@ -41,6 +41,10 @@ public class BattlefieldArrowManager {
     }
 
     public void UpdateArrowsFromActionsQueue() {
+        // Prevent recursive updates
+        if (isUpdating) return;
+
+        isUpdating = true;
         Log("Starting update of arrows from actions queue", LogTag.Actions);
 
         // Clear existing arrows before recreating
@@ -48,14 +52,17 @@ public class BattlefieldArrowManager {
 
         if (gameManager.ActionsQueue == null) {
             LogWarning("ActionsQueue is null!", LogTag.Actions);
+            isUpdating = false;
             return;
         }
 
         var pendingActions = gameManager.ActionsQueue.GetPendingActions();
         Log($"Number of pending actions: {pendingActions.Count}", LogTag.Actions);
 
-        // Process all pending actions instead of just the last one
+        // Process all pending actions
         ProcessQueuedActions(pendingActions);
+
+        isUpdating = false;
     }
 
     private void ClearExistingArrows() {

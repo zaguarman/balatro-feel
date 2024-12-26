@@ -12,6 +12,8 @@ public class BattlefieldUI : CardContainer {
 
     protected GameManager gameManager;
     private BattlefieldArrowManager arrowManager;
+    private bool isResolvingActions = false;
+
 
     #region Initialization
 
@@ -210,7 +212,11 @@ public class BattlefieldUI : CardContainer {
 
         UpdateCreatureCards();
         UpdateSlotOccupancy();
-        arrowManager.UpdateArrowsFromActionsQueue();
+
+        // Only update arrows if not currently resolving actions
+        if (!isResolvingActions) {
+            arrowManager.UpdateArrowsFromActionsQueue();
+        }
     }
 
     private void UpdateCreatureCards() {
@@ -265,6 +271,7 @@ public class BattlefieldUI : CardContainer {
         if (gameMediator != null) {
             gameMediator.AddGameStateChangedListener(UpdateUI);
             gameMediator.AddCreatureDiedListener(OnCreatureDied);
+            gameManager.ActionsQueue.OnActionsResolved.AddListener(OnActionsResolved);
         }
     }
 
@@ -272,7 +279,14 @@ public class BattlefieldUI : CardContainer {
         if (gameMediator != null) {
             gameMediator.RemoveGameStateChangedListener(UpdateUI);
             gameMediator.RemoveCreatureDiedListener(OnCreatureDied);
+            gameManager.ActionsQueue.OnActionsResolved.RemoveListener(OnActionsResolved);
         }
+    }
+
+    private void OnActionsResolved() {
+        isResolvingActions = true;
+        arrowManager.UpdateArrowsFromActionsQueue();
+        isResolvingActions = false;
     }
 
     private void OnCreatureDied(ICreature creature) {
