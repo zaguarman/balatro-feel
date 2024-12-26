@@ -9,7 +9,9 @@ public class BattlefieldArrowManager {
     private readonly GameReferences gameReferences;
     private ArrowIndicator dragArrowIndicator;
     private Dictionary<string, ArrowIndicator> activeArrows = new Dictionary<string, ArrowIndicator>();
+    private Dictionary<string, Vector3> cachedPositions = new Dictionary<string, Vector3>();
     private bool isUpdating = false;
+
     public BattlefieldArrowManager(Transform parent, GameManager gameManager) {
         this.parentTransform = parent;
         this.gameManager = gameManager;
@@ -75,20 +77,14 @@ public class BattlefieldArrowManager {
     }
 
     private void ProcessQueuedActions(IReadOnlyCollection<IGameAction> actions) {
-        // Remove arrows for actions no longer in queue
-        var currentArrowKeys = activeArrows.Keys.ToList();
-        foreach (var key in currentArrowKeys) {
-            if (!actions.Any(a => GetActionKey(a) == key)) {
-                if (activeArrows[key] != null) {
-                    Object.Destroy(activeArrows[key].gameObject);
-                }
-                activeArrows.Remove(key);
-            }
-        }
-
-        // Process each action
         foreach (var action in actions) {
-            ProcessAction(action);
+            string actionKey = GetActionKey(action);
+            if (actionKey == null) continue;
+
+            // Only create new arrow if one doesn't exist for this action
+            if (!activeArrows.ContainsKey(actionKey)) {
+                CreateArrowForAction(action, actionKey);
+            }
         }
     }
 
@@ -102,64 +98,21 @@ public class BattlefieldArrowManager {
         };
     }
 
-    private void ProcessAction(IGameAction action) {
-        string actionKey = GetActionKey(action);
-        if (actionKey == null) return;
-
-        // Only create new arrow if one doesn't exist for this action
-        if (!activeArrows.ContainsKey(actionKey)) {
-            switch (action) {
-                case MarkCombatTargetAction markCombatAction:
-                    CreateArrowForMarkCombatAction(markCombatAction, actionKey);
-                    break;
-                case DamageCreatureAction damageAction:
-                    CreateArrowForDamageAction(damageAction, actionKey);
-                    break;
-                case DamagePlayerAction playerDamageAction:
-                    CreateArrowForPlayerDamageAction(playerDamageAction, actionKey);
-                    break;
-                case MoveCreatureAction moveAction:
-                    CreateArrowForMoveAction(moveAction, actionKey);
-                    break;
-            }
+    private void CreateArrowForAction(IGameAction action, string actionKey) {
+        switch (action) {
+            case MarkCombatTargetAction markCombatAction:
+                CreateArrowForMarkCombatAction(markCombatAction, actionKey);
+                break;
+            case DamageCreatureAction damageAction:
+                CreateArrowForDamageAction(damageAction, actionKey);
+                break;
+            case DamagePlayerAction playerDamageAction:
+                CreateArrowForPlayerDamageAction(playerDamageAction, actionKey);
+                break;
+            case MoveCreatureAction moveAction:
+                CreateArrowForMoveAction(moveAction, actionKey);
+                break;
         }
-    }
-
-    private void CreateArrowForMoveAction(MoveCreatureAction moveAction, string actionKey) {
-        var creature = moveAction.GetCreature();
-        if (creature == null) return;
-
-        var arrow = ArrowIndicator.Create(parentTransform);
-        Vector3 startPos = GetCreaturePosition(creature);
-        Vector3 endPos = GetSlotPosition(moveAction.GetToSlot());
-
-        startPos.z = 0;
-        endPos.z = 0;
-
-        arrow.Show(startPos, endPos);
-        arrow.SetColor(Color.green); // Use green for move actions
-        activeArrows[actionKey] = arrow;
-
-        Log($"Created move arrow for {creature.Name} to slot {moveAction.GetToSlot()}", LogTag.Actions | LogTag.UI);
-    }
-
-    private Vector3 GetSlotPosition(int slotIndex) {
-        var player1Battlefield = gameReferences.GetPlayer1BattlefieldUI();
-        var player2Battlefield = gameReferences.GetPlayer2BattlefieldUI();
-
-        // Try to find the slot in either battlefield
-        Transform slotTransform = null;
-        if (player1Battlefield != null) {
-            var slots = player1Battlefield.GetComponentsInChildren<BattlefieldSlot>();
-            slotTransform = slots.FirstOrDefault(s => s.Index == slotIndex)?.transform;
-        }
-
-        if (slotTransform == null && player2Battlefield != null) {
-            var slots = player2Battlefield.GetComponentsInChildren<BattlefieldSlot>();
-            slotTransform = slots.FirstOrDefault(s => s.Index == slotIndex)?.transform;
-        }
-
-        return slotTransform != null ? slotTransform.position : Vector3.zero;
     }
 
     private void CreateArrowForMarkCombatAction(MarkCombatTargetAction action, string actionKey) {
@@ -176,6 +129,7 @@ public class BattlefieldArrowManager {
         endPos.z = 0;
 
         arrow.Show(startPos, endPos);
+        arrow.SetColor(Color.red); // Combat arrows are red
         activeArrows[actionKey] = arrow;
 
         Log($"Created combat targeting arrow from {attacker.Name} to slot {targetSlot.Index}", LogTag.Actions | LogTag.UI);
@@ -195,19 +149,35 @@ public class BattlefieldArrowManager {
         endPos.z = 0;
 
         arrow.Show(startPos, endPos);
+        arrow.SetColor(Color.red); // Damage arrows are red
         activeArrows[actionKey] = arrow;
 
-        Log($"Created arrow from {attacker.Name} to {target.Name}", LogTag.Actions | LogTag.UI);
+        Log($"Created damage arrow from {attacker.Name} to {target.Name}", LogTag.Actions | LogTag.UI);
+    }
+
+    private void CreateArrowForMoveAction(MoveCreatureAction moveAction, string actionKey) {
+        var creature = moveAction.GetCreature();
+        if (creature == null) return;
+
+        var arrow = ArrowIndicator.Create(parentTransform);
+        Vector3 startPos = GetCreaturePosition(creature);
+        Vector3 endPos = GetSlotPosition(moveAction.GetToSlot());
+
+        startPos.z = 0;
+        endPos.z = 0;
+
+        arrow.Show(startPos, endPos);
+        arrow.SetColor(Color.green); // Move arrows are green
+        activeArrows[actionKey] = arrow;
+
+        Log($"Created move arrow for {creature.Name} to slot {moveAction.GetToSlot()}", LogTag.Actions | LogTag.UI);
     }
 
     private void CreateArrowForPlayerDamageAction(DamagePlayerAction action, string actionKey) {
-        if (action == null) return;
-
         var sourceCreature = FindSourceCreatureForPlayerDamage(action);
-        if (sourceCreature == null) return;
-
         var targetPlayer = action.GetTargetPlayer();
-        if (targetPlayer == null) return;
+
+        if (sourceCreature == null || targetPlayer == null) return;
 
         var arrow = ArrowIndicator.Create(parentTransform);
         Vector3 startPos = GetCreaturePosition(sourceCreature);
@@ -217,27 +187,20 @@ public class BattlefieldArrowManager {
         endPos.z = 0;
 
         arrow.Show(startPos, endPos);
+        arrow.SetColor(Color.red); // Player damage arrows are red
         activeArrows[actionKey] = arrow;
 
-        Log($"Created arrow from {sourceCreature.Name} to Player {(targetPlayer.IsPlayer1() ? "1" : "2")}",
+        Log($"Created player damage arrow from {sourceCreature.Name} to Player {(targetPlayer.IsPlayer1() ? "1" : "2")}",
             LogTag.Actions | LogTag.UI);
-    }
-
-    private ICreature FindSourceCreatureForPlayerDamage(DamagePlayerAction action) {
-        // Look through the battlefield to find the attacking creature
-        var attackingCreature = gameManager.Player1.Battlefield
-            .FirstOrDefault(c => gameManager.CombatHandler.HasCreatureAttacked(c.TargetId));
-
-        if (attackingCreature == null) {
-            attackingCreature = gameManager.Player2.Battlefield
-                .FirstOrDefault(c => gameManager.CombatHandler.HasCreatureAttacked(c.TargetId));
-        }
-
-        return attackingCreature;
     }
 
     private Vector3 GetCreaturePosition(ICreature creature) {
         if (creature == null) return Vector3.zero;
+
+        // Check cache first
+        if (cachedPositions.TryGetValue(creature.TargetId, out Vector3 cachedPos)) {
+            return cachedPos;
+        }
 
         // Try to find the card in Player 1's battlefield
         var player1Battlefield = gameReferences.GetPlayer1BattlefieldUI();
@@ -251,6 +214,8 @@ public class BattlefieldArrowManager {
 
         if (cardController != null) {
             var position = cardController.transform.position;
+            // Cache the position
+            cachedPositions[creature.TargetId] = position;
             Log($"Found position for creature {creature.Name} with ID {creature.TargetId}: {position}", LogTag.Actions);
             return position;
         }
@@ -272,10 +237,39 @@ public class BattlefieldArrowManager {
         return Vector3.zero;
     }
 
+    private Vector3 GetSlotPosition(int slotIndex) {
+        var player1Battlefield = gameReferences.GetPlayer1BattlefieldUI();
+        var player2Battlefield = gameReferences.GetPlayer2BattlefieldUI();
+
+        // Try to find the slot in either battlefield
+        Transform slotTransform = null;
+        if (player1Battlefield != null) {
+            var slots = player1Battlefield.GetComponentsInChildren<BattlefieldSlot>();
+            slotTransform = slots.FirstOrDefault(s => s.Index == slotIndex)?.transform;
+        }
+
+        if (slotTransform == null && player2Battlefield != null) {
+            var slots = player2Battlefield.GetComponentsInChildren<BattlefieldSlot>();
+            slotTransform = slots.FirstOrDefault(s => s.Index == slotIndex)?.transform;
+        }
+
+        return slotTransform != null ? slotTransform.position : Vector3.zero;
+    }
+
+    private ICreature FindSourceCreatureForPlayerDamage(DamagePlayerAction action) {
+        return gameManager.Player1.Battlefield.FirstOrDefault(c => gameManager.CombatHandler.HasCreatureAttacked(c.TargetId)) ??
+               gameManager.Player2.Battlefield.FirstOrDefault(c => gameManager.CombatHandler.HasCreatureAttacked(c.TargetId));
+    }
+
+    public void ClearPositionCache() {
+        cachedPositions.Clear();
+    }
+
     public void Cleanup() {
         ClearExistingArrows();
         if (dragArrowIndicator != null) {
             Object.Destroy(dragArrowIndicator.gameObject);
         }
+        cachedPositions.Clear();
     }
 }

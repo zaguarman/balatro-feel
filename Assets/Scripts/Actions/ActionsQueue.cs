@@ -93,6 +93,12 @@ public class ActionsQueue {
     }
 
     public void ResolveActions() {
+        // Early return if there are no actions to process
+        if (actionsList.Count == 0) {
+            Log("No actions to resolve", LogTag.Actions);
+            return;
+        }
+
         currentIterationDepth++;
         Log($"Resolving actions. Queue size: {actionsList.Count}", LogTag.Actions);
 

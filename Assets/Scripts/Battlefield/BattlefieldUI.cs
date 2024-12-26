@@ -14,6 +14,9 @@ public class BattlefieldUI : CardContainer {
     private BattlefieldArrowManager arrowManager;
     private bool isResolvingActions = false;
 
+    private bool isLayoutDirty = false;
+    private float arrowUpdateCooldown = 0.1f; // 100ms cooldown
+    private float lastArrowUpdate = 0f;
 
     #region Initialization
 
@@ -67,7 +70,8 @@ public class BattlefieldUI : CardContainer {
             HandleCardFromBattlefield(card, targetSlot);
         }
 
-        arrowManager.UpdateArrowsFromActionsQueue();
+        // Update arrows immediately after action is queued
+        arrowManager?.UpdateArrowsFromActionsQueue();
         gameMediator?.NotifyGameStateChanged();
     }
 
@@ -213,10 +217,8 @@ public class BattlefieldUI : CardContainer {
         UpdateCreatureCards();
         UpdateSlotOccupancy();
 
-        // Only update arrows if not currently resolving actions
-        if (!isResolvingActions) {
-            arrowManager.UpdateArrowsFromActionsQueue();
-        }
+        // Update arrows when UI is explicitly updated
+        arrowManager?.UpdateArrowsFromActionsQueue();
     }
 
     private void UpdateCreatureCards() {
@@ -321,6 +323,9 @@ public class BattlefieldUI : CardContainer {
             arrowManager.ShowDragArrow(card.transform.position);
         }
         card.transform.SetAsLastSibling();
+
+        // Clear position cache when starting drag
+        arrowManager?.ClearPositionCache();
     }
 
     public void OnCardDrag(PointerEventData eventData) {
