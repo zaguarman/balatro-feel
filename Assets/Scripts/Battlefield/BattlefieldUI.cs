@@ -323,9 +323,6 @@ public class BattlefieldUI : CardContainer {
             arrowManager.ShowDragArrow(card.transform.position);
         }
         card.transform.SetAsLastSibling();
-
-        // Clear position cache when starting drag
-        arrowManager?.ClearPositionCache();
     }
 
     public void OnCardDrag(PointerEventData eventData) {
