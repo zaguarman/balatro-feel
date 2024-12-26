@@ -86,10 +86,12 @@ public class DamageCreatureAction : IGameAction {
 
         // Apply weather modifiers
         if (modifier != 0f) {
-            modifiedDamage = Mathf.Max(0, modifiedDamage + Mathf.RoundToInt(modifier)); // Add or subtract flat amount
+            modifiedDamage = Mathf.Max(0, modifiedDamage + Mathf.RoundToInt(modifier));
+            Log($"Weather modified damage from {damage} to {modifiedDamage} (modifier: {modifier})",
+                LogTag.Actions | LogTag.Combat | LogTag.Effects);
         }
 
-        Log($"Executing DamageAction - Target: {target.Name}, Original Damage: {damage}, Modified Damage: {modifiedDamage}, Weather Modifier: {modifier}",
+        Log($"Executing DamageAction - Target: {target.Name}, Original Damage: {damage}, Modified Damage: {modifiedDamage}, Weather Modifier: {modifier}, Attacker: {attacker?.Name}",
             LogTag.Actions | LogTag.Creatures | LogTag.Combat);
 
         if (target is Creature creatureTarget) {
@@ -120,13 +122,24 @@ public class DirectDamageAction : IGameAction {
     public void Execute() {
         if (target == null) return;
 
-        Log($"Executing DirectDamageAction - Source: {source?.Name}, Target: {target.Name}, Damage: {damage}",
+        var weatherSystem = GameManager.Instance?.WeatherSystem;
+        float modifier = weatherSystem?.GetDamageModifier(true) ?? 0f; // true for direct damage
+        int modifiedDamage = damage;
+
+        // Apply weather modifiers
+        if (modifier != 0f) {
+            modifiedDamage = Mathf.Max(0, modifiedDamage + Mathf.RoundToInt(modifier));
+            Log($"Weather modified direct damage from {damage} to {modifiedDamage} (modifier: {modifier})",
+                LogTag.Actions | LogTag.Combat | LogTag.Effects);
+        }
+
+        Log($"Executing DirectDamageAction - Source: {source?.Name}, Target: {target.Name}, Original Damage: {damage}, Modified Damage: {modifiedDamage}, Weather Modifier: {modifier}",
             LogTag.Actions | LogTag.Creatures | LogTag.Combat);
 
         if (target is Creature creatureTarget) {
-            creatureTarget.TakeDamage(damage, source);
+            creatureTarget.TakeDamage(modifiedDamage, source);
         } else {
-            target.TakeDamage(damage);
+            target.TakeDamage(modifiedDamage);
         }
     }
 
@@ -134,7 +147,6 @@ public class DirectDamageAction : IGameAction {
     public ICreature GetSource() => source;
     public int GetDamage() => damage;
 }
-
 public class SwapCreaturesAction : IGameAction {
     private readonly ICreature creature1;
     private readonly ICreature creature2;
