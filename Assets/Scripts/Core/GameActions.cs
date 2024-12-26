@@ -1,5 +1,6 @@
 using static Enums;
 using static DebugLogger;
+using UnityEngine;
 
 public interface IGameAction { void Execute(); }
 
@@ -65,25 +66,36 @@ public class DamageCreatureAction : IGameAction {
     private readonly ICreature target;
     private readonly int damage;
     private readonly ICreature attacker;
+    private readonly bool isDirectDamage;
 
-    public DamageCreatureAction(ICreature target, int damage, ICreature attacker = null) {
+    public DamageCreatureAction(ICreature target, int damage, ICreature attacker = null, bool isDirectDamage = false) {
         this.target = target;
         this.damage = damage;
         this.attacker = attacker;
-        Log($"Created DamageAction - Target: {target?.Name}, Damage: {damage}, Attacker: {attacker?.Name}",
+        this.isDirectDamage = isDirectDamage;
+        Log($"Created DamageAction - Target: {target?.Name}, Damage: {damage}, Attacker: {attacker?.Name}, DirectDamage: {isDirectDamage}",
             LogTag.Actions | LogTag.Creatures | LogTag.Combat);
     }
 
     public void Execute() {
         if (target == null) return;
 
-        Log($"Executing DamageAction - Target: {target.Name}, Damage: {damage}, Attacker: {attacker?.Name}",
+        var weatherSystem = GameManager.Instance?.WeatherSystem;
+        float modifier = weatherSystem?.GetDamageModifier(isDirectDamage) ?? 0f;
+        int modifiedDamage = damage;
+
+        // Apply weather modifiers
+        if (modifier != 0f) {
+            modifiedDamage = Mathf.Max(0, modifiedDamage + Mathf.RoundToInt(modifier)); // Add or subtract flat amount
+        }
+
+        Log($"Executing DamageAction - Target: {target.Name}, Original Damage: {damage}, Modified Damage: {modifiedDamage}, Weather Modifier: {modifier}",
             LogTag.Actions | LogTag.Creatures | LogTag.Combat);
 
         if (target is Creature creatureTarget) {
-            creatureTarget.TakeDamage(damage, attacker);
+            creatureTarget.TakeDamage(modifiedDamage, attacker);
         } else {
-            target.TakeDamage(damage);
+            target.TakeDamage(modifiedDamage);
         }
     }
 

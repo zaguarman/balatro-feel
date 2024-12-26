@@ -1,6 +1,6 @@
-using System.Linq;
-using UnityEngine;
 using static DebugLogger;
+using UnityEngine;
+using System.Linq;
 
 public class GameManager : InitializableComponent {
     private static GameManager instance;
@@ -18,6 +18,7 @@ public class GameManager : InitializableComponent {
     public IPlayer Player1 { get; private set; }
     public IPlayer Player2 { get; private set; }
     public ActionsQueue ActionsQueue { get; private set; }
+    public IWeatherSystem WeatherSystem { get; private set; }
     private BattlefieldCombatHandler combatHandler;
 
     private GameMediator gameMediator;
@@ -27,6 +28,8 @@ public class GameManager : InitializableComponent {
 
     // Public accessor for the combat handler
     public BattlefieldCombatHandler CombatHandler => combatHandler;
+
+    private bool weatherSystemInitialized = false;
 
     protected override void Awake() {
         base.Awake();
@@ -51,15 +54,36 @@ public class GameManager : InitializableComponent {
         gameReferences = GameReferences.Instance;
         cardDealingService = new CardDealingService(gameMediator);
 
-        // Initialize combat handler first
-        combatHandler = new BattlefieldCombatHandler(this);
-
-        // Then initialize actions queue with combat handler
-        ActionsQueue = new ActionsQueue(gameMediator, combatHandler);
-
+        // Initialize systems in the correct order
+        InitializeWeatherSystem();
+        InitializeCombatSystem();
+        InitializeActionsQueue();
         InitializeGameSystem();
 
         base.Initialize();
+
+        // After everything is initialized, set initial weather
+        if (WeatherSystem != null) {
+            WeatherSystem.SetWeather(WeatherType.Rainy);
+        }
+    }
+
+    private void InitializeWeatherSystem() {
+        if (!weatherSystemInitialized) {
+            WeatherSystem = new WeatherSystem(gameMediator);
+            weatherSystemInitialized = true;
+            Log("Weather system initialized", LogTag.Initialization);
+        }
+    }
+
+    private void InitializeCombatSystem() {
+        combatHandler = new BattlefieldCombatHandler(this);
+        Log("Combat system initialized", LogTag.Initialization);
+    }
+
+    private void InitializeActionsQueue() {
+        ActionsQueue = new ActionsQueue(gameMediator, combatHandler);
+        Log("Actions queue initialized", LogTag.Initialization);
     }
 
     private void InitializeGameSystem() {

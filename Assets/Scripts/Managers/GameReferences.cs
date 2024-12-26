@@ -1,6 +1,7 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using static DebugLogger;
 
 public class GameReferences : Singleton<GameReferences> {
     [System.Serializable]
@@ -21,19 +22,19 @@ public class GameReferences : Singleton<GameReferences> {
         public bool ValidateReferences(string playerName) {
             bool isValid = true;
             if (playerUI == null) {
-                Debug.LogError($"{playerName} PlayerUI reference missing!");
+                Log($"{playerName} PlayerUI reference missing!", LogTag.Initialization);
                 isValid = false;
             }
             if (healthText == null) {
-                Debug.LogError($"{playerName} HealthText reference missing!");
+                Log($"{playerName} HealthText reference missing!", LogTag.Initialization);
                 isValid = false;
             }
             if (handUI == null) {
-                Debug.LogError($"{playerName} HandUI reference missing!");
+                Log($"{playerName} HandUI reference missing!", LogTag.Initialization);
                 isValid = false;
             }
             if (battlefieldUI == null) {
-                Debug.LogError($"{playerName} BattlefieldUI reference missing!");
+                Log($"{playerName} BattlefieldUI reference missing!", LogTag.Initialization);
                 isValid = false;
             }
             return isValid;
@@ -42,6 +43,10 @@ public class GameReferences : Singleton<GameReferences> {
 
     [Header("Game Control")]
     [SerializeField] private Button resolveActionsButton;
+
+    [Header("Weather Control")]
+    [SerializeField] private Button weatherCycleButton;
+    [SerializeField] private TextMeshProUGUI weatherText;
 
     [Header("Player References")]
     [SerializeField] private PlayerUIReferences player1References;
@@ -55,6 +60,7 @@ public class GameReferences : Singleton<GameReferences> {
     [SerializeField] private Color player2CardColor = new Color(1f, 0.8f, 0.8f);
 
     private bool referencesValidated = false;
+    private bool debugValidation = true;  // Added for debug
 
     public override void Initialize() {
         if (IsInitialized) return;
@@ -62,18 +68,44 @@ public class GameReferences : Singleton<GameReferences> {
         base.Initialize();
     }
 
+    private void OnEnable() {
+        ValidateReferences();
+    }
+
     private void ValidateReferences() {
         if (referencesValidated) return;
+
+        if (debugValidation) {
+            Log("Starting references validation", LogTag.Initialization);
+            Log($"Weather button: {(weatherCycleButton != null ? "Found" : "Missing")}", LogTag.Initialization);
+            Log($"Weather text: {(weatherText != null ? "Found" : "Missing")}", LogTag.Initialization);
+            if (weatherCycleButton != null) {
+                Log($"Weather button active: {weatherCycleButton.gameObject.activeInHierarchy}", LogTag.Initialization);
+            }
+            if (weatherText != null) {
+                Log($"Weather text active: {weatherText.gameObject.activeInHierarchy}", LogTag.Initialization);
+            }
+        }
 
         bool isValid = true;
 
         if (resolveActionsButton == null) {
-            Debug.LogError("ResolveActionsButton reference missing!");
+            Log("ResolveActionsButton reference missing!", LogTag.Initialization);
+            isValid = false;
+        }
+
+        if (weatherCycleButton == null) {
+            Log("WeatherCycleButton reference missing!", LogTag.Initialization);
+            isValid = false;
+        }
+
+        if (weatherText == null) {
+            Log("WeatherText reference missing!", LogTag.Initialization);
             isValid = false;
         }
 
         if (cardPrefab == null) {
-            Debug.LogError("CardPrefab reference missing!");
+            Log("CardPrefab reference missing!", LogTag.Initialization);
             isValid = false;
         }
 
@@ -81,6 +113,10 @@ public class GameReferences : Singleton<GameReferences> {
         isValid &= player2References.ValidateReferences("Player 2");
 
         referencesValidated = isValid;
+
+        if (debugValidation) {
+            Log($"References validation complete. Valid: {isValid}", LogTag.Initialization);
+        }
     }
 
     // Immutable references getters
@@ -94,6 +130,11 @@ public class GameReferences : Singleton<GameReferences> {
     public Button GetResolveActionsButton() => resolveActionsButton;
     public Color GetPlayer1CardColor() => player1CardColor;
     public Color GetPlayer2CardColor() => player2CardColor;
+    public Button GetWeatherCycleButton() => weatherCycleButton;
+    public TextMeshProUGUI GetWeatherText() => weatherText;
 
-    public bool AreReferencesValid() => referencesValidated;
+    public bool AreReferencesValid() {
+        ValidateReferences();  // Force revalidation each time
+        return referencesValidated;
+    }
 }
