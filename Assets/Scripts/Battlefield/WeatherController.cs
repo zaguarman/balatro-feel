@@ -11,7 +11,6 @@ public class WeatherController : MonoBehaviour {
     private bool isInitialized = false;
 
     private void Awake() {
-        Log("WeatherController Awake", LogTag.Initialization);
         InitializeReferences();
     }
 
@@ -20,7 +19,6 @@ public class WeatherController : MonoBehaviour {
         if (isInitialized && gameManager?.WeatherSystem != null) {
             gameManager.WeatherSystem.SetWeather(WeatherType.Rainy);
             UpdateWeatherText(WeatherType.Rainy);  
-            Log("Set initial weather to Rainy", LogTag.UI | LogTag.Effects);
         }
     }
 

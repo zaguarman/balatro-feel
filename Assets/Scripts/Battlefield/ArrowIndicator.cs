@@ -13,28 +13,26 @@ public class ArrowIndicator : MonoBehaviour {
     private float arrowWidth = 0.2f;
     private float headLength = 0.5f;
     private float headAngle = 25f;
-    private Color currentColor = Color.red; // Default to red for visibility
+    private Color currentColor = Color.red;
 
     private void Awake() {
         SetupArrow();
     }
 
     private void SetupArrow() {
-        // Ensure the arrow is part of the UI canvas
-        Canvas parentCanvas = GetComponentInParent<Canvas>();
-        if (parentCanvas == null) {
-            LogWarning("ArrowIndicator must be a child of a Canvas", LogTag.UI);
-        }
-
         // Setup main line
         mainLine = gameObject.AddComponent<LineRenderer>();
         mainLine.positionCount = 2;
         mainLine.startWidth = arrowWidth;
         mainLine.endWidth = arrowWidth;
         mainLine.material = new Material(Shader.Find("Sprites/Default"));
-        mainLine.material.color = currentColor;
+        mainLine.sortingOrder = 5000; // Ensure it renders above other UI elements
+        mainLine.receiveShadows = false;
+        mainLine.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        mainLine.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
+        mainLine.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
 
-        // Create separate GameObjects for the arrowheads
+        // Create arrow heads
         headObject1 = new GameObject("ArrowHead1");
         headObject2 = new GameObject("ArrowHead2");
         headObject1.transform.SetParent(transform);
@@ -46,38 +44,37 @@ public class ArrowIndicator : MonoBehaviour {
         SetupHeadLine(headLine1);
         SetupHeadLine(headLine2);
 
-        // Set sorting order to appear above cards
-        mainLine.sortingOrder = 100;
-        headLine1.sortingOrder = 100;
-        headLine2.sortingOrder = 100;
-
-        // Ensure the arrow starts hidden
+        // Hide initially
         Hide();
+
+        Log("Arrow indicator setup complete", LogTag.UI);
     }
 
     private void SetupHeadLine(LineRenderer line) {
         line.positionCount = 2;
-        line.startWidth = arrowWidth * 1.2f; // Slightly wider at base
-        line.endWidth = 0f; // Sharp point at tip
+        line.startWidth = arrowWidth * 1.2f;
+        line.endWidth = 0f;
         line.material = new Material(Shader.Find("Sprites/Default"));
-        line.material.color = currentColor;
+        line.sortingOrder = 5000;
+        line.receiveShadows = false;
+        line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        line.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
+        line.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
     }
 
     public static ArrowIndicator Create(Transform parent = null) {
-        GameObject arrowObj = new GameObject("AttackArrow");
+        GameObject arrowObj = new GameObject("ArrowIndicator");
         if (parent != null) {
             arrowObj.transform.SetParent(parent, false);
             arrowObj.transform.localPosition = Vector3.zero;
         }
-        return arrowObj.AddComponent<ArrowIndicator>();
+        var indicator = arrowObj.AddComponent<ArrowIndicator>();
+        Log("Created new arrow indicator", LogTag.UI);
+        return indicator;
     }
 
     public void SetColor(Color newColor) {
         currentColor = newColor;
-        UpdateColors();
-    }
-
-    private void UpdateColors() {
         if (mainLine != null && mainLine.material != null) {
             mainLine.material.color = currentColor;
         }
@@ -95,21 +92,25 @@ public class ArrowIndicator : MonoBehaviour {
 
         Log($"Showing arrow from {start} to {end}", LogTag.UI);
 
-        // Ensure lines are not null
         if (mainLine == null || headLine1 == null || headLine2 == null) {
-            LogWarning("Arrow lines are null when trying to show", LogTag.UI);
+            LogWarning("Arrow components missing, recreating...", LogTag.UI);
             SetupArrow();
         }
 
+        // Ensure Z position is consistent
+        startPosition.z = 0;
+        endPosition.z = 0;
+
         // Update main line
-        mainLine.SetPosition(0, start);
-        mainLine.SetPosition(1, end);
         mainLine.enabled = true;
+        mainLine.SetPosition(0, startPosition);
+        mainLine.SetPosition(1, endPosition);
+        mainLine.material.color = currentColor;
 
         UpdateArrowHead();
 
         // Ensure visibility
-        mainLine.gameObject.SetActive(true);
+        gameObject.SetActive(true);
         headObject1.SetActive(true);
         headObject2.SetActive(true);
 
@@ -122,108 +123,117 @@ public class ArrowIndicator : MonoBehaviour {
         Vector3 direction = (endPosition - startPosition).normalized;
         Vector3 right = Quaternion.Euler(0, 0, 90) * direction;
 
-        // Calculate points for the arrowhead
         Vector3 arrowTip = endPosition;
         Vector3 arrowBase = arrowTip - (direction * headLength);
         float baseWidth = headLength * Mathf.Tan(headAngle * Mathf.Deg2Rad);
         Vector3 arrowBaseLeft = arrowBase + (right * baseWidth);
         Vector3 arrowBaseRight = arrowBase - (right * baseWidth);
 
-        // Set the positions for the arrowhead lines
         headLine1.SetPosition(0, arrowBaseLeft);
         headLine1.SetPosition(1, arrowTip);
         headLine1.enabled = true;
+        headLine1.material.color = currentColor;
 
         headLine2.SetPosition(0, arrowBaseRight);
         headLine2.SetPosition(1, arrowTip);
         headLine2.enabled = true;
+        headLine2.material.color = currentColor;
 
-        // Update main line to connect with arrowhead base
         mainLine.SetPosition(1, arrowBase);
     }
 
     public void ShowSwapAction(Vector3 start1, Vector3 start2) {
-        // Create a swap-style arrow between two positions
         startPosition = start1;
         endPosition = start2;
 
-        Log($"Showing swap arrow from {start1} to {start2}", LogTag.UI);
+        Log($"Showing swap arrow between {start1} and {start2}", LogTag.UI);
 
-        // Ensure lines are not null
         if (mainLine == null || headLine1 == null || headLine2 == null) {
-            LogWarning("Arrow lines are null when trying to show swap", LogTag.UI);
+            LogWarning("Arrow components missing for swap, recreating...", LogTag.UI);
             SetupArrow();
         }
 
-        // Use a distinct yellow color for swap actions
+        // Ensure Z position is consistent
+        startPosition.z = 0;
+        endPosition.z = 0;
+
+        // Use yellow for swap actions
         SetColor(Color.yellow);
 
-        // Create a curved/wavy arrow to indicate swap
-        Vector3 midPoint1 = Vector3.Lerp(start1, start2, 0.4f);
-        Vector3 midPoint2 = Vector3.Lerp(start1, start2, 0.6f);
+        // Create curved path
+        Vector3 midPoint = Vector3.Lerp(startPosition, endPosition, 0.5f);
+        midPoint.y += 1.5f; // Add arc height
 
-        midPoint1.y += 50f; // Add some arc to the arrow
-        midPoint2.y += 50f;
-
-        // Main line will be a curved line
+        // Update line positions for curved path
         mainLine.positionCount = 3;
-        mainLine.SetPosition(0, start1);
-        mainLine.SetPosition(1, midPoint1);
-        mainLine.SetPosition(2, start2);
+        mainLine.SetPosition(0, startPosition);
+        mainLine.SetPosition(1, midPoint);
+        mainLine.SetPosition(2, endPosition);
+        mainLine.enabled = true;
 
-        // Arrowheads will point from start to end
-        UpdateSwapArrowHead(start1, start2);
+        // Update arrow heads
+        float halfLength = headLength * 0.5f;
+        Vector3 dir1 = (midPoint - startPosition).normalized;
+        Vector3 dir2 = (endPosition - midPoint).normalized;
+
+        // First arrow head
+        Vector3 head1Pos = Vector3.Lerp(startPosition, midPoint, 0.3f);
+        Vector3 head1Dir = (midPoint - head1Pos).normalized;
+        SetupArrowHead(headLine1, head1Pos, head1Dir);
+
+        // Second arrow head
+        Vector3 head2Pos = Vector3.Lerp(midPoint, endPosition, 0.7f);
+        Vector3 head2Dir = (endPosition - head2Pos).normalized;
+        SetupArrowHead(headLine2, head2Pos, head2Dir);
 
         // Ensure visibility
-        mainLine.gameObject.SetActive(true);
+        gameObject.SetActive(true);
         headObject1.SetActive(true);
         headObject2.SetActive(true);
 
         isVisible = true;
     }
 
-    private void UpdateSwapArrowHead(Vector3 start, Vector3 end) {
-        if (headLine1 == null || headLine2 == null) return;
-
-        Vector3 direction = (end - start).normalized;
+    private void SetupArrowHead(LineRenderer headLine, Vector3 position, Vector3 direction) {
         Vector3 right = Quaternion.Euler(0, 0, 90) * direction;
+        Vector3 tip = position + direction * headLength;
+        Vector3 baseLeft = position + right * (headLength * Mathf.Tan(headAngle * Mathf.Deg2Rad));
+        Vector3 baseRight = position - right * (headLength * Mathf.Tan(headAngle * Mathf.Deg2Rad));
 
-        // Calculate points for the arrowhead
-        Vector3 arrowTip1 = end;
-        Vector3 arrowBase1 = arrowTip1 - (direction * headLength);
-        float baseWidth = headLength * Mathf.Tan(headAngle * Mathf.Deg2Rad);
-        Vector3 arrowBaseLeft1 = arrowBase1 + (right * baseWidth);
-        Vector3 arrowBaseRight1 = arrowBase1 - (right * baseWidth);
-
-        // Set the positions for the first arrowhead lines
-        headLine1.SetPosition(0, arrowBaseLeft1);
-        headLine1.SetPosition(1, arrowTip1);
-        headLine1.enabled = true;
-
-        headLine2.SetPosition(0, arrowBaseRight1);
-        headLine2.SetPosition(1, arrowTip1);
-        headLine2.enabled = true;
+        headLine.SetPosition(0, baseLeft);
+        headLine.SetPosition(1, tip);
+        headLine.enabled = true;
+        headLine.material.color = currentColor;
     }
 
     public void Hide() {
-        if (mainLine != null) mainLine.enabled = false;
-        if (headLine1 != null) headLine1.enabled = false;
-        if (headLine2 != null) headLine2.enabled = false;
+        isVisible = false;
 
-        // Also deactivate GameObjects to ensure they're not visible
-        if (mainLine != null) mainLine.gameObject.SetActive(false);
+        if (mainLine != null) {
+            mainLine.enabled = false;
+        }
+        if (headLine1 != null) {
+            headLine1.enabled = false;
+        }
+        if (headLine2 != null) {
+            headLine2.enabled = false;
+        }
+
+        gameObject.SetActive(false);
         if (headObject1 != null) headObject1.SetActive(false);
         if (headObject2 != null) headObject2.SetActive(false);
 
-        isVisible = false;
+        Log("Arrow hidden", LogTag.UI);
     }
 
     public void UpdateEndPosition(Vector3 newEnd) {
-        if (isVisible) {
-            endPosition = newEnd;
-            if (mainLine != null) {
-                mainLine.SetPosition(1, newEnd);
-            }
+        if (!isVisible) return;
+
+        endPosition = newEnd;
+        endPosition.z = 0;
+
+        if (mainLine != null) {
+            mainLine.SetPosition(1, endPosition);
             UpdateArrowHead();
         }
     }
@@ -233,12 +243,20 @@ public class ArrowIndicator : MonoBehaviour {
     }
 
     private void OnDestroy() {
-        // Ensure clean destruction of arrow components
-        if (headObject1 != null) Destroy(headObject1);
-        if (headObject2 != null) Destroy(headObject2);
-
-        if (mainLine != null && mainLine.material != null) Destroy(mainLine.material);
-        if (headLine1 != null && headLine1.material != null) Destroy(headLine1.material);
-        if (headLine2 != null && headLine2.material != null) Destroy(headLine2.material);
+        if (mainLine != null && mainLine.material != null) {
+            Destroy(mainLine.material);
+        }
+        if (headLine1 != null && headLine1.material != null) {
+            Destroy(headLine1.material);
+        }
+        if (headLine2 != null && headLine2.material != null) {
+            Destroy(headLine2.material);
+        }
+        if (headObject1 != null) {
+            Destroy(headObject1);
+        }
+        if (headObject2 != null) {
+            Destroy(headObject2);
+        }
     }
 }

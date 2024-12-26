@@ -34,10 +34,6 @@ public static class CardFactory {
                 break;
         }
 
-        if (card != null) {
-            Log($"Successfully created {card.Name} with {card.Effects.Count} effects", LogTag.Cards | LogTag.Initialization);
-        }
-
         return card;
     }
 
@@ -79,7 +75,6 @@ public static class CardFactory {
         var newData = ScriptableObject.CreateInstance<CreatureData>();
         setup(newData);
         cardDataCache[name] = newData;
-        Log($"Created new card data for {name}", LogTag.Cards | LogTag.Initialization);
         return newData;
     }
 

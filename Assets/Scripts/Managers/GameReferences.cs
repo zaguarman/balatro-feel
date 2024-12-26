@@ -60,7 +60,6 @@ public class GameReferences : Singleton<GameReferences> {
     [SerializeField] private Color player2CardColor = new Color(1f, 0.8f, 0.8f);
 
     private bool referencesValidated = false;
-    private bool debugValidation = true;  // Added for debug
 
     public override void Initialize() {
         if (IsInitialized) return;
@@ -74,18 +73,6 @@ public class GameReferences : Singleton<GameReferences> {
 
     private void ValidateReferences() {
         if (referencesValidated) return;
-
-        if (debugValidation) {
-            Log("Starting references validation", LogTag.Initialization);
-            Log($"Weather button: {(weatherCycleButton != null ? "Found" : "Missing")}", LogTag.Initialization);
-            Log($"Weather text: {(weatherText != null ? "Found" : "Missing")}", LogTag.Initialization);
-            if (weatherCycleButton != null) {
-                Log($"Weather button active: {weatherCycleButton.gameObject.activeInHierarchy}", LogTag.Initialization);
-            }
-            if (weatherText != null) {
-                Log($"Weather text active: {weatherText.gameObject.activeInHierarchy}", LogTag.Initialization);
-            }
-        }
 
         bool isValid = true;
 
@@ -113,10 +100,6 @@ public class GameReferences : Singleton<GameReferences> {
         isValid &= player2References.ValidateReferences("Player 2");
 
         referencesValidated = isValid;
-
-        if (debugValidation) {
-            Log($"References validation complete. Valid: {isValid}", LogTag.Initialization);
-        }
     }
 
     // Immutable references getters
