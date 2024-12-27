@@ -9,7 +9,6 @@ public class BattlefieldArrowManager {
     private readonly GameReferences gameReferences;
     private ArrowIndicator dragArrowIndicator;
     private Dictionary<string, ArrowIndicator> activeArrows = new Dictionary<string, ArrowIndicator>();
-    private Dictionary<string, Vector3> cachedPositions = new Dictionary<string, Vector3>();
     private bool isUpdating = false;
 
     public BattlefieldArrowManager(Transform parent, GameManager gameManager) {
@@ -197,11 +196,6 @@ public class BattlefieldArrowManager {
     private Vector3 GetCreaturePosition(ICreature creature) {
         if (creature == null) return Vector3.zero;
 
-        // Check cache first
-        if (cachedPositions.TryGetValue(creature.TargetId, out Vector3 cachedPos)) {
-            return cachedPos;
-        }
-
         // Try to find the card in Player 1's battlefield
         var player1Battlefield = gameReferences.GetPlayer1BattlefieldUI();
         var cardController = player1Battlefield?.GetCardControllerByCreatureId(creature.TargetId);
@@ -214,8 +208,6 @@ public class BattlefieldArrowManager {
 
         if (cardController != null) {
             var position = cardController.transform.position;
-            // Cache the position
-            cachedPositions[creature.TargetId] = position;
             Log($"Found position for creature {creature.Name} with ID {creature.TargetId}: {position}", LogTag.Actions);
             return position;
         }
@@ -261,15 +253,10 @@ public class BattlefieldArrowManager {
                gameManager.Player2.Battlefield.FirstOrDefault(c => gameManager.CombatHandler.HasCreatureAttacked(c.TargetId));
     }
 
-    public void ClearPositionCache() {
-        cachedPositions.Clear();
-    }
-
     public void Cleanup() {
         ClearExistingArrows();
         if (dragArrowIndicator != null) {
             Object.Destroy(dragArrowIndicator.gameObject);
         }
-        cachedPositions.Clear();
     }
 }
