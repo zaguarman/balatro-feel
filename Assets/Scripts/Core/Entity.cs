@@ -12,7 +12,7 @@ public abstract class Entity : IEntity {
         Name = name;
     }
 
-    public virtual bool IsValidTarget(IPlayer controller) {
+    public virtual bool IsValidTarget() {
         return true;
     }
 }

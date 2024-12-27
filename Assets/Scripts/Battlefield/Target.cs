@@ -4,7 +4,7 @@ using static Enums;
 
 public interface ITarget {
     string TargetId { get; }
-    bool IsValidTarget(IPlayer controller);
+    bool IsValidTarget();
 }
 
 public static class TargetingSystem {
@@ -19,14 +19,14 @@ public static class TargetingSystem {
                 validTargets.Add(controller);
                 break;
             case TargetType.AllCreatures:
-                validTargets.AddRange(controller.Battlefield.Where(c => c.IsValidTarget(controller)));
-                validTargets.AddRange(controller.Opponent.Battlefield.Where(c => c.IsValidTarget(controller)));
+                validTargets.AddRange(controller.Battlefield.Where(s => s.IsValidTarget()).Cast<ITarget>());
+                validTargets.AddRange(controller.Opponent.Battlefield.Where(s => s.IsValidTarget()).Cast<ITarget>());
                 break;
             case TargetType.FriendlyCreatures:
-                validTargets.AddRange(controller.Battlefield.Where(c => c.IsValidTarget(controller)));
+                validTargets.AddRange(controller.Battlefield.Where(s => s.IsValidTarget()).Cast<ITarget>());
                 break;
             case TargetType.EnemyCreatures:
-                validTargets.AddRange(controller.Opponent.Battlefield.Where(c => c.IsValidTarget(controller)));
+                validTargets.AddRange(controller.Opponent.Battlefield.Where(s => s.IsValidTarget()).Cast<ITarget>());
                 break;
         }
 

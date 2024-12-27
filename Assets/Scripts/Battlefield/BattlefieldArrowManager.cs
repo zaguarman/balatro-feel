@@ -131,7 +131,7 @@ public class BattlefieldArrowManager {
         arrow.SetColor(Color.red); // Combat arrows are red
         activeArrows[actionKey] = arrow;
 
-        Log($"Created combat targeting arrow from {attacker.Name} to slot {targetSlot.Index}", LogTag.Actions | LogTag.UI);
+        Log($"Created combat targeting arrow from {attacker.Name} to slot {targetSlot.TargetId}", LogTag.Actions | LogTag.UI);
     }
 
     private void CreateArrowForDamageAction(DamageCreatureAction damageAction, string actionKey) {
@@ -159,7 +159,7 @@ public class BattlefieldArrowManager {
         if (creature == null) return;
 
         var arrow = ArrowIndicator.Create(parentTransform);
-        Vector3 startPos = GetCreaturePosition(creature);
+        Vector3 startPos = GetSlotPosition(moveAction.GetFromSlot());
         Vector3 endPos = GetSlotPosition(moveAction.GetToSlot());
 
         startPos.z = 0;
@@ -229,7 +229,7 @@ public class BattlefieldArrowManager {
         return Vector3.zero;
     }
 
-    private Vector3 GetSlotPosition(int slotIndex) {
+    private Vector3 GetSlotPosition(ITarget slotIndex) {
         var player1Battlefield = gameReferences.GetPlayer1BattlefieldUI();
         var player2Battlefield = gameReferences.GetPlayer2BattlefieldUI();
 
@@ -237,20 +237,20 @@ public class BattlefieldArrowManager {
         Transform slotTransform = null;
         if (player1Battlefield != null) {
             var slots = player1Battlefield.GetComponentsInChildren<BattlefieldSlot>();
-            slotTransform = slots.FirstOrDefault(s => s.Index == slotIndex)?.transform;
+            slotTransform = slots.FirstOrDefault(s => s.TargetId == slotIndex.TargetId).transform;
         }
 
         if (slotTransform == null && player2Battlefield != null) {
             var slots = player2Battlefield.GetComponentsInChildren<BattlefieldSlot>();
-            slotTransform = slots.FirstOrDefault(s => s.Index == slotIndex)?.transform;
+            slotTransform = slots.FirstOrDefault(s => s.TargetId == slotIndex.TargetId).transform;
         }
 
         return slotTransform != null ? slotTransform.position : Vector3.zero;
     }
 
     private ICreature FindSourceCreatureForPlayerDamage(DamagePlayerAction action) {
-        return gameManager.Player1.Battlefield.FirstOrDefault(c => gameManager.CombatHandler.HasCreatureAttacked(c.TargetId)) ??
-               gameManager.Player2.Battlefield.FirstOrDefault(c => gameManager.CombatHandler.HasCreatureAttacked(c.TargetId));
+        return gameManager.Player1.Battlefield.FirstOrDefault(c => gameManager.CombatHandler.HasCreatureAttacked(c.OccupyingCreature))?.OccupyingCreature ??
+               gameManager.Player2.Battlefield.FirstOrDefault(c => gameManager.CombatHandler.HasCreatureAttacked(c.OccupyingCreature))?.OccupyingCreature;
     }
 
     public void Cleanup() {

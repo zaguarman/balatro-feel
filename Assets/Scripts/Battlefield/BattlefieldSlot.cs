@@ -1,37 +1,42 @@
 using UnityEngine;
 using UnityEngine.UI;
-using System.Collections.Generic;
 
-public class BattlefieldSlot : MonoBehaviour {
-    private int index;
-    private CardController occupyingCard;
+public class BattlefieldSlot : MonoBehaviour, ITarget {
     private RectTransform rectTransform;
-    private Image slotImage;
-    private CardDropZone dropZoneHandler;
+    private Image backgroundImage;
+    
+    public string TargetId { get; private set; }
+    public CardController OccupyingCard { get; private set; }
+    public ICreature OccupyingCreature { get; private set; }
 
-    public int Index => index;
-    public bool IsOccupied => occupyingCard != null;
-    public CardController OccupyingCard => occupyingCard;
+    private Color defaultColor;
+    private Color validDropColor;
+    private Color invalidDropColor;
+    private Color hoverColor;
 
-    public void Initialize(int slotIndex, Color defaultColor, Color validDropColor, Color invalidDropColor, Color hoverColor) {
-        index = slotIndex;
+    private void Awake() {
         rectTransform = GetComponent<RectTransform>();
         if (rectTransform == null) {
             rectTransform = gameObject.AddComponent<RectTransform>();
         }
 
-        slotImage = GetComponent<Image>();
-        if (slotImage == null) {
-            slotImage = gameObject.AddComponent<Image>();
+        backgroundImage = GetComponent<Image>();
+        if (backgroundImage == null) {
+            backgroundImage = gameObject.AddComponent<Image>();
         }
 
-        dropZoneHandler = new CardDropZone(
-            slotImage,
-            defaultColor,
-            validDropColor,
-            invalidDropColor,
-            hoverColor
-        );
+        TargetId = System.Guid.NewGuid().ToString();
+    }
+
+    public void Initialize(Color defaultColor, Color validDropColor, Color invalidDropColor, Color hoverColor) {
+        this.defaultColor = defaultColor;
+        this.validDropColor = validDropColor;
+        this.invalidDropColor = invalidDropColor;
+        this.hoverColor = hoverColor;
+        
+        backgroundImage.color = defaultColor;
+        
+        ClearSlot();
     }
 
     public void SetPosition(Vector2 position) {
@@ -40,8 +45,12 @@ public class BattlefieldSlot : MonoBehaviour {
         }
     }
 
+    public void AssignCreature(ICreature creature) {
+        OccupyingCreature = creature;
+    }
+
     public void OccupySlot(CardController card) {
-        occupyingCard = card;
+        OccupyingCard = card;
         if (card != null) {
             card.transform.SetParent(transform);
             card.transform.localPosition = Vector3.zero;
@@ -49,18 +58,21 @@ public class BattlefieldSlot : MonoBehaviour {
     }
 
     public void ClearSlot() {
-        occupyingCard = null;
+        if (OccupyingCard != null) {
+            OccupyingCard = null;
+        }
+        OccupyingCreature = null;
     }
 
-    public void UpdateVisuals(bool isValid) {
-        dropZoneHandler?.UpdateVisualFeedback(isValid);
+    public bool IsOccupied() {
+        return OccupyingCreature != null;
     }
 
     public void ResetVisuals() {
-        dropZoneHandler?.ResetVisualFeedback();
+        if (backgroundImage != null) {
+            backgroundImage.color = defaultColor;
+        }
     }
 
-    private void OnDestroy() {
-        dropZoneHandler?.Cleanup();
-    }
+    public bool IsValidTarget() => true;
 }

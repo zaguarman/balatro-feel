@@ -228,7 +228,7 @@ public abstract class CardContainer : UIComponent, IDropHandler, IPointerEnterHa
         var cardPrefab = gameReferences.GetCardPrefab();
         if (cardPrefab == null) return null;
 
-        var cardObj = Object.Instantiate(cardPrefab, transform);
+        var cardObj = Instantiate(cardPrefab, transform);
         var controller = cardObj.GetComponent<CardController>();
         if (controller != null) {
             var data = CreateCardData(creature);

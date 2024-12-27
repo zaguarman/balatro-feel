@@ -2,6 +2,7 @@ using UnityEngine.Events;
 using System;
 using System.Collections.Generic;
 using static DebugLogger;
+using System.Linq;
 
 [Serializable]
 public class PlayerDamagedUnityEvent : UnityEvent<int> { }
@@ -10,35 +11,39 @@ public interface IPlayer : IEntity, IDamageable {
     bool IsPlayer1();
     IPlayer Opponent { get; set; }
     List<ICard> Hand { get; }
-    List<ICreature> Battlefield { get; }
+    List<BattlefieldSlot> Battlefield { get; }
     void AddToHand(ICard card);
-    void AddToBattlefield(ICreature creature);
-    void AddToBattlefield(ICreature creature, int slotIndex);
+    void AddToBattlefield(ICreature creature, ITarget slotId = null);
     void RemoveFromBattlefield(ICreature creature);
     PlayerDamagedUnityEvent OnDamaged { get; }
-    int GetCreatureSlotIndex(ICreature creature);
+    string GetCreatureSlotTargetId(ICreature creature);
     bool HasEmptyBattlefieldSlot();
-    ICreature GetCreatureInSlot(int slotIndex);
-    Dictionary<string, int> GetCreatureSlotMap();
+    ICreature GetCreatureInSlot(ITarget slotId);
+    Dictionary<string, ITarget> GetCreatureSlotMap();
+    void InitializeBattlefield(List<BattlefieldSlot> slots);
 }
 
 public class Player : Entity, IPlayer {
-    private const int MAX_BATTLEFIELD_SLOTS = 5;
-    private readonly ICreature[] battlefieldSlots = new ICreature[MAX_BATTLEFIELD_SLOTS];
-    private readonly Dictionary<string, int> creatureSlotMap = new Dictionary<string, int>();
+    private readonly Dictionary<string, ITarget> creatureSlotMap = new Dictionary<string, ITarget>();
 
     public int Health { get; private set; } = 20;
     public IPlayer Opponent { get; set; }
     public List<ICard> Hand { get; private set; }
-    public List<ICreature> Battlefield { get; private set; }
+    public List<BattlefieldSlot> Battlefield { get; private set; }
     public PlayerDamagedUnityEvent OnDamaged { get; } = new PlayerDamagedUnityEvent();
 
     private readonly GameMediator gameMediator;
 
     public Player(string name = "Player") : base(name) {
         Hand = new List<ICard>();
-        Battlefield = new List<ICreature>();
+        Battlefield = new List<BattlefieldSlot>();
         gameMediator = GameMediator.Instance;
+    }
+
+    // Initialize battlefield with existing UI slots
+    public void InitializeBattlefield(List<BattlefieldSlot> slots) {
+        Battlefield.Clear();
+        Battlefield.AddRange(slots);
     }
 
     public bool IsPlayer1() {
@@ -57,89 +62,72 @@ public class Player : Entity, IPlayer {
         gameMediator?.NotifyGameStateChanged();
     }
 
-    public void AddToBattlefield(ICreature creature) {
-        // Find first empty slot when no specific slot is provided
-        int emptySlot = FindFirstEmptySlot();
-        if (emptySlot != -1) {
-            AddToBattlefield(creature, emptySlot);
-        }
-    }
-
-    public void AddToBattlefield(ICreature creature, int slotIndex) {
+    public void AddToBattlefield(ICreature creature, ITarget slot = null) {
         if (creature == null) return;
 
-        // Validate slot index
-        if (slotIndex < 0 || slotIndex >= MAX_BATTLEFIELD_SLOTS) {
-            LogWarning($"Invalid slot index {slotIndex}", LogTag.Creatures);
-            return;
-        }
-
-        // If creature is already in a slot, clear that slot
-        if (creatureSlotMap.TryGetValue(creature.TargetId, out int currentSlot)) {
-            battlefieldSlots[currentSlot] = null;
-        }
-
-        // If there's already a creature in the target slot, don't allow the placement
-        if (battlefieldSlots[slotIndex] != null) {
-            LogWarning($"Slot {slotIndex} is already occupied", LogTag.Creatures);
-            return;
-        }
-
-        // Add to new slot
-        battlefieldSlots[slotIndex] = creature;
-        creatureSlotMap[creature.TargetId] = slotIndex;
-
-        // Update the list representation
-        if (!Battlefield.Contains(creature)) {
-            Battlefield.Add(creature);
-            gameMediator?.NotifyCreatureSummoned(creature, this);
-        }
-
-        gameMediator?.NotifyGameStateChanged();
-    }
-
-    public Dictionary<string, int> GetCreatureSlotMap() {
-        return new Dictionary<string, int>(creatureSlotMap);
-    }
-
-    private int FindFirstEmptySlot() {
-        for (int i = 0; i < MAX_BATTLEFIELD_SLOTS; i++) {
-            if (battlefieldSlots[i] == null) {
-                return i;
+        // If no slot specified, find first empty slot
+        if (slot == null) {
+            slot = (ITarget)Battlefield.FirstOrDefault(s => !s.IsOccupied());
+            if (slot == null) {
+                LogWarning("No empty battlefield slots available", LogTag.Creatures);
+                return;
             }
         }
-        return -1;
+
+        var targetSlot = Battlefield.FirstOrDefault(s => s.TargetId == slot.TargetId);
+        if (targetSlot == null || targetSlot.IsOccupied()) {
+            LogWarning($"Invalid or occupied slot {slot.TargetId}", LogTag.Creatures);
+            return;
+        }
+
+        // Store the creature-slot mapping
+        creatureSlotMap[creature.TargetId] = slot;
+
+        // Update the slot with the creature
+        if (targetSlot is BattlefieldSlot battlefieldSlot) {
+            battlefieldSlot.AssignCreature(creature);
+        }
+
+        gameMediator?.NotifyCreatureSummoned(creature, this);
+        gameMediator?.NotifyGameStateChanged();
     }
 
     public void RemoveFromBattlefield(ICreature creature) {
         if (creature == null) return;
 
-        if (creatureSlotMap.TryGetValue(creature.TargetId, out int slot)) {
-            battlefieldSlots[slot] = null;
-            creatureSlotMap.Remove(creature.TargetId);
+        if (creatureSlotMap.TryGetValue(creature.TargetId, out ITarget slotId)) {
+            var slot = Battlefield.FirstOrDefault(s => s.TargetId == slotId.TargetId);
+            if (slot != null) {
+                slot.ClearSlot();
+                creatureSlotMap.Remove(creature.TargetId);
+            }
         }
 
-        Battlefield.Remove(creature);
-        Log($"Removed creature from battlefield: {creature.Name}", LogTag.Creatures);
+        Log($"Removed creature {creature.Name} from battlefield", LogTag.Creatures);
         gameMediator?.NotifyGameStateChanged();
     }
 
-    public int GetCreatureSlotIndex(ICreature creature) {
-        return creatureSlotMap.TryGetValue(creature.TargetId, out int slot) ? slot : -1;
+    public Dictionary<string, ITarget> GetCreatureSlotMap() {
+        return new Dictionary<string, ITarget>(creatureSlotMap);
+    }
+
+    public ICreature GetCreatureInSlot(ITarget slotId) {
+        if (string.IsNullOrEmpty(slotId?.TargetId)) return null;
+        return Battlefield.FirstOrDefault(s => s.TargetId == slotId.TargetId)?.OccupyingCreature;
+    }
+
+    public string GetCreatureSlotTargetId(ICreature creature) {
+        if (creature == null) return null;
+        return creatureSlotMap.TryGetValue(creature.TargetId, out ITarget slot) ? slot.TargetId : null;
     }
 
     public bool HasEmptyBattlefieldSlot() {
-        return FindFirstEmptySlot() != -1;
+        return Battlefield.Any(s => !s.IsOccupied());
     }
 
-    public ICreature GetCreatureInSlot(int slotIndex) {
-        if (slotIndex >= 0 && slotIndex < MAX_BATTLEFIELD_SLOTS) {
-            return battlefieldSlots[slotIndex];
-        }
-        return null;
-    }
+    public override bool IsValidTarget() => true;
 
     public override string ToString() {
-        return $"{Name} - Health: {Health}, Hand: {Hand.Count}, Battlefield: {Battlefield.Count}";
+        return $"{Name} - Health: {Health}, Hand: {Hand.Count}, Battlefield: {Battlefield.Count(s => s.IsOccupied())}";
     }
 }

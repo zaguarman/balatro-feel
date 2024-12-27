@@ -7,13 +7,13 @@ public interface IGameAction { void Execute(); }
 public class SummonCreatureAction : IGameAction {
     private readonly ICreature creature;
     private readonly IPlayer owner;
-    private readonly int targetSlot;
+    private readonly ITarget target;
 
-    public SummonCreatureAction(ICreature creature, IPlayer owner, int targetSlot = -1) {
+    public SummonCreatureAction(ICreature creature, IPlayer owner, ITarget target = null) {
         this.creature = creature;
         this.owner = owner;
-        this.targetSlot = targetSlot;
-        Log($"Created SummonCreatureAction for {creature.Name} targeting slot {targetSlot} with {creature.Effects.Count} effects", LogTag.Actions | LogTag.Creatures);
+        this.target = target;
+        Log($"Created SummonCreatureAction for {creature.Name} targeting slot {target.TargetId} with {creature.Effects.Count} effects", LogTag.Actions | LogTag.Creatures);
     }
 
     public void Execute() {
@@ -34,12 +34,7 @@ public class SummonCreatureAction : IGameAction {
             c2.HandleEffect(EffectTrigger.OnPlay, actionsQueue);
         }
 
-        // Add to battlefield with specific slot if provided
-        if (targetSlot >= 0) {
-            owner.AddToBattlefield(creature, targetSlot);
-        } else {
-            owner.AddToBattlefield(creature);
-        }
+        owner.AddToBattlefield(creature, target);
     }
 }
 
@@ -148,54 +143,52 @@ public class DirectDamageAction : IGameAction {
     public int GetDamage() => damage;
 }
 public class SwapCreaturesAction : IGameAction {
-    private readonly ICreature creature1;
-    private readonly ICreature creature2;
-    private readonly int slot1Index;
-    private readonly int slot2Index;
+    private readonly ICreature fromCreature;
+    private readonly ICreature toCreature;
+    private readonly ITarget fromSlot;
+    private readonly ITarget toSlot;
     private readonly IPlayer owner;
 
-    public SwapCreaturesAction(ICreature creature1, ICreature creature2, int slot1Index, int slot2Index, IPlayer owner) {
-        this.creature1 = creature1;
-        this.creature2 = creature2;
-        this.slot1Index = slot1Index;
-        this.slot2Index = slot2Index;
+    public SwapCreaturesAction(ICreature fromCreature, ICreature toCreature, ITarget fromSlot, ITarget toSlot, IPlayer owner) {
+        this.fromCreature = fromCreature;
+        this.toCreature = toCreature;
+        this.fromSlot = fromSlot;
+        this.toSlot = toSlot;
         this.owner = owner;
-        Log($"Created SwapCreaturesAction between {creature1.Name} (slot {slot1Index}) and {creature2.Name} (slot {slot2Index})",
+        Log($"Created SwapCreaturesAction between {fromCreature.Name} (slot {fromSlot}) and {toCreature.Name} (slot {toSlot})",
             LogTag.Actions | LogTag.Creatures);
     }
 
     public void Execute() {
-        if (creature1 == null || creature2 == null || owner == null) {
+        if (fromCreature == null || toCreature == null || owner == null) {
             LogError("Cannot execute swap - one or more components are null", LogTag.Actions | LogTag.Creatures);
             return;
         }
 
-        // Temporarily remove both creatures from battlefield
-        owner.RemoveFromBattlefield(creature1);
-        owner.RemoveFromBattlefield(creature2);
+        owner.RemoveFromBattlefield(fromCreature);
+        owner.RemoveFromBattlefield(toCreature);
 
-        // Re-add them in swapped order using the slot-specific overload
-        ((Player)owner).AddToBattlefield(creature1, slot2Index);
-        ((Player)owner).AddToBattlefield(creature2, slot1Index);
+        owner.AddToBattlefield(fromCreature, toSlot);
+        owner.AddToBattlefield(toCreature, fromSlot);
 
-        Log($"Executed swap between {creature1.Name} and {creature2.Name}", LogTag.Actions | LogTag.Creatures);
+        Log($"Executed swap between {fromCreature.Name} and {toCreature.Name}", LogTag.Actions | LogTag.Creatures);
     }
 
     // Added methods to help with arrow creation
-    public ICreature GetCreature1() => creature1;
-    public ICreature GetCreature2() => creature2;
+    public ICreature GetCreature1() => fromCreature;
+    public ICreature GetCreature2() => toCreature;
 }
 
 public class PlayCardAction : IGameAction {
     private readonly ICard card;
     private readonly IPlayer owner;
-    private readonly int targetSlot;
+    private readonly ITarget target;
 
-    public PlayCardAction(ICard card, IPlayer owner, int targetSlot = -1) {
+    public PlayCardAction(ICard card, IPlayer owner, ITarget target) {
         this.card = card;
         this.owner = owner;
-        this.targetSlot = targetSlot;
-        Log($"Created PlayCardAction for {card.Name} targeting slot {targetSlot}", LogTag.Actions | LogTag.Cards);
+        this.target = target;
+        Log($"Created PlayCardAction for {card.Name} targeting slot {target}", LogTag.Actions | LogTag.Cards);
     }
 
     public void Execute() {
@@ -209,7 +202,7 @@ public class PlayCardAction : IGameAction {
 
         // Play the card with the specific slot target
         if (card is ICreature creature) {
-            var summonAction = new SummonCreatureAction(creature, owner, targetSlot);
+            var summonAction = new SummonCreatureAction(creature, owner, target);
             GameManager.Instance.ActionsQueue.AddAction(summonAction);
         }
 
@@ -224,14 +217,14 @@ public class MarkCombatTargetAction : IGameAction {
     private readonly ICreature attacker;
     private readonly BattlefieldSlot targetSlot;
 
-    public MarkCombatTargetAction(ICreature attacker, BattlefieldSlot targetSlot) {
+    public MarkCombatTargetAction(ICreature attacker, ITarget targetSlot) {
         this.attacker = attacker;
-        this.targetSlot = targetSlot;
+        this.targetSlot = (BattlefieldSlot)targetSlot;
     }
 
     public void Execute() {
-        if (targetSlot.IsOccupied) {
-            var targetCreature = targetSlot.OccupyingCard?.GetLinkedCreature();
+        if (targetSlot.IsOccupied()) {
+            var targetCreature = targetSlot.OccupyingCreature;
             if (targetCreature != null) {
                 var damageAction = new DamageCreatureAction(targetCreature, attacker.Attack, attacker);
                 GameManager.Instance.ActionsQueue.AddAction(damageAction);
@@ -252,11 +245,11 @@ public class MarkCombatTargetAction : IGameAction {
 
 public class MoveCreatureAction : IGameAction {
     private readonly ICreature creature;
-    private readonly int fromSlot;
-    private readonly int toSlot;
+    private readonly ITarget fromSlot;
+    private readonly ITarget toSlot;
     private readonly IPlayer player;
 
-    public MoveCreatureAction(ICreature creature, int fromSlot, int toSlot, IPlayer player) {
+    public MoveCreatureAction(ICreature creature, ITarget fromSlot, ITarget toSlot, IPlayer player) {
         this.creature = creature;
         this.fromSlot = fromSlot;
         this.toSlot = toSlot;
@@ -270,7 +263,7 @@ public class MoveCreatureAction : IGameAction {
         }
 
         // Check if target slot is occupied
-        var targetCreature = player.GetCreatureInSlot(toSlot);
+        var targetCreature = ((BattlefieldSlot)toSlot).OccupyingCreature;
         if (targetCreature != null) {
             // Handle swap
             HandleSwap(targetCreature);
@@ -304,6 +297,6 @@ public class MoveCreatureAction : IGameAction {
 
     // Getter methods for arrow visualization
     public ICreature GetCreature() => creature;
-    public int GetFromSlot() => fromSlot;
-    public int GetToSlot() => toSlot;
+    public ITarget GetFromSlot() => fromSlot;
+    public ITarget GetToSlot() => toSlot;
 }

@@ -26,7 +26,6 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
     private CardData cardData;
     private IPlayer player;
     private ICreature linkedCreature;
-    private string linkedCreatureId;
 
     public CardUnityEvent OnBeginDragEvent = new CardUnityEvent();
     public CardUnityEvent OnEndDragEvent = new CardUnityEvent();
@@ -55,18 +54,16 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
         cardImage = GetComponent<Image>();
     }
 
-    public void Setup(CardData data, IPlayer owner, string creatureId = null) {
+    public void Setup(CardData data, IPlayer owner, string creatureTargetId = null) {
         cardData = data;
         player = owner;
-        linkedCreatureId = creatureId;
         if (cardData is CreatureData creatureData) {
             Log($"Setting up {cardData.cardName} with {cardData.effects.Count} effects", LogTag.Cards | LogTag.Initialization);
         }
         if (cardData is CreatureData) {
             linkedCreature = FindLinkedCreature();
             if (linkedCreature != null) {
-                linkedCreatureId = linkedCreature.TargetId;
-                Log($"Linked to creature: {linkedCreature.Name} with ID: {linkedCreatureId}", LogTag.Cards);
+                Log($"Linked to creature: {linkedCreature.Name} with ID: {linkedCreature.TargetId}", LogTag.Cards);
             }
         }
         UpdateUI();
@@ -75,15 +72,15 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
     private ICreature FindLinkedCreature() {
         if (cardData == null || player == null) return null;
 
-        if (!string.IsNullOrEmpty(linkedCreatureId)) {
-            return player.Battlefield.Find(c => c.TargetId == linkedCreatureId) ??
-                   player.Opponent.Battlefield.Find(c => c.TargetId == linkedCreatureId);
+        if (linkedCreature != null) {
+            return linkedCreature;
         }
 
-        return null;
-    }
+        var creature = player.Battlefield.Find(s => s.OccupyingCreature.TargetId == linkedCreature.TargetId).OccupyingCreature
+            ?? player.Opponent.Battlefield.Find(s => s.OccupyingCreature.TargetId == linkedCreature.TargetId).OccupyingCreature;
 
-    public string GetLinkedCreatureId() => linkedCreatureId;
+        return creature;
+    }
 
     protected override void RegisterEvents() {
         if (gameMediator != null) {

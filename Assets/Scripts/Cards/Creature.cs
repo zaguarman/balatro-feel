@@ -7,6 +7,7 @@ public interface ICreature : ICard {
     int Health { get; }
     void TakeDamage(int damage);
     IPlayer Owner { get; }
+    string Id { get; }
 }
 
 public class Creature : Card, ICreature {
@@ -14,19 +15,22 @@ public class Creature : Card, ICreature {
     public int Health { get; private set; }
     private bool isDead = false;
     public IPlayer Owner { get; private set; }
+    public string Id { get; private set; }
+
     private ICreature lastAttacker;
 
     public Creature(string name, int attack, int health, IPlayer owner = null) : base(name) {
         Attack = attack;
         Health = health;
         Owner = owner;
+        Id = TargetId;
     }
 
     public void SetOwner(IPlayer newOwner) {
         Owner = newOwner;
     }
 
-    public override void Play(IPlayer owner, ActionsQueue context) {
+    public override void Play(IPlayer owner, ActionsQueue context, ITarget target = null) {
         Log($"Playing {Name} with {Effects.Count} effects", LogTag.Creatures | LogTag.Cards | LogTag.Actions);
         Owner = owner;
         context.AddAction(new SummonCreatureAction(this, owner));

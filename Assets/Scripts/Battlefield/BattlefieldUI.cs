@@ -11,11 +11,6 @@ public class BattlefieldUI : CardContainer {
 
     protected GameManager gameManager;
     private BattlefieldArrowManager arrowManager;
-    private bool isResolvingActions = false;
-
-    private bool isLayoutDirty = false;
-    private float arrowUpdateCooldown = 0.1f; // 100ms cooldown
-    private float lastArrowUpdate = 0f;
 
     #region Initialization
 
@@ -36,10 +31,19 @@ public class BattlefieldUI : CardContainer {
             slotObj.transform.SetParent(transform, false);
 
             var slot = slotObj.AddComponent<BattlefieldSlot>();
-            slot.Initialize(i, defaultColor, validDropColor, invalidDropColor, hoverColor);
+            slot.Initialize(defaultColor, validDropColor, invalidDropColor, hoverColor);
             slots.Add(slot);
         }
         UpdateSlotPositions();
+    }
+
+    public override void Initialize(IPlayer player) {
+        base.Initialize(player);
+
+        // Initialize the player's battlefield with our slots
+        player.InitializeBattlefield(slots);
+
+        UpdateUI();
     }
 
     private void UpdateSlotPositions() {
@@ -69,7 +73,6 @@ public class BattlefieldUI : CardContainer {
             HandleCardFromBattlefield(card, targetSlot);
         }
 
-        // Update arrows immediately after action is queued
         arrowManager?.UpdateArrowsFromActionsQueue();
         gameMediator?.NotifyGameStateChanged();
     }
@@ -79,70 +82,46 @@ public class BattlefieldUI : CardContainer {
 
         Transform parent = card.OriginalParent;
         while (parent != null) {
-            if (parent.GetComponent<HandUI>() != null) {
-                return true;
-            }
+            if (parent.GetComponent<HandUI>() != null) return true;
             parent = parent.parent;
         }
         return false;
     }
 
-    private void HandleCardFromHand(CardController card, BattlefieldSlot targetSlot) {
+    private void HandleCardFromHand(CardController card, ITarget target) {
         var cardData = card.GetCardData();
         if (cardData != null) {
             var newCard = CardFactory.CreateCard(cardData);
             if (newCard != null) {
-                Log($"Adding PlayCardAction for {cardData.cardName} to slot {targetSlot.Index}", LogTag.Actions | LogTag.Cards);
-                gameManager.ActionsQueue.AddAction(new PlayCardAction(newCard, player, targetSlot.Index));
+                Log($"Adding PlayCardAction for {cardData.cardName} to slot {target.TargetId}",
+                    LogTag.Actions | LogTag.Cards);
+                gameManager.ActionsQueue.AddAction(new PlayCardAction(newCard, player, target));
             }
         }
     }
 
-    private void HandleCardFromBattlefield(CardController card, BattlefieldSlot targetSlot) {
-        if (targetSlot != null) {
+    private void HandleCardFromBattlefield(CardController card, ITarget target) {
+        if (target != null) {
             if (card.IsPlayer1Card() != player.IsPlayer1()) {
-                // Enemy slot - handle combat
-                gameManager.CombatHandler.HandleCreatureCombat(card, targetSlot);
+                gameManager.CombatHandler.HandleCreatureCombat(card, target);
             } else {
-                // Same player slot - handle movement/swap
-                HandleCreatureMove(card, targetSlot);
+                HandleCreatureMove(card, target);
             }
         }
     }
 
-    private void HandleCreatureMove(CardController card, BattlefieldSlot targetSlot) {
-        var creature = FindCreatureByTargetId(card);
+    private void HandleCreatureMove(CardController card, ITarget targetSlot) {
+        var creature = card.GetLinkedCreature();
         if (creature == null) return;
 
-        int fromSlot = player.GetCreatureSlotIndex(creature);
-        if (fromSlot != -1) {
-            Log($"Creating move action for {creature.Name} from slot {fromSlot} to slot {targetSlot.Index}",
-                LogTag.Actions | LogTag.Creatures);
-
-            // Create and add the move action
-            var moveAction = new MoveCreatureAction(creature, fromSlot, targetSlot.Index, player);
+        var sourceSlot = slots.FirstOrDefault(s => s.OccupyingCard == card);
+        if (sourceSlot != null) {
+            var moveAction = new MoveCreatureAction(creature, (ITarget)sourceSlot, targetSlot, player);
             gameManager.ActionsQueue.AddAction(moveAction);
         }
     }
 
-    private void HandleCreatureSwap(CardController card1, BattlefieldSlot targetSlot) {
-        var creature1 = FindCreatureByTargetId(card1);
-        var creature2 = FindCreatureByTargetId(targetSlot.OccupyingCard);
-
-        if (creature1 == null || creature2 == null) return;
-
-        int slot1Index = player.GetCreatureSlotIndex(creature1);
-        int slot2Index = targetSlot.Index;
-
-        if (slot1Index != -1 && slot2Index != -1) {
-            Log($"Creating swap action between {creature1.Name} (slot {slot1Index}) and {creature2.Name} (slot {slot2Index})",
-                LogTag.Actions | LogTag.Creatures);
-            var swapAction = new SwapCreaturesAction(creature1, creature2, slot1Index, slot2Index, player);
-            gameManager.ActionsQueue.AddAction(swapAction);
-        }
-    }
-
-    private BattlefieldSlot GetTargetSlot() {
+    private ITarget GetTargetSlot() {
         var pointerEventData = new PointerEventData(EventSystem.current) {
             position = Input.mousePosition
         };
@@ -152,58 +131,10 @@ public class BattlefieldUI : CardContainer {
 
         foreach (var result in raycastResults) {
             var slot = result.gameObject.GetComponent<BattlefieldSlot>();
-            if (slot != null) return slot;
-
-            var parentSlot = result.gameObject.GetComponentInParent<BattlefieldSlot>();
-            if (parentSlot != null) return parentSlot;
-        }
-
-        // If no slot found through raycast, find nearest slot
-        if (slots != null && slots.Count > 0) {
-            Vector2 mousePos = Input.mousePosition;
-            float closestDistance = float.MaxValue;
-            BattlefieldSlot nearestSlot = null;
-
-            foreach (var slot in slots) {
-                if (slot == null) continue;
-
-                Vector2 slotScreenPos = Camera.main.WorldToScreenPoint(slot.transform.position);
-                float distance = Vector2.Distance(mousePos, slotScreenPos);
-
-                if (distance < closestDistance) {
-                    closestDistance = distance;
-                    nearestSlot = slot;
-                }
-            }
-
-            if (nearestSlot != null) {
-                return nearestSlot;
-            }
+            if (slot != null) return (ITarget)slot;
         }
 
         return null;
-    }
-
-    private ICreature FindCreatureByTargetId(CardController cardController) {
-        if (cardController == null) return null;
-
-        string targetId = cardController.GetLinkedCreatureId();
-        if (string.IsNullOrEmpty(targetId)) {
-            LogWarning($"No linked creature ID found for card {cardController.GetCardData()?.cardName}", LogTag.Cards | LogTag.Creatures);
-            return null;
-        }
-
-        var creature = player?.Battlefield.FirstOrDefault(c => c.TargetId == targetId);
-        if (creature != null) return creature;
-
-        creature = gameManager?.Player1.Battlefield.FirstOrDefault(c => c.TargetId == targetId) ??
-                  gameManager?.Player2.Battlefield.FirstOrDefault(c => c.TargetId == targetId);
-
-        if (creature == null) {
-            LogWarning($"Could not find creature with ID {targetId}", LogTag.Cards | LogTag.Creatures);
-        }
-
-        return creature;
     }
 
     #endregion
@@ -215,33 +146,20 @@ public class BattlefieldUI : CardContainer {
 
         UpdateCreatureCards();
         UpdateSlotOccupancy();
-
-        // Update arrows when UI is explicitly updated
         arrowManager?.UpdateArrowsFromActionsQueue();
     }
 
     private void UpdateCreatureCards() {
-        // Clear all slots
+        // Clear existing cards
         foreach (var slot in slots) {
             slot.ClearSlot();
         }
 
-        var currentCreatureIds = new HashSet<string>(player.Battlefield.Select(c => c.TargetId));
-        var cardsToRemove = creatureCards.Keys.Where(id => !currentCreatureIds.Contains(id)).ToList();
+        // Update based on player's battlefield state
+        foreach (var battlefieldSlot in player.Battlefield) {
+            var creature = battlefieldSlot.OccupyingCreature;
+            if (creature == null) continue;
 
-        // Remove cards that are no longer in the battlefield
-        foreach (var id in cardsToRemove) {
-            if (creatureCards.TryGetValue(id, out var card)) {
-                if (card != null) Destroy(card.gameObject);
-                creatureCards.Remove(id);
-            }
-        }
-
-        // Get the current slot mapping from the player
-        var slotMap = player.GetCreatureSlotMap();
-
-        // Update or create cards for each creature
-        foreach (var creature in player.Battlefield) {
             if (!creatureCards.TryGetValue(creature.TargetId, out var cardController)) {
                 cardController = CreateCreatureCard(creature);
                 if (cardController != null) {
@@ -249,11 +167,9 @@ public class BattlefieldUI : CardContainer {
                 }
             }
 
-            if (cardController != null && slotMap.TryGetValue(creature.TargetId, out int slotIndex)) {
-                if (slotIndex >= 0 && slotIndex < slots.Count) {
-                    slots[slotIndex].OccupySlot(cardController);
-                    cardController.UpdateUI();
-                }
+            if (cardController != null) {
+                battlefieldSlot.OccupySlot(cardController);
+                cardController.UpdateUI();
             }
         }
     }
@@ -285,9 +201,7 @@ public class BattlefieldUI : CardContainer {
     }
 
     private void OnActionsResolved() {
-        isResolvingActions = true;
         arrowManager.UpdateArrowsFromActionsQueue();
-        isResolvingActions = false;
     }
 
     private void OnCreatureDied(ICreature creature) {

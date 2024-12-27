@@ -74,14 +74,9 @@ public class InitializationManager : MonoBehaviour {
     private void InitializeComponent<T>() where T : class {
         var component = components.Keys.FirstOrDefault(c => c is T);
         if (component != null && !components[component]) {
-            try {
-                component.Initialize();
-                components[component] = true;
-                Log($"Initialized component: {typeof(T).Name}", LogTag.Initialization);
-            } catch (System.Exception e) {
-                LogError($"Failed to initialize {typeof(T).Name}: {e}", LogTag.Initialization);
-                throw; // Rethrow to stop initialization sequence
-            }
+            component.Initialize();
+            components[component] = true;
+            Log($"Initialized component: {typeof(T).Name}", LogTag.Initialization);
         }
     }
 
