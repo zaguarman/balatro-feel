@@ -20,7 +20,7 @@ MonoBehaviour:
     filterState: 1
     color: {r: 1, g: 0.8784314, b: 0.4, a: 1}
   - tagValue: 4
-    filterState: 1
+    filterState: 2
     color: {r: 1, g: 0.6, b: 1, a: 1}
   - tagValue: 8
     filterState: 1
@@ -41,11 +41,11 @@ MonoBehaviour:
   - className: ActionsQueue
     filterState: 1
   - className: ArrowIndicator
-    filterState: 1
+    filterState: 2
   - className: BattlefieldArrowManager
-    filterState: 1
+    filterState: 2
   - className: BattlefieldCombatHandler
-    filterState: 1
+    filterState: 2
   - className: BattlefieldUI
     filterState: 1
   - className: Card
@@ -96,4 +96,4 @@ MonoBehaviour:
     filterState: 1
   - className: UIComponent
     filterState: 1
-  showStackTrace: 1
+  showStackTrace: 0

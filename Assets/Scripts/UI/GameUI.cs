@@ -41,7 +41,6 @@ public class GameUI : UIComponent {
         }
 
         gameManager = GameManager.Instance;
-
         if (gameManager == null) {
             LogError("GameManager reference is null", LogTag.UI | LogTag.Initialization);
             return;
@@ -59,6 +58,7 @@ public class GameUI : UIComponent {
 
         IsInitialized = true;
         Log("GameUI initialized successfully", LogTag.UI | LogTag.Initialization);
+        onInitialized.Invoke(); 
     }
 
     private void GetReferences() {
