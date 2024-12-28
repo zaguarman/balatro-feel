@@ -1,9 +1,12 @@
 using UnityEngine;
+using UnityEngine.Events;
 
 public abstract class UIComponent : InitializableComponent {
     protected GameMediator gameMediator => GameMediator.Instance;
     protected GameReferences gameReferences => GameReferences.Instance;
     private bool hasBeenDestroyed = false;
+
+    public UnityEvent onInitialized = new UnityEvent();
 
     protected override void Awake() {
         base.Awake();
@@ -22,6 +25,9 @@ public abstract class UIComponent : InitializableComponent {
         RegisterEvents();
         UpdateUI();
         base.Initialize();
+
+        // Fire the UnityEvent when initialization is complete
+        onInitialized.Invoke();
     }
 
     protected virtual void OnEnable() {
@@ -37,12 +43,13 @@ public abstract class UIComponent : InitializableComponent {
         }
     }
 
-    protected virtual void OnDestroy() {
-        hasBeenDestroyed = true;
+    protected override void OnDestroy() {
         if (IsInitialized) {
+            onInitialized.RemoveAllListeners();
             UnregisterEvents();
             CleanupComponent();
         }
+        base.OnDestroy();
     }
 
     protected virtual void CleanupComponent() {

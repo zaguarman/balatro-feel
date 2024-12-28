@@ -17,6 +17,11 @@ public abstract class InitializableComponent : MonoBehaviour, IInitializable {
     public virtual void Initialize() {
         IsInitialized = true;
     }
+
+    protected virtual void OnDestroy() {
+        // Base cleanup logic
+        IsInitialized = false;
+    }
 }
 
 public class InitializationManager : MonoBehaviour {

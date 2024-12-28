@@ -90,32 +90,25 @@ public class GameManager : InitializableComponent {
     }
 
     private void InitializeGameSystem() {
-        // Initialize players
+        // Initialize core game components first
         InitializePlayers();
-
-        // Initialize decks and cards first
         InitializeCards();
 
-        // Wait for battlefield UI to be ready
-        if (GameUI.Instance != null && GameUI.Instance.IsInitialized) {
-            PlaceInitialCreatures();
-            SetupInitialGameState();
-            SetupResolveButton();
+        // Setup initial game state
+        if (GameUI.Instance.IsInitialized) {
+            CompleteGameInitialization();
         } else {
-            // Register for game state changed to catch when UI is ready
-            gameMediator.AddGameStateChangedListener(OnGameStateChanged);
+            GameUI.Instance.onInitialized.AddListener(CompleteGameInitialization);
         }
     }
 
-    private void OnGameStateChanged() {
-        if (GameUI.Instance != null && GameUI.Instance.IsInitialized && !creaturesPlaced) {
-            PlaceInitialCreatures();
-            SetupInitialGameState();
-            SetupResolveButton();
-            creaturesPlaced = true;
-            // Unsubscribe after initialization is complete
-            gameMediator.RemoveGameStateChangedListener(OnGameStateChanged);
-        }
+    private void CompleteGameInitialization() {
+        PlaceInitialCreatures();
+        SetupInitialGameState();
+        SetupResolveButton();
+
+        // Important: Notify game is initialized after all setup is complete
+        gameMediator.NotifyGameInitialized();
     }
 
     private void InitializePlayers() {
