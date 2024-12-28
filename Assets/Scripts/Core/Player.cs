@@ -67,7 +67,7 @@ public class Player : Entity, IPlayer {
 
         // If no slot specified, find first empty slot
         if (slot == null) {
-            slot = (ITarget)Battlefield.FirstOrDefault(s => !s.IsOccupied());
+            slot = Battlefield.FirstOrDefault(s => !s.IsOccupied());
             if (slot == null) {
                 LogWarning("No empty battlefield slots available", LogTag.Creatures);
                 return;
