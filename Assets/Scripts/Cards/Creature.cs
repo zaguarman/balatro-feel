@@ -8,6 +8,7 @@ public interface ICreature : ICard {
     void TakeDamage(int damage);
     IPlayer Owner { get; }
     string Id { get; }
+    void SetOwner(IPlayer owner);
 }
 
 public class Creature : Card, ICreature {
@@ -19,15 +20,14 @@ public class Creature : Card, ICreature {
 
     private ICreature lastAttacker;
 
-    public Creature(string name, int attack, int health, IPlayer owner = null) : base(name) {
+    public Creature(string name, int attack, int health) : base(name) {
         Attack = attack;
         Health = health;
-        Owner = owner;
         Id = TargetId;
     }
 
-    public void SetOwner(IPlayer newOwner) {
-        Owner = newOwner;
+    public void SetOwner(IPlayer owner) {
+        Owner = owner;
     }
 
     public override void Play(IPlayer owner, ActionsQueue context, ITarget target = null) {

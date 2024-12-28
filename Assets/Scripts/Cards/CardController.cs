@@ -57,29 +57,42 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
     public void Setup(CardData data, IPlayer owner, string creatureTargetId = null) {
         cardData = data;
         player = owner;
-        if (cardData is CreatureData creatureData) {
-            Log($"Setting up {cardData.cardName} with {cardData.effects.Count} effects", LogTag.Cards | LogTag.Initialization);
-        }
+
         if (cardData is CreatureData) {
             linkedCreature = FindLinkedCreature();
-            if (linkedCreature != null) {
-                Log($"Linked to creature: {linkedCreature.Name} with ID: {linkedCreature.TargetId}", LogTag.Cards);
-            }
         }
+
         UpdateUI();
     }
 
     private ICreature FindLinkedCreature() {
-        if (cardData == null || player == null) return null;
+        // Early return if we can't find a creature
+        if (cardData == null || player == null || !(cardData is CreatureData)) {
+            return null;
+        }
 
+        // If we have a valid linked creature, return it
         if (linkedCreature != null) {
             return linkedCreature;
         }
 
-        var creature = player.Battlefield.Find(s => s.OccupyingCreature.TargetId == linkedCreature.TargetId).OccupyingCreature
-            ?? player.Opponent.Battlefield.Find(s => s.OccupyingCreature.TargetId == linkedCreature.TargetId).OccupyingCreature;
+        // Search in player's battlefield
+        foreach (var slot in player.Battlefield) {
+            if (slot.OccupyingCreature != null && slot.OccupyingCreature.Name == cardData.cardName) {
+                return slot.OccupyingCreature;
+            }
+        }
 
-        return creature;
+        // Search in opponent's battlefield
+        if (player.Opponent != null) {
+            foreach (var slot in player.Opponent.Battlefield) {
+                if (slot.OccupyingCreature != null && slot.OccupyingCreature.Name == cardData.cardName) {
+                    return slot.OccupyingCreature;
+                }
+            }
+        }
+
+        return null;
     }
 
     protected override void RegisterEvents() {

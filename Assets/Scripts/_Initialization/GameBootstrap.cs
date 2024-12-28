@@ -9,35 +9,25 @@ public class GameBootstrap : MonoBehaviour {
     private IEnumerator InitializeGame() {
         var initManager = InitializationManager.Instance;
 
-        while (GameReferences.Instance == null ||
-               GameMediator.Instance == null ||
-               GameManager.Instance == null ||
-               GameUI.Instance == null) {
-            yield return null;
-        }
-
-        Log("Starting game initialization", LogTag.Initialization);
-
+        // Initialize references first
         initManager.RegisterComponent(GameReferences.Instance);
         initManager.InitializeComponents();
         yield return new WaitUntil(() => GameReferences.Instance.IsInitialized);
         Log("GameReferences initialized", LogTag.Initialization);
 
+        // Initialize mediator after references
         initManager.RegisterComponent(GameMediator.Instance);
         initManager.InitializeComponents();
         yield return new WaitUntil(() => GameMediator.Instance.IsInitialized);
         Log("GameMediator initialized", LogTag.Initialization);
 
-        if (GameManager.Instance != null) {
-            initManager.RegisterComponent(GameManager.Instance);
-            initManager.InitializeComponents();
-            yield return new WaitUntil(() => GameManager.Instance.IsInitialized);
-            Log("GameManager initialized", LogTag.Initialization);
-        } else {
-            LogError("GameManager instance is null!", LogTag.Initialization);
-            yield break;
-        }
+        // Initialize GameManager next
+        initManager.RegisterComponent(GameManager.Instance);
+        initManager.InitializeComponents();
+        yield return new WaitUntil(() => GameManager.Instance.IsInitialized);
+        Log("GameManager initialized", LogTag.Initialization);
 
+        // Initialize UI last since it depends on GameManager
         initManager.RegisterComponent(GameUI.Instance);
         initManager.InitializeComponents();
         yield return new WaitUntil(() => GameUI.Instance.IsInitialized);

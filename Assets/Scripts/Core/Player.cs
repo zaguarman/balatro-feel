@@ -42,8 +42,13 @@ public class Player : Entity, IPlayer {
 
     // Initialize battlefield with existing UI slots
     public void InitializeBattlefield(List<BattlefieldSlot> slots) {
+        if (slots == null || slots.Count == 0) {
+            LogError("Cannot initialize battlefield with null or empty slots", LogTag.Initialization);
+            return;
+        }
         Battlefield.Clear();
         Battlefield.AddRange(slots);
+        Log($"Initialized battlefield with {slots.Count} slots", LogTag.Initialization);
     }
 
     public bool IsPlayer1() {

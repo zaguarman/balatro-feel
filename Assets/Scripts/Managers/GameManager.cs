@@ -1,6 +1,7 @@
 using static DebugLogger;
 using UnityEngine;
 using System.Linq;
+using System.Collections.Generic;
 
 public class GameManager : InitializableComponent {
     private static GameManager instance;
@@ -25,6 +26,8 @@ public class GameManager : InitializableComponent {
     private GameReferences gameReferences;
     private ICardDealingService cardDealingService;
     private System.Random random = new System.Random();
+
+    private bool creaturesPlaced = false;
 
     // Public accessor for the combat handler
     public BattlefieldCombatHandler CombatHandler => combatHandler;
@@ -87,11 +90,32 @@ public class GameManager : InitializableComponent {
     }
 
     private void InitializeGameSystem() {
+        // Initialize players
         InitializePlayers();
+
+        // Initialize decks and cards first
         InitializeCards();
-        PlaceInitialCreatures();
-        SetupInitialGameState();
-        SetupResolveButton();
+
+        // Wait for battlefield UI to be ready
+        if (GameUI.Instance != null && GameUI.Instance.IsInitialized) {
+            PlaceInitialCreatures();
+            SetupInitialGameState();
+            SetupResolveButton();
+        } else {
+            // Register for game state changed to catch when UI is ready
+            gameMediator.AddGameStateChangedListener(OnGameStateChanged);
+        }
+    }
+
+    private void OnGameStateChanged() {
+        if (GameUI.Instance != null && GameUI.Instance.IsInitialized && !creaturesPlaced) {
+            PlaceInitialCreatures();
+            SetupInitialGameState();
+            SetupResolveButton();
+            creaturesPlaced = true;
+            // Unsubscribe after initialization is complete
+            gameMediator.RemoveGameStateChangedListener(OnGameStateChanged);
+        }
     }
 
     private void InitializePlayers() {
@@ -111,36 +135,45 @@ public class GameManager : InitializableComponent {
     }
 
     private void PlaceInitialCreatures() {
+        if (!HasValidBattlefields()) {
+            LogError("Cannot place creatures - battlefield not initialized", LogTag.Initialization);
+            return;
+        }
+
         var testSetup = gameObject.AddComponent<TestSetup>();
         var availableCreatures = testSetup.CreateTestCards()
             .Where(card => card is CreatureData)
             .Cast<CreatureData>()
             .ToList();
 
-        // Place creatures for Player 1
-        for (int i = 0; i < 2; i++) {
-            int randomIndex = random.Next(availableCreatures.Count);
-            var creatureData = availableCreatures[randomIndex];
-            var creature = CardFactory.CreateCard(creatureData) as Creature;
-            if (creature != null) {
-                creature.SetOwner(Player1);
-                Player1.AddToBattlefield(creature);
-                Log($"Added {creature.Name} to Player 1's battlefield slot {i} with {creature.Effects.Count} effects",
-                    LogTag.Creatures | LogTag.Initialization);
-            }
-        }
+        PlaceCreaturesForPlayer(Player1, availableCreatures);
+        PlaceCreaturesForPlayer(Player2, availableCreatures);
+    }
 
-        // Place creatures for Player 2
+    private bool HasValidBattlefields() {
+        return Player1?.Battlefield != null && Player1.Battlefield.Any() &&
+               Player2?.Battlefield != null && Player2.Battlefield.Any();
+    }
+
+    private void PlaceCreaturesForPlayer(IPlayer player, List<CreatureData> availableCreatures) {
         for (int i = 0; i < 2; i++) {
             int randomIndex = random.Next(availableCreatures.Count);
             var creatureData = availableCreatures[randomIndex];
-            var creature = CardFactory.CreateCard(creatureData) as Creature;
-            if (creature != null) {
-                creature.SetOwner(Player2);
-                Player2.AddToBattlefield(creature);
-                Log($"Added {creature.Name} to Player 2's battlefield slot {i} with {creature.Effects.Count} effects",
-                    LogTag.Creatures | LogTag.Initialization);
+            var creature = CardFactory.CreateCard(creatureData) as ICreature;
+
+            if (creature == null) continue;
+
+            // Find first empty slot
+            var emptySlot = player.Battlefield.FirstOrDefault(s => !s.IsOccupied());
+            if (emptySlot == null) {
+                LogWarning($"No empty battlefield slots available for {(player.IsPlayer1() ? "Player 1" : "Player 2")}", LogTag.Creatures);
+                continue;
             }
+
+            creature.SetOwner(player);
+            player.AddToBattlefield(creature, emptySlot);
+            Log($"Added {creature.Name} to {(player.IsPlayer1() ? "Player 1" : "Player 2")}'s battlefield with {creature.Effects.Count} effects",
+                LogTag.Creatures | LogTag.Initialization);
         }
     }
 
