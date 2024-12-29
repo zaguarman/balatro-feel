@@ -27,8 +27,6 @@ public class GameManager : InitializableComponent {
     private ICardDealingService cardDealingService;
     private System.Random random = new System.Random();
 
-    private bool creaturesPlaced = false;
-
     // Public accessor for the combat handler
     public BattlefieldCombatHandler CombatHandler => combatHandler;
 
