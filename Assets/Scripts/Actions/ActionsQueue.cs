@@ -23,11 +23,12 @@ public class ActionsQueue {
 
     private int GetActionPriority(IGameAction action) {
         return action switch {
-            MoveCreatureAction or SwapCreaturesAction => 0,  // Highest priority - all positioning actions
-            DirectDamageAction => 1,
-            MarkCombatTargetAction => 2,
-            DamageCreatureAction => 3,
-            DamagePlayerAction => 4,  // Lowest priority
+            SummonCreatureAction => -1,
+            MoveCreatureAction or SwapCreaturesAction => 0,
+            PlayCardAction => 1,
+            DirectDamageAction => 2,
+            MarkCombatTargetAction => 3,
+            DamageCreatureAction or DamagePlayerAction => 4,
             _ => 5
         };
     }
@@ -59,6 +60,9 @@ public class ActionsQueue {
 
         InsertActionWithPriority(action);
         Log($"Added action to queue: {action.GetType().Name}", LogTag.Actions);
+
+        // log number of actions in the queue
+        Log($"Actions in queue: {actionsList.Count}", LogTag.Actions);
 
         OnActionsQueued.Invoke();
         gameMediator.NotifyGameStateChanged();

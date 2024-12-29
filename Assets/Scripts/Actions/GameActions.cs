@@ -207,7 +207,7 @@ public class PlayCardAction : IGameAction {
         }
 
         // Process any immediate effects
-        card.Play(owner, GameManager.Instance.ActionsQueue);
+        card.Play(owner, GameManager.Instance.ActionsQueue, target);
 
         Log($"Executed PlayCardAction for {card.Name}", LogTag.Actions | LogTag.Cards);
     }

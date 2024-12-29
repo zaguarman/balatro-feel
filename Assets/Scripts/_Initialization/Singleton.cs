@@ -7,13 +7,11 @@ public abstract class Singleton<T> : InitializableComponent where T : Initializa
     public static T Instance {
         get {
             if (isQuitting) {
-                //Debug.LogWarning($"[Singleton] Instance '{typeof(T)}' already destroyed on application quit. Won't create again - returning null.");
                 return null;
             }
 
             if (instance == null) {
                 instance = FindObjectOfType<T>();
-
                 if (instance == null) {
                     Debug.LogError($"{typeof(T).Name} not found in scene!");
                 }
@@ -24,8 +22,6 @@ public abstract class Singleton<T> : InitializableComponent where T : Initializa
 
     protected override void Awake() {
         base.Awake();
-
-        // Reset the quitting flag when a new instance is created
         isQuitting = false;
 
         if (instance != null && instance != this) {
@@ -35,7 +31,9 @@ public abstract class Singleton<T> : InitializableComponent where T : Initializa
         instance = this as T;
     }
 
-    protected virtual void OnDestroy() {
+    // Added override keyword to properly override base class method
+    protected override void OnDestroy() {
+        base.OnDestroy();
         if (instance == this) {
             instance = null;
         }
@@ -45,7 +43,6 @@ public abstract class Singleton<T> : InitializableComponent where T : Initializa
         isQuitting = true;
     }
 
-    // Optional: Add this if you want to reset when entering play mode in editor
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void ResetStatics() {
         isQuitting = false;

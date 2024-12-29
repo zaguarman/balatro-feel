@@ -216,12 +216,17 @@ public class GameManager : InitializableComponent {
         var state = $"=== Game State {(string.IsNullOrEmpty(action) ? "" : $"- {action}")} ===\n";
 
         if (Player1 != null) {
-            state += $"Player 1 - Health: {Player1.Health}, Hand: {Player1.Hand.Count}, Battlefield: {Player1.Battlefield.Count}\n";
+            state += $"Player 1 - Health: {Player1.Health}, Hand: {Player1.Hand.Count}\n";
         }
 
+        Log(state, LogTag.Players | LogTag.Creatures | LogTag.Actions);
+        Player1?.LogBattlefieldCreatures();
+
         if (Player2 != null) {
-            state += $"Player 2 - Health: {Player2.Health}, Hand: {Player2.Hand.Count}, Battlefield: {Player2.Battlefield.Count}\n";
+            state += $"Player 2 - Health: {Player2.Health}, Hand: {Player2.Hand.Count}\n";
         }
+
+        Player2?.LogBattlefieldCreatures();
 
         if (ActionsQueue != null) {
             state += $"Pending Actions: {ActionsQueue.GetPendingActionsCount()}\n";
@@ -230,7 +235,7 @@ public class GameManager : InitializableComponent {
         Log(state, LogTag.Players | LogTag.Creatures | LogTag.Actions);
     }
 
-    private void OnDestroy() {
+    protected override void OnDestroy() {
         if (instance == this) {
             var resolveButton = gameReferences?.GetResolveActionsButton();
             if (resolveButton != null) {

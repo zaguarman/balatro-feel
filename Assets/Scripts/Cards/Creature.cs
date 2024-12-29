@@ -33,7 +33,7 @@ public class Creature : Card, ICreature {
     public override void Play(IPlayer owner, ActionsQueue context, ITarget target = null) {
         Log($"Playing {Name} with {Effects.Count} effects", LogTag.Creatures | LogTag.Cards | LogTag.Actions);
         Owner = owner;
-        context.AddAction(new SummonCreatureAction(this, owner));
+        context.AddAction(new SummonCreatureAction(this, owner, target));
     }
 
     public void TakeDamage(int damage) {

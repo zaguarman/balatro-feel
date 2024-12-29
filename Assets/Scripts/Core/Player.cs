@@ -21,6 +21,7 @@ public interface IPlayer : IEntity, IDamageable {
     ICreature GetCreatureInSlot(ITarget slotId);
     Dictionary<string, ITarget> GetCreatureSlotMap();
     void InitializeBattlefield(List<BattlefieldSlot> slots);
+    void LogBattlefieldCreatures();
 }
 
 public class Player : Entity, IPlayer {
@@ -49,6 +50,14 @@ public class Player : Entity, IPlayer {
         Battlefield.Clear();
         Battlefield.AddRange(slots);
         Log($"Initialized battlefield with {slots.Count} slots", LogTag.Initialization);
+    }
+
+    public void LogBattlefieldCreatures() {
+        foreach (var slot in Battlefield) {
+            if (slot.IsOccupied()) {
+                Log($"Slot {slot.TargetId} is occupied by {slot.OccupyingCreature.Name}", LogTag.Creatures);
+            }
+        }
     }
 
     public bool IsPlayer1() {
