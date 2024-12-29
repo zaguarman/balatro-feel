@@ -20,7 +20,7 @@ MonoBehaviour:
     filterState: 1
     color: {r: 1, g: 0.8784314, b: 0.4, a: 1}
   - tagValue: 4
-    filterState: 2
+    filterState: 1
     color: {r: 1, g: 0.6, b: 1, a: 1}
   - tagValue: 8
     filterState: 1
@@ -39,7 +39,7 @@ MonoBehaviour:
     color: {r: 0.87058824, g: 0.72156864, b: 0.5294118, a: 1}
   classFilters:
   - className: ActionsQueue
-    filterState: 1
+    filterState: 2
   - className: ArrowIndicator
     filterState: 2
   - className: BattlefieldArrowManager
@@ -49,51 +49,51 @@ MonoBehaviour:
   - className: BattlefieldUI
     filterState: 1
   - className: Card
-    filterState: 1
+    filterState: 2
   - className: CardContainer
-    filterState: 1
+    filterState: 2
   - className: CardController
-    filterState: 1
+    filterState: 2
   - className: CardData
-    filterState: 1
+    filterState: 2
   - className: CardDealingService
-    filterState: 1
+    filterState: 2
   - className: CardDropZone
-    filterState: 1
+    filterState: 2
   - className: CardFactory
-    filterState: 1
+    filterState: 2
   - className: ContainerSettings
-    filterState: 1
+    filterState: 2
   - className: Creature
-    filterState: 1
+    filterState: 2
   - className: Deck
-    filterState: 1
+    filterState: 2
   - className: Entity
-    filterState: 1
+    filterState: 2
   - className: GameActions
-    filterState: 1
+    filterState: 2
   - className: GameBootstrap
-    filterState: 1
+    filterState: 2
   - className: GameManager
-    filterState: 1
+    filterState: 0
   - className: GameMediator
-    filterState: 1
+    filterState: 2
   - className: GameReferences
-    filterState: 1
+    filterState: 2
   - className: GameUI
-    filterState: 1
+    filterState: 2
   - className: HandUI
-    filterState: 1
+    filterState: 2
   - className: HealthHandler
-    filterState: 1
+    filterState: 2
   - className: Player
-    filterState: 1
+    filterState: 2
   - className: PlayerUI
-    filterState: 1
+    filterState: 2
   - className: Target
-    filterState: 1
+    filterState: 2
   - className: TestSetup
-    filterState: 1
+    filterState: 2
   - className: UIComponent
-    filterState: 1
-  showStackTrace: 0
+    filterState: 2
+  showStackTrace: 1
