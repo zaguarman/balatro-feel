@@ -4,50 +4,32 @@ using UnityEngine;
 using static DebugLogger;
 
 public class HandUI : CardContainer {
-    private void Start() {
-        if (InitializationManager.Instance.IsComponentInitialized<GameMediator>()) {
-            InitializeReferences();
-        } else {
-            InitializationManager.Instance.OnSystemInitialized.AddListener(InitializeReferences);
-        }
-    }
-
-    private void InitializeReferences() {
-        if (!InitializationManager.Instance.IsComponentInitialized<GameManager>()) {
-            LogWarning("GameManager not initialized yet, will retry later", LogTag.UI | LogTag.Initialization);
-            return;
-        }
-
-        if (player != null) {
-            Initialize(player);
-        }
-    }
-
-    public override void Initialize(IPlayer assignedPlayer) {
-        player = assignedPlayer;
+    public override void Initialize(IPlayer player) {
         base.Initialize(player);
     }
 
     protected override void RegisterEvents() {
         if (gameMediator != null) {
-            gameMediator.AddGameStateChangedListener(UpdateUI);
+            gameMediator.AddHandStateChangedListener(UpdateUI);
             gameMediator.AddGameInitializedListener(OnGameInitialized);
         }
     }
 
     protected override void UnregisterEvents() {
         if (gameMediator != null) {
-            gameMediator.RemoveGameStateChangedListener(UpdateUI);
+            gameMediator.RemoveHandStateChangedListener(UpdateUI);
             gameMediator.RemoveGameInitializedListener(OnGameInitialized);
         }
     }
 
     private void OnGameInitialized() {
-        UpdateUI();
+        UpdateUI(Player);
     }
 
-    public override void UpdateUI() {
-        if (!IsInitialized || player == null) return;
+    public override void UpdateUI(IPlayer player) {
+        if (!IsInitialized || Player == null) return;
+
+        if (player != Player) return;
 
         foreach (var card in cards.ToList()) {
             RemoveCard(card);
@@ -76,7 +58,7 @@ public class HandUI : CardContainer {
         if (controller != null) {
             var data = CreateCardData(cardData);
             Log($"Creating card {cardData.Name} with {cardData.Effects.Count} effects", LogTag.UI | LogTag.Cards);
-            controller.Setup(data, player);
+            controller.Setup(data, Player);
             SetupCardEventHandlers(controller);
         }
         return controller;

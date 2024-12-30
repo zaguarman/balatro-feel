@@ -48,24 +48,28 @@ public class ActionsQueue {
             return;
         }
 
+        bool queueChanged = false;
         string activeCreatureId = GetActiveCreatureId(action);
 
         if (activeCreatureId != null) {
             if (activeCreatureActions.ContainsKey(activeCreatureId)) {
                 Log($"Replacing existing action for creature {activeCreatureId}", LogTag.Actions);
                 actionsList.Remove(activeCreatureActions[activeCreatureId]);
+                queueChanged = true;
             }
             activeCreatureActions[activeCreatureId] = action;
+            queueChanged = true;
         }
 
         InsertActionWithPriority(action);
+        queueChanged = true;
         Log($"Added action to queue: {action.GetType().Name}", LogTag.Actions);
-
-        // log number of actions in the queue
         Log($"Actions in queue: {actionsList.Count}", LogTag.Actions);
 
-        OnActionsQueued.Invoke();
-        gameMediator.NotifyGameStateChanged();
+        if (queueChanged) {
+            OnActionsQueued.Invoke();
+            gameMediator.NotifyActionsQueueChanged();
+        }
     }
 
     private void InsertActionWithPriority(IGameAction action) {
@@ -97,12 +101,12 @@ public class ActionsQueue {
     }
 
     public void ResolveActions() {
-        // Early return if there are no actions to process
         if (actionsList.Count == 0) {
             Log("No actions to resolve", LogTag.Actions);
             return;
         }
 
+        bool queueChanged = false;
         currentIterationDepth++;
         Log($"Resolving actions. Queue size: {actionsList.Count}", LogTag.Actions);
 
@@ -112,6 +116,7 @@ public class ActionsQueue {
         while (actionsList.Count > 0) {
             var action = actionsList[0];
             actionsList.RemoveAt(0);
+            queueChanged = true;
 
             string activeCreatureId = GetActiveCreatureId(action);
             if (activeCreatureId != null) {
@@ -126,8 +131,11 @@ public class ActionsQueue {
         activeCreatureActions.Clear();
         combatHandler?.ResetAttackingCreatures();
 
-        OnActionsResolved.Invoke();
-        gameMediator.NotifyGameStateChanged();
+        if (queueChanged) {
+            OnActionsResolved.Invoke();
+            gameMediator.NotifyActionsQueueChanged();
+            gameMediator.NotifyGameStateChanged();
+        }
         Log("Action resolution complete", LogTag.Actions);
     }
 
@@ -145,11 +153,14 @@ public class ActionsQueue {
     public IReadOnlyCollection<IGameAction> GetPendingActions() => actionsList.AsReadOnly();
 
     public void Cleanup() {
-        actionsList.Clear();
-        activeCreatureActions.Clear();
-        processedEffects.Clear();
-        OnActionsQueued.RemoveAllListeners();
-        OnActionsResolved.RemoveAllListeners();
-        Log("Actions queue cleaned up", LogTag.Actions);
+        if (actionsList.Count > 0 || activeCreatureActions.Count > 0) {
+            actionsList.Clear();
+            activeCreatureActions.Clear();
+            processedEffects.Clear();
+            OnActionsQueued.RemoveAllListeners();
+            OnActionsResolved.RemoveAllListeners();
+            Log("Actions queue cleaned up", LogTag.Actions);
+            gameMediator.NotifyActionsQueueChanged();
+        }
     }
 }

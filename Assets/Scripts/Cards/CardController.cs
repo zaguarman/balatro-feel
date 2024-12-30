@@ -24,7 +24,7 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
     private Transform originalParent;
     private bool isDragging;
     private CardData cardData;
-    private IPlayer player;
+
     private ICreature linkedCreature;
 
     public CardUnityEvent OnBeginDragEvent = new CardUnityEvent();
@@ -35,7 +35,7 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
 
     public Transform OriginalParent => originalParent;
     public ICreature GetLinkedCreature() => linkedCreature;
-    public bool IsPlayer1Card() => player?.IsPlayer1() ?? false;
+    public bool IsPlayer1Card() => Player?.IsPlayer1() ?? false;
     public CardData GetCardData() => cardData;
 
 
@@ -55,8 +55,8 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
     }
 
     public void Setup(CardData data, IPlayer owner, string creatureTargetId = null) {
+        base.Initialize(owner);
         cardData = data;
-        player = owner;
 
         if (cardData is CreatureData) {
             linkedCreature = FindLinkedCreature();
@@ -67,7 +67,7 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
 
     private ICreature FindLinkedCreature() {
         // Early return if we can't find a creature
-        if (cardData == null || player == null || !(cardData is CreatureData)) {
+        if (cardData == null || Player == null || !(cardData is CreatureData)) {
             return null;
         }
 
@@ -77,15 +77,15 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
         }
 
         // Search in player's battlefield
-        foreach (var slot in player.Battlefield) {
+        foreach (var slot in Player.Battlefield) {
             if (slot.OccupyingCreature != null && slot.OccupyingCreature.Name == cardData.cardName) {
                 return slot.OccupyingCreature;
             }
         }
 
         // Search in opponent's battlefield
-        if (player.Opponent != null) {
-            foreach (var slot in player.Opponent.Battlefield) {
+        if (Player.Opponent != null) {
+            foreach (var slot in Player.Opponent.Battlefield) {
                 if (slot.OccupyingCreature != null && slot.OccupyingCreature.Name == cardData.cardName) {
                     return slot.OccupyingCreature;
                 }
@@ -97,7 +97,6 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
 
     protected override void RegisterEvents() {
         if (gameMediator != null) {
-            gameMediator.AddGameStateChangedListener(UpdateUI);
             gameMediator.AddCreatureDamagedListener(OnCreatureDamaged);
             gameMediator.AddCreatureDiedListener(OnCreatureDied);
         }
@@ -105,7 +104,6 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
 
     protected override void UnregisterEvents() {
         if (gameMediator != null) {
-            gameMediator.RemoveGameStateChangedListener(UpdateUI);
             gameMediator.RemoveCreatureDamagedListener(OnCreatureDamaged);
             gameMediator.RemoveCreatureDiedListener(OnCreatureDied);
         }
@@ -127,7 +125,7 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
         }
     }
 
-    public override void UpdateUI() {
+    public override void UpdateUI(IPlayer player = null) {
         if (cardData == null) {
             LogWarning("Attempted to update UI with null card data", LogTag.UI | LogTag.Cards);
             return;
@@ -160,8 +158,8 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
     }
 
     private void UpdateCardVisuals() {
-        if (cardImage != null && player != null) {
-            cardImage.color = player.IsPlayer1()
+        if (cardImage != null && Player != null) {
+            cardImage.color = Player.IsPlayer1()
                 ? gameReferences.GetPlayer1CardColor()
                 : gameReferences.GetPlayer2CardColor();
         }

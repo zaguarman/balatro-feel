@@ -20,7 +20,6 @@ public class GameUI : UIComponent {
     private BattlefieldUI player1BattlefieldUI;
     private BattlefieldUI player2BattlefieldUI;
     private WeatherController weatherController;
-    private GameManager gameManager;
     private bool weatherSystemInitialized = false;
 
     protected override void Awake() {
@@ -40,12 +39,6 @@ public class GameUI : UIComponent {
             return;
         }
 
-        gameManager = GameManager.Instance;
-        if (gameManager == null) {
-            LogError("GameManager reference is null", LogTag.UI | LogTag.Initialization);
-            return;
-        }
-
         GetReferences();
         if (!ValidateReferences()) {
             LogError("Failed to validate UI references", LogTag.UI | LogTag.Initialization);
@@ -58,7 +51,7 @@ public class GameUI : UIComponent {
 
         IsInitialized = true;
         Log("GameUI initialized successfully", LogTag.UI | LogTag.Initialization);
-        onInitialized.Invoke(); 
+        onInitialized.Invoke();
     }
 
     private void GetReferences() {
@@ -127,7 +120,6 @@ public class GameUI : UIComponent {
 
     protected override void RegisterEvents() {
         if (gameMediator != null) {
-            gameMediator.AddGameStateChangedListener(UpdateUI);
             gameMediator.AddGameInitializedListener(OnGameInitialized);
             Log("GameUI events registered", LogTag.UI | LogTag.Initialization);
         }
@@ -135,29 +127,18 @@ public class GameUI : UIComponent {
 
     protected override void UnregisterEvents() {
         if (gameMediator != null) {
-            gameMediator.RemoveGameStateChangedListener(UpdateUI);
             gameMediator.RemoveGameInitializedListener(OnGameInitialized);
             Log("GameUI events unregistered", LogTag.UI);
         }
     }
 
+    public override void UpdateUI(IPlayer player = null) {
+        // do nothing, the ui components are self contained
+    }
+
     private void OnGameInitialized() {
         UpdateUI();
         Log("GameUI updated after game initialization", LogTag.UI);
-    }
-
-    public override void UpdateUI() {
-        if (!IsInitialized) {
-            LogWarning("Attempted to update UI before initialization", LogTag.UI);
-            return;
-        }
-
-        player1UI?.UpdateUI();
-        player2UI?.UpdateUI();
-        player1BattlefieldUI?.UpdateUI();
-        player2BattlefieldUI?.UpdateUI();
-
-        Log("All UI components updated", LogTag.UI);
     }
 
     protected override void OnDestroy() {

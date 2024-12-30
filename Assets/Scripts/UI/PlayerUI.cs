@@ -1,41 +1,40 @@
 using UnityEngine;
 
 public class PlayerUI : UIComponent {
-    private IPlayer player;
     private HandUI handUI;
 
-    public void Initialize(IPlayer player) {
-        this.player = player;
+    public override void Initialize(IPlayer player) {
+        base.Initialize(player);
 
         if (gameReferences == null) {
             Debug.LogError("GameReferences not found during PlayerUI initialization");
             return;
         }
 
-        InitializeHandUI();
+        InitializeHandUI(Player);
 
         IsInitialized = true;
     }
 
     protected override void RegisterEvents() {
         if (gameMediator != null) {
-            gameMediator.AddGameStateChangedListener(UpdateUI);
+            //gameMediator.AddGameStateChangedListener(UpdateUI);
         }
     }
 
     protected override void UnregisterEvents() {
         if (gameMediator != null) {
-            gameMediator.RemoveGameStateChangedListener(UpdateUI);
+            //gameMediator.RemoveGameStateChangedListener(UpdateUI);
         }
     }
 
-    public override void UpdateUI() {
-        if (!IsInitialized || player == null) return;
-        handUI?.UpdateUI();
+    public override void UpdateUI(IPlayer player) {
+        if (!IsInitialized || player != Player) return;
+        handUI?.UpdateUI(player);
     }
 
 
-    private void InitializeHandUI() {
+    private void InitializeHandUI(IPlayer player) {
         if (player == null) {
             Debug.LogError("Player is null on PlayerUI");
             return;
@@ -50,15 +49,6 @@ public class PlayerUI : UIComponent {
         } else {
             Debug.LogError($"HandUI reference missing for {(player.IsPlayer1() ? "Player 1" : "Player 2")}");
         }
-    }
-
-    public void SetPlayer(IPlayer player) {
-        this.player = player;
-        if (handUI != null) {
-            handUI.Initialize(player);
-        }
-        IsInitialized = player != null;
-        UpdateUI();
     }
 
     protected override void OnDestroy() {

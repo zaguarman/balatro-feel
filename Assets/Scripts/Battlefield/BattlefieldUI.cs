@@ -9,20 +9,11 @@ public class BattlefieldUI : CardContainer {
     private readonly List<BattlefieldSlot> slots = new List<BattlefieldSlot>();
     private Dictionary<string, CardController> creatureCards = new Dictionary<string, CardController>();
 
-    protected GameManager gameManager;
     private BattlefieldArrowManager arrowManager;
 
     #region Initialization
-
-    private void Start() {
-        gameManager = GameManager.Instance;
-        InitializeManagers();
-        CreateSlots();
-        Log("BattlefieldUI initialized", LogTag.Initialization);
-    }
-
     private void InitializeManagers() {
-        arrowManager = new BattlefieldArrowManager(transform, gameManager);
+        arrowManager = new BattlefieldArrowManager(transform, gameManager, gameMediator);
     }
 
     private void CreateSlots() {
@@ -40,10 +31,13 @@ public class BattlefieldUI : CardContainer {
     public override void Initialize(IPlayer player) {
         base.Initialize(player);
 
-        // Initialize the player's battlefield with our slots
-        player.InitializeBattlefield(slots);
+        InitializeManagers();
+        CreateSlots();
+        Player.InitializeBattlefield(slots);
 
-        UpdateUI();
+        Log("BattlefieldUI initialized", LogTag.Initialization);
+
+        UpdateUI(Player);
     }
 
     private void UpdateSlotPositions() {
@@ -73,7 +67,6 @@ public class BattlefieldUI : CardContainer {
             HandleCardFromBattlefield(card, targetSlot);
         }
 
-        arrowManager?.UpdateArrowsFromActionsQueue();
         gameMediator?.NotifyGameStateChanged();
     }
 
@@ -95,14 +88,14 @@ public class BattlefieldUI : CardContainer {
             if (newCard != null) {
                 Log($"Adding PlayCardAction for {cardData.cardName} to slot {target.TargetId}",
                     LogTag.Actions | LogTag.Cards);
-                gameManager.ActionsQueue.AddAction(new PlayCardAction(newCard, player, target));
+                gameManager.ActionsQueue.AddAction(new PlayCardAction(newCard, Player, target));
             }
         }
     }
 
     private void HandleCardFromBattlefield(CardController card, ITarget target) {
         if (target != null) {
-            if (card.IsPlayer1Card() != player.IsPlayer1()) {
+            if (card.IsPlayer1Card() != Player.IsPlayer1()) {
                 gameManager.CombatHandler.HandleCreatureCombat(card, target);
             } else {
                 HandleCreatureMove(card, target);
@@ -116,7 +109,7 @@ public class BattlefieldUI : CardContainer {
 
         var sourceSlot = slots.FirstOrDefault(s => s.OccupyingCard == card);
         if (sourceSlot != null) {
-            var moveAction = new MoveCreatureAction(creature, (ITarget)sourceSlot, targetSlot, player);
+            var moveAction = new MoveCreatureAction(creature, (ITarget)sourceSlot, targetSlot, Player);
             gameManager.ActionsQueue.AddAction(moveAction);
         }
     }
@@ -141,12 +134,11 @@ public class BattlefieldUI : CardContainer {
 
     #region UI Updates
 
-    public override void UpdateUI() {
-        if (!IsInitialized || player == null) return;
+    public override void UpdateUI(IPlayer player) {
+        if (!IsInitialized || player != Player) return;
 
         UpdateCreatureCards();
         UpdateSlotOccupancy();
-        arrowManager?.UpdateArrowsFromActionsQueue();
     }
 
     private void UpdateCreatureCards() {
@@ -156,7 +148,7 @@ public class BattlefieldUI : CardContainer {
         }
 
         // Update based on player's battlefield state
-        foreach (var battlefieldSlot in player.Battlefield) {
+        foreach (var battlefieldSlot in Player.Battlefield) {
             var creature = battlefieldSlot.OccupyingCreature;
             if (creature == null) continue;
 
@@ -186,24 +178,17 @@ public class BattlefieldUI : CardContainer {
 
     protected override void RegisterEvents() {
         if (gameMediator != null) {
-            gameMediator.AddGameStateChangedListener(UpdateUI);
+            //gameMediator.AddGameStateChangedListener(UpdateUI);
             gameMediator.AddCreatureDiedListener(OnCreatureDied);
-            gameManager.ActionsQueue.OnActionsResolved.AddListener(OnActionsResolved);
         }
     }
 
     protected override void UnregisterEvents() {
         if (gameMediator != null) {
-            gameMediator.RemoveGameStateChangedListener(UpdateUI);
+            //gameMediator.RemoveGameStateChangedListener(UpdateUI);
             gameMediator.RemoveCreatureDiedListener(OnCreatureDied);
-            gameManager.ActionsQueue.OnActionsResolved.RemoveListener(OnActionsResolved);
         }
     }
-
-    private void OnActionsResolved() {
-        arrowManager.UpdateArrowsFromActionsQueue();
-    }
-
     private void OnCreatureDied(ICreature creature) {
         if (!IsInitialized) return;
 
@@ -219,7 +204,7 @@ public class BattlefieldUI : CardContainer {
             creatureCards.Remove(creature.TargetId);
         }
 
-        UpdateUI();
+        UpdateUI(Player);
     }
 
     #endregion
@@ -245,7 +230,7 @@ public class BattlefieldUI : CardContainer {
 
     protected override void OnCardEndDrag(CardController card) {
         arrowManager.HideDragArrow();
-        UpdateUI();
+        UpdateUI(Player);
     }
 
     #endregion

@@ -7,15 +7,33 @@ public class BattlefieldArrowManager {
     private readonly Transform parentTransform;
     private readonly GameManager gameManager;
     private readonly GameReferences gameReferences;
+    private readonly GameMediator gameMediator;
     private ArrowIndicator dragArrowIndicator;
     private Dictionary<string, ArrowIndicator> activeArrows = new Dictionary<string, ArrowIndicator>();
     private bool isUpdating = false;
+    private int lastProcessedActionCount = 0;
 
-    public BattlefieldArrowManager(Transform parent, GameManager gameManager) {
+    public BattlefieldArrowManager(Transform parent, GameManager gameManager, GameMediator gameMediator) {
         this.parentTransform = parent;
         this.gameManager = gameManager;
         this.gameReferences = GameReferences.Instance;
+        this.gameMediator = gameMediator;
         SetupDragArrow();
+        RegisterEvents();
+    }
+
+    private void RegisterEvents() {
+        gameMediator.AddActionsQueueChangedListener(OnActionsQueueChanged);
+    }
+
+    private void OnActionsQueueChanged() {
+        if (gameManager.ActionsQueue == null) return;
+
+        int currentActionCount = gameManager.ActionsQueue.GetPendingActionsCount();
+        if (currentActionCount != lastProcessedActionCount) {
+            lastProcessedActionCount = currentActionCount;
+            UpdateArrowsFromActionsQueue();
+        }
     }
 
     private void SetupDragArrow() {
@@ -41,14 +59,12 @@ public class BattlefieldArrowManager {
         }
     }
 
-    public void UpdateArrowsFromActionsQueue() {
-        // Prevent recursive updates
+    private void UpdateArrowsFromActionsQueue() {
         if (isUpdating) return;
 
         isUpdating = true;
         Log("Starting update of arrows from actions queue", LogTag.Actions);
 
-        // Clear existing arrows before recreating
         ClearExistingArrows();
 
         if (gameManager.ActionsQueue == null) {
@@ -60,7 +76,6 @@ public class BattlefieldArrowManager {
         var pendingActions = gameManager.ActionsQueue.GetPendingActions();
         Log($"Number of pending actions: {pendingActions.Count}", LogTag.Actions);
 
-        // Process all pending actions
         ProcessQueuedActions(pendingActions);
 
         isUpdating = false;
@@ -80,7 +95,6 @@ public class BattlefieldArrowManager {
             string actionKey = GetActionKey(action);
             if (actionKey == null) continue;
 
-            // Only create new arrow if one doesn't exist for this action
             if (!activeArrows.ContainsKey(actionKey)) {
                 CreateArrowForAction(action, actionKey);
             }
@@ -128,7 +142,7 @@ public class BattlefieldArrowManager {
         endPos.z = 0;
 
         arrow.Show(startPos, endPos);
-        arrow.SetColor(Color.red); // Combat arrows are red
+        arrow.SetColor(Color.red);
         activeArrows[actionKey] = arrow;
 
         Log($"Created combat targeting arrow from {attacker.Name} to slot {targetSlot.TargetId}", LogTag.Actions | LogTag.UI);
@@ -148,7 +162,7 @@ public class BattlefieldArrowManager {
         endPos.z = 0;
 
         arrow.Show(startPos, endPos);
-        arrow.SetColor(Color.red); // Damage arrows are red
+        arrow.SetColor(Color.red);
         activeArrows[actionKey] = arrow;
 
         Log($"Created damage arrow from {attacker.Name} to {target.Name}", LogTag.Actions | LogTag.UI);
@@ -166,7 +180,7 @@ public class BattlefieldArrowManager {
         endPos.z = 0;
 
         arrow.Show(startPos, endPos);
-        arrow.SetColor(Color.green); // Move arrows are green
+        arrow.SetColor(Color.green);
         activeArrows[actionKey] = arrow;
 
         Log($"Created move arrow for {creature.Name} to slot {moveAction.GetToSlot()}", LogTag.Actions | LogTag.UI);
@@ -186,7 +200,7 @@ public class BattlefieldArrowManager {
         endPos.z = 0;
 
         arrow.Show(startPos, endPos);
-        arrow.SetColor(Color.red); // Player damage arrows are red
+        arrow.SetColor(Color.red);
         activeArrows[actionKey] = arrow;
 
         Log($"Created player damage arrow from {sourceCreature.Name} to Player {(targetPlayer.IsPlayer1() ? "1" : "2")}",
@@ -196,11 +210,9 @@ public class BattlefieldArrowManager {
     private Vector3 GetCreaturePosition(ICreature creature) {
         if (creature == null) return Vector3.zero;
 
-        // Try to find the card in Player 1's battlefield
         var player1Battlefield = gameReferences.GetPlayer1BattlefieldUI();
         var cardController = player1Battlefield?.GetCardControllerByCreatureId(creature.TargetId);
 
-        // If not found in Player 1's battlefield, try Player 2's
         if (cardController == null) {
             var player2Battlefield = gameReferences.GetPlayer2BattlefieldUI();
             cardController = player2Battlefield?.GetCardControllerByCreatureId(creature.TargetId);
@@ -233,7 +245,6 @@ public class BattlefieldArrowManager {
         var player1Battlefield = gameReferences.GetPlayer1BattlefieldUI();
         var player2Battlefield = gameReferences.GetPlayer2BattlefieldUI();
 
-        // Try to find the slot in either battlefield
         Transform slotTransform = null;
         if (player1Battlefield != null) {
             var slots = player1Battlefield.GetComponentsInChildren<BattlefieldSlot>();
@@ -254,9 +265,11 @@ public class BattlefieldArrowManager {
     }
 
     public void Cleanup() {
+        gameMediator.RemoveActionsQueueChangedListener(OnActionsQueueChanged);
         ClearExistingArrows();
         if (dragArrowIndicator != null) {
             Object.Destroy(dragArrowIndicator.gameObject);
         }
+        lastProcessedActionCount = 0;
     }
 }

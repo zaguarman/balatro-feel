@@ -73,7 +73,7 @@ public class Player : Entity, IPlayer {
     public void AddToHand(ICard card) {
         if (card == null) return;
         Hand.Add(card);
-        gameMediator?.NotifyGameStateChanged();
+        gameMediator?.NotifyHandStateChanged(this);
     }
 
     public void AddToBattlefield(ICreature creature, ITarget slot = null) {

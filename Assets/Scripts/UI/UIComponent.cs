@@ -4,16 +4,23 @@ using UnityEngine.Events;
 public abstract class UIComponent : InitializableComponent {
     protected GameMediator gameMediator => GameMediator.Instance;
     protected GameReferences gameReferences => GameReferences.Instance;
+    protected GameManager gameManager => GameManager.Instance;
+
     private bool hasBeenDestroyed = false;
 
     public UnityEvent onInitialized = new UnityEvent();
 
+    public IPlayer Player { get; private set; }
+
     protected override void Awake() {
         base.Awake();
-        // Any additional Awake logic for UI components
     }
 
-    public override void Initialize() {
+    public virtual void Initialize(IPlayer player = null) {
+        if (Player == null) {
+            Player = player;
+        }
+
         if (IsInitialized) return;
 
         // Ensure dependencies are initialized
@@ -23,7 +30,6 @@ public abstract class UIComponent : InitializableComponent {
         }
 
         RegisterEvents();
-        UpdateUI();
         base.Initialize();
 
         // Fire the UnityEvent when initialization is complete
@@ -33,7 +39,6 @@ public abstract class UIComponent : InitializableComponent {
     protected virtual void OnEnable() {
         if (IsInitialized && !hasBeenDestroyed) {
             RegisterEvents();
-            UpdateUI();
         }
     }
 
@@ -58,5 +63,5 @@ public abstract class UIComponent : InitializableComponent {
 
     protected abstract void RegisterEvents();
     protected abstract void UnregisterEvents();
-    public abstract void UpdateUI();
+    public abstract void UpdateUI(IPlayer player = null);
 }

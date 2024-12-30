@@ -14,7 +14,7 @@ public abstract class CardContainer : UIComponent, IDropHandler, IPointerEnterHa
     [SerializeField] protected Color hoverColor = new Color(1f, 1f, 0f, 0.5f);
 
     protected List<CardController> cards = new List<CardController>();
-    protected IPlayer player;
+
     protected RectTransform containerRect;
     protected CardDropZone dropZoneHandler;
 
@@ -72,7 +72,8 @@ public abstract class CardContainer : UIComponent, IDropHandler, IPointerEnterHa
     }
 
     public virtual void Initialize(IPlayer player) {
-        this.player = player;
+        base.Initialize(player);
+
         containerRect = GetComponent<RectTransform>();
         if (containerRect == null) {
             containerRect = gameObject.AddComponent<RectTransform>();
@@ -81,7 +82,7 @@ public abstract class CardContainer : UIComponent, IDropHandler, IPointerEnterHa
         SetupDropZone();
         UpdateLayout();
         IsInitialized = true;
-        UpdateUI();
+        UpdateUI(Player);
     }
 
     protected void UpdateLayout() {
@@ -221,7 +222,7 @@ public abstract class CardContainer : UIComponent, IDropHandler, IPointerEnterHa
     }
 
     protected virtual CardController CreateCard(ICard cardData) {
-        return CardFactory.CreateCardController(cardData, player, transform, gameReferences);
+        return CardFactory.CreateCardController(cardData, Player, transform, gameReferences);
     }
 
     protected CardController CreateCreatureCard(ICreature creature) {
@@ -232,7 +233,7 @@ public abstract class CardContainer : UIComponent, IDropHandler, IPointerEnterHa
         var controller = cardObj.GetComponent<CardController>();
         if (controller != null) {
             var data = CreateCardData(creature);
-            controller.Setup(data, player, creature.TargetId);
+            controller.Setup(data, Player, creature.TargetId);
         }
         return controller;
     }

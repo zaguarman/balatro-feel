@@ -8,7 +8,6 @@ public class WeatherController : MonoBehaviour {
     private TextMeshProUGUI weatherText;
     private GameManager gameManager;
     private GameReferences gameReferences;
-    private bool isInitialized = false;
 
     private void Awake() {
         InitializeReferences();
@@ -16,9 +15,9 @@ public class WeatherController : MonoBehaviour {
 
     private void Start() {
         // Set initial weather to Rainy after everything is initialized
-        if (isInitialized && gameManager?.WeatherSystem != null) {
+        if (gameManager?.WeatherSystem != null) {
             gameManager.WeatherSystem.SetWeather(WeatherType.Rainy);
-            UpdateWeatherText(WeatherType.Rainy);  
+            UpdateWeatherText(WeatherType.Rainy);
         }
     }
 
@@ -29,7 +28,6 @@ public class WeatherController : MonoBehaviour {
         if (gameManager != null && gameReferences != null && gameReferences.AreReferencesValid()) {
             GetUIReferences();
             SetupButton();
-            isInitialized = true;
             Log("WeatherController initialized successfully", LogTag.Initialization);
         } else {
             Log("Starting delayed initialization", LogTag.Initialization);
@@ -52,7 +50,6 @@ public class WeatherController : MonoBehaviour {
             if (gameManager != null && gameReferences != null && gameReferences.AreReferencesValid()) {
                 GetUIReferences();
                 SetupButton();
-                isInitialized = true;
 
                 // Set initial weather after delayed initialization
                 if (gameManager.WeatherSystem != null) {
@@ -98,11 +95,6 @@ public class WeatherController : MonoBehaviour {
     }
 
     private void CycleWeather() {
-        if (!isInitialized) {
-            LogError("Attempted to cycle weather before initialization", LogTag.UI | LogTag.Effects);
-            return;
-        }
-
         if (gameManager?.WeatherSystem == null) {
             LogError("Cannot cycle weather - WeatherSystem is null", LogTag.UI | LogTag.Effects);
             return;
@@ -120,16 +112,7 @@ public class WeatherController : MonoBehaviour {
     }
 
     private void UpdateWeatherText(WeatherType weather) {
-        if (!isInitialized) {
-            LogWarning("Attempted to update weather text before initialization", LogTag.UI);
-            return;
-        }
-
-        if (weatherText != null) {
-            string text = WeatherSystem.GetWeatherDescription(weather);
-            weatherText.text = text;
-            Log($"Updated weather text to: {text}", LogTag.UI);
-        }
+        weatherText.text = WeatherSystem.GetWeatherDescription(weather);
     }
 
     private void OnDestroy() {

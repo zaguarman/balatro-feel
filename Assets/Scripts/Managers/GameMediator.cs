@@ -12,6 +12,9 @@ public class GameMediator : Singleton<GameMediator> {
         public readonly UnityEvent GameInitialized = new UnityEvent();
         public readonly UnityEvent<ICreature, IPlayer> CreatureSummoned = new UnityEvent<ICreature, IPlayer>();
         public readonly UnityEvent<ICreature> CreaturePreSummon = new UnityEvent<ICreature>();
+        public readonly UnityEvent ActionsQueueChanged = new UnityEvent();
+        public readonly UnityEvent<IPlayer> HandStateChanged = new UnityEvent<IPlayer>();
+        public readonly UnityEvent<IPlayer> BattlefieldStateChanged = new UnityEvent<IPlayer>();
 
         public void ClearAllListeners() {
             PlayerDamaged.RemoveAllListeners();
@@ -22,6 +25,9 @@ public class GameMediator : Singleton<GameMediator> {
             GameInitialized.RemoveAllListeners();
             CreatureSummoned.RemoveAllListeners();
             CreaturePreSummon.RemoveAllListeners();
+            ActionsQueueChanged.RemoveAllListeners();
+            HandStateChanged.RemoveAllListeners();
+            BattlefieldStateChanged.RemoveAllListeners();
         }
     }
 
@@ -100,6 +106,33 @@ public class GameMediator : Singleton<GameMediator> {
 
     public void RemoveCreaturePreSummonListener(UnityAction<ICreature> listener) {
         events.CreaturePreSummon.RemoveListener(listener);
+    }
+
+    public void AddActionsQueueChangedListener(UnityAction listener) {
+        ValidateInitialization();
+        events.ActionsQueueChanged.AddListener(listener);
+    }
+
+    public void RemoveActionsQueueChangedListener(UnityAction listener) {
+        events.ActionsQueueChanged.RemoveListener(listener);
+    }
+
+    public void AddHandStateChangedListener(UnityAction<IPlayer> listener) {
+        ValidateInitialization();
+        events.HandStateChanged.AddListener(listener);
+    }
+
+    public void RemoveHandStateChangedListener(UnityAction<IPlayer> listener) {
+        events.HandStateChanged.RemoveListener(listener);
+    }
+
+    public void AddBattlefieldStateChangedListener(UnityAction<IPlayer> listener) {
+        ValidateInitialization();
+        events.BattlefieldStateChanged.AddListener(listener);
+    }
+
+    public void RemoveBattlefieldStateChangedListener(UnityAction<IPlayer> listener) {
+        events.BattlefieldStateChanged.RemoveListener(listener);
     }
     #endregion
 
@@ -194,6 +227,23 @@ public class GameMediator : Singleton<GameMediator> {
         events.CreatureSummoned.Invoke(creature, owner);
         Log($"Creature summoned: {creature.Name} by {(owner.IsPlayer1() ? "Player 1" : "Player 2")}", LogTag.Creatures);
         NotifyGameStateChanged();
+    }
+
+    public void NotifyActionsQueueChanged() {
+        ValidateInitialization();
+        events.ActionsQueueChanged.Invoke();
+    }
+
+    public void NotifyHandStateChanged(IPlayer player) {
+        ValidateInitialization();
+        events.HandStateChanged.Invoke(player);
+        Log($"Hand state changed for {(player.IsPlayer1() ? "Player 1" : "Player 2")}", LogTag.Players | LogTag.Cards);
+    }
+
+    public void NotifyBattlefieldStateChanged(IPlayer player) {
+        ValidateInitialization();
+        events.BattlefieldStateChanged.Invoke(player);
+        Log($"Battlefield state changed for {(player.IsPlayer1() ? "Player 1" : "Player 2")}", LogTag.Players | LogTag.Cards);
     }
     #endregion
 

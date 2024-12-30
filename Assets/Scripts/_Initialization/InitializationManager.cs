@@ -19,7 +19,6 @@ public abstract class InitializableComponent : MonoBehaviour, IInitializable {
     }
 
     protected virtual void OnDestroy() {
-        // Base cleanup logic
         IsInitialized = false;
     }
 }

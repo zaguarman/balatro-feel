@@ -5,11 +5,9 @@ using TMPro;
 public class WeatherUI : UIComponent {
     [SerializeField] private Image weatherIcon;
     [SerializeField] private TextMeshProUGUI weatherText;
-    private GameManager gameManager;
 
     protected override void Awake() {
         base.Awake();
-        gameManager = GameManager.Instance;
     }
 
     protected override void RegisterEvents() {
@@ -35,7 +33,7 @@ public class WeatherUI : UIComponent {
         }
     }
 
-    public override void UpdateUI() {
+    public override void UpdateUI(IPlayer player = null) {
         if (gameManager?.WeatherSystem != null) {
             UpdateWeatherUI(gameManager.WeatherSystem.CurrentWeather);
         }
