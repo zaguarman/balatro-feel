@@ -89,9 +89,13 @@ public class Player : Entity, IPlayer {
         }
 
         var targetSlot = Battlefield.FirstOrDefault(s => s.TargetId == slot.TargetId);
-        if (targetSlot == null || targetSlot.IsOccupied()) {
-            LogWarning($"Invalid or occupied slot {slot.TargetId}", LogTag.Creatures);
+        if (targetSlot == null) {
+            LogWarning($"Invalid slot {slot.TargetId}", LogTag.Creatures);
             return;
+        }
+
+        if (targetSlot.IsOccupied()) {
+            Log($"Slot {slot.TargetId} is already occupied, replacing creature...", LogTag.Creatures);
         }
 
         // Store the creature-slot mapping
@@ -103,7 +107,7 @@ public class Player : Entity, IPlayer {
         }
 
         gameMediator?.NotifyCreatureSummoned(creature, this);
-        gameMediator?.NotifyGameStateChanged();
+        gameMediator?.NotifyBattlefieldStateChanged(this);
     }
 
     public void RemoveFromBattlefield(ICreature creature) {
