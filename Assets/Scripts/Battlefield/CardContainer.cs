@@ -71,7 +71,7 @@ public abstract class CardContainer : UIComponent, IDropHandler, IPointerEnterHa
         // Override in derived classes if needed
     }
 
-    public virtual void Initialize(IPlayer player) {
+    public override void Initialize(IPlayer player) {
         base.Initialize(player);
 
         containerRect = GetComponent<RectTransform>();

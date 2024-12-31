@@ -49,11 +49,9 @@ public class BattlefieldUI : CardContainer {
             slots[i].SetPosition(new Vector2(xPos, 0));
         }
     }
-
     #endregion
 
     #region Card Handling
-
     protected override void HandleCardDropped(CardController card) {
         if (card == null || !CanAcceptCard(card)) return;
         if (gameManager == null) return;
@@ -129,11 +127,9 @@ public class BattlefieldUI : CardContainer {
 
         return null;
     }
-
     #endregion
 
     #region UI Updates
-
     public override void UpdateUI(IPlayer player) {
         if (!IsInitialized || player != Player) return;
 
@@ -142,12 +138,10 @@ public class BattlefieldUI : CardContainer {
     }
 
     private void UpdateCreatureCards() {
-        // Clear existing cards
         foreach (var slot in slots) {
             slot.ClearSlot();
         }
 
-        // Update based on player's battlefield state
         foreach (var battlefieldSlot in Player.Battlefield) {
             var creature = battlefieldSlot.OccupyingCreature;
             if (creature == null) continue;
@@ -171,24 +165,29 @@ public class BattlefieldUI : CardContainer {
             slot.ResetVisuals();
         }
     }
-
     #endregion
 
     #region Event Handling
-
     protected override void RegisterEvents() {
         if (gameMediator != null) {
-            //gameMediator.AddGameStateChangedListener(UpdateUI);
+            gameMediator.AddCreatureSummonedListener(OnCreatureSummoned);
+            gameMediator.AddBattlefieldStateChangedListener(UpdateUI);
             gameMediator.AddCreatureDiedListener(OnCreatureDied);
         }
     }
 
     protected override void UnregisterEvents() {
         if (gameMediator != null) {
-            //gameMediator.RemoveGameStateChangedListener(UpdateUI);
+            gameMediator.RemoveCreatureSummonedListener(OnCreatureSummoned);
             gameMediator.RemoveCreatureDiedListener(OnCreatureDied);
         }
     }
+
+    private void OnCreatureSummoned(ICreature creature, IPlayer player) {
+        if (!IsInitialized || player != Player) return;
+        UpdateUI(Player);
+    }
+
     private void OnCreatureDied(ICreature creature) {
         if (!IsInitialized) return;
 
@@ -206,11 +205,9 @@ public class BattlefieldUI : CardContainer {
 
         UpdateUI(Player);
     }
-
     #endregion
 
     #region Drag Handling
-
     protected override void OnCardBeginDrag(CardController card) {
         if (card == null) return;
 
@@ -232,11 +229,9 @@ public class BattlefieldUI : CardContainer {
         arrowManager.HideDragArrow();
         UpdateUI(Player);
     }
-
     #endregion
 
     #region Cleanup
-
     protected override void OnDestroy() {
         base.OnDestroy();
         foreach (var slot in slots) {
@@ -257,7 +252,6 @@ public class BattlefieldUI : CardContainer {
             arrowManager.Cleanup();
         }
     }
-
     #endregion
 
     public CardController GetCardControllerByCreatureId(string creatureId) {
