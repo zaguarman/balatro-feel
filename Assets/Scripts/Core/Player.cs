@@ -16,22 +16,21 @@ public interface IPlayer : IEntity, IDamageable {
     void AddToBattlefield(ICreature creature, ITarget slotId = null);
     void RemoveFromBattlefield(ICreature creature);
     PlayerDamagedUnityEvent OnDamaged { get; }
-    string GetCreatureSlotTargetId(ICreature creature);
     bool HasEmptyBattlefieldSlot();
     ICreature GetCreatureInSlot(ITarget slotId);
-    Dictionary<string, ITarget> GetCreatureSlotMap();
     void InitializeBattlefield(List<BattlefieldSlot> slots);
     void LogBattlefieldCreatures();
 }
 
 public class Player : Entity, IPlayer {
-    private readonly Dictionary<string, ITarget> creatureSlotMap = new Dictionary<string, ITarget>();
-
     public int Health { get; private set; } = 20;
     public IPlayer Opponent { get; set; }
     public List<ICard> Hand { get; private set; }
     public List<BattlefieldSlot> Battlefield { get; private set; }
     public PlayerDamagedUnityEvent OnDamaged { get; } = new PlayerDamagedUnityEvent();
+
+    // is player 1 prop using the isplayer1 method
+    public bool Is_Player1 => IsPlayer1();
 
     private readonly GameMediator gameMediator;
 
@@ -98,13 +97,7 @@ public class Player : Entity, IPlayer {
             Log($"Slot {slot.TargetId} is already occupied, replacing creature...", LogTag.Creatures);
         }
 
-        // Store the creature-slot mapping
-        creatureSlotMap[creature.TargetId] = slot;
-
-        // Update the slot with the creature
-        if (targetSlot is BattlefieldSlot battlefieldSlot) {
-            battlefieldSlot.AssignCreature(creature);
-        }
+        targetSlot.AssignCreature(creature);
 
         gameMediator?.NotifyCreatureSummoned(creature, this);
         gameMediator?.NotifyBattlefieldStateChanged(this);
@@ -113,11 +106,12 @@ public class Player : Entity, IPlayer {
     public void RemoveFromBattlefield(ICreature creature) {
         if (creature == null) return;
 
-        if (creatureSlotMap.TryGetValue(creature.TargetId, out ITarget slotId)) {
-            var slot = Battlefield.FirstOrDefault(s => s.TargetId == slotId.TargetId);
-            if (slot != null) {
+        foreach (var slot in Battlefield) {
+            if (slot.IsOccupied() && slot.OccupyingCreature == creature) {
                 slot.ClearSlot();
-                creatureSlotMap.Remove(creature.TargetId);
+                Log($"Removed {creature.Name} from battlefield", LogTag.Creatures);
+                gameMediator?.NotifyBattlefieldStateChanged(this);
+                return;
             }
         }
 
@@ -125,18 +119,9 @@ public class Player : Entity, IPlayer {
         gameMediator?.NotifyGameStateChanged();
     }
 
-    public Dictionary<string, ITarget> GetCreatureSlotMap() {
-        return new Dictionary<string, ITarget>(creatureSlotMap);
-    }
-
     public ICreature GetCreatureInSlot(ITarget slotId) {
         if (string.IsNullOrEmpty(slotId?.TargetId)) return null;
         return Battlefield.FirstOrDefault(s => s.TargetId == slotId.TargetId)?.OccupyingCreature;
-    }
-
-    public string GetCreatureSlotTargetId(ICreature creature) {
-        if (creature == null) return null;
-        return creatureSlotMap.TryGetValue(creature.TargetId, out ITarget slot) ? slot.TargetId : null;
     }
 
     public bool HasEmptyBattlefieldSlot() {

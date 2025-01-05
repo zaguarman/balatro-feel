@@ -159,7 +159,6 @@ public class ActionsQueue {
             OnActionsQueued.RemoveAllListeners();
             OnActionsResolved.RemoveAllListeners();
             Log("Actions queue cleaned up", LogTag.Actions);
-            gameMediator.NotifyActionsQueueChanged();
         }
     }
 }
