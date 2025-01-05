@@ -210,12 +210,13 @@ public class BattlefieldArrowManager {
     private Vector3 GetCreaturePosition(ICreature creature) {
         if (creature == null) return Vector3.zero;
 
-        var player1Battlefield = gameReferences.GetPlayer1BattlefieldUI();
-        var cardController = player1Battlefield?.GetCardControllerByCreatureId(creature.TargetId);
+        var player1Battlefield = gameManager.Player1.Battlefield;
+
+        var cardController = gameManager.Player1.GetCardByCreature(creature);
 
         if (cardController == null) {
-            var player2Battlefield = gameReferences.GetPlayer2BattlefieldUI();
-            cardController = player2Battlefield?.GetCardControllerByCreatureId(creature.TargetId);
+            var player2Battlefield = gameManager.Player2.Battlefield;
+            cardController = gameManager.Player2.GetCardByCreature(creature);
         }
 
         if (cardController != null) {

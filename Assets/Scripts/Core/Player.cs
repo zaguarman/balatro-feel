@@ -17,9 +17,10 @@ public interface IPlayer : IEntity, IDamageable {
     void RemoveFromBattlefield(ICreature creature);
     PlayerDamagedUnityEvent OnDamaged { get; }
     bool HasEmptyBattlefieldSlot();
-    ICreature GetCreatureInSlot(ITarget slotId);
     void InitializeBattlefield(List<BattlefieldSlot> slots);
     void LogBattlefieldCreatures();
+    ICreature GetCreatureInSlot(ITarget slotId);
+    CardController GetCardByCreature(ICreature creature);
 }
 
 public class Player : Entity, IPlayer {
@@ -117,6 +118,16 @@ public class Player : Entity, IPlayer {
 
         Log($"Removed creature {creature.Name} from battlefield", LogTag.Creatures);
         gameMediator?.NotifyGameStateChanged();
+    }
+
+    public CardController GetCardByCreature(ICreature creature) {
+        foreach (BattlefieldSlot slot in Battlefield) {
+            if (slot.OccupyingCreature == creature) {
+                return slot.OccupyingCard;
+            }
+        }
+
+        return null;
     }
 
     public ICreature GetCreatureInSlot(ITarget slotId) {

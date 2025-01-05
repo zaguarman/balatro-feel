@@ -47,6 +47,7 @@ public class BattlefieldSlot : MonoBehaviour, ITarget {
 
     public void AssignCreature(ICreature creature) {
         OccupyingCreature = creature;
+        // Occupy slot with creature card
     }
 
     public void OccupySlot(CardController card) {

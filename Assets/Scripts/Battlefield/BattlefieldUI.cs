@@ -6,8 +6,7 @@ using static DebugLogger;
 
 public class BattlefieldUI : CardContainer {
     private const int MAX_SLOTS = 5;
-    private readonly List<BattlefieldSlot> slots = new List<BattlefieldSlot>();
-    private Dictionary<string, CardController> creatureCards = new Dictionary<string, CardController>();
+    private readonly List<BattlefieldSlot> BattlefieldSlotsList = new List<BattlefieldSlot>();
 
     private BattlefieldArrowManager arrowManager;
 
@@ -23,7 +22,7 @@ public class BattlefieldUI : CardContainer {
 
             var slot = slotObj.AddComponent<BattlefieldSlot>();
             slot.Initialize(defaultColor, validDropColor, invalidDropColor, hoverColor);
-            slots.Add(slot);
+            BattlefieldSlotsList.Add(slot);
         }
         UpdateSlotPositions();
     }
@@ -33,7 +32,7 @@ public class BattlefieldUI : CardContainer {
 
         InitializeManagers();
         CreateSlots();
-        Player.InitializeBattlefield(slots);
+        Player.InitializeBattlefield(BattlefieldSlotsList);
 
         Log("BattlefieldUI initialized", LogTag.Initialization);
 
@@ -44,9 +43,9 @@ public class BattlefieldUI : CardContainer {
         float totalWidth = (MAX_SLOTS - 1) * settings.spacing;
         float startX = -totalWidth / 2;
 
-        for (int i = 0; i < slots.Count; i++) {
+        for (int i = 0; i < BattlefieldSlotsList.Count; i++) {
             float xPos = startX + (settings.spacing * i);
-            slots[i].SetPosition(new Vector2(xPos, 0));
+            BattlefieldSlotsList[i].SetPosition(new Vector2(xPos, 0));
         }
     }
     #endregion
@@ -105,7 +104,7 @@ public class BattlefieldUI : CardContainer {
         var creature = card.GetLinkedCreature();
         if (creature == null) return;
 
-        var sourceSlot = slots.FirstOrDefault(s => s.OccupyingCard == card);
+        var sourceSlot = BattlefieldSlotsList.FirstOrDefault(s => s.OccupyingCard == card);
         if (sourceSlot != null) {
             var moveAction = new MoveCreatureAction(creature, (ITarget)sourceSlot, targetSlot, Player);
             gameManager.ActionsQueue.AddAction(moveAction);
@@ -138,7 +137,7 @@ public class BattlefieldUI : CardContainer {
     }
 
     private void UpdateCreatureCards() {
-        foreach (var slot in slots) {
+        foreach (var slot in BattlefieldSlotsList) {
             slot.ClearSlot();
         }
 
@@ -146,22 +145,17 @@ public class BattlefieldUI : CardContainer {
             var creature = battlefieldSlot.OccupyingCreature;
             if (creature == null) continue;
 
-            if (!creatureCards.TryGetValue(creature.TargetId, out var cardController)) {
-                cardController = CreateCreatureCard(creature);
-                if (cardController != null) {
-                    creatureCards[creature.TargetId] = cardController;
-                }
-            }
+            var creatureCard = battlefieldSlot.OccupyingCard;
 
-            if (cardController != null) {
-                battlefieldSlot.OccupySlot(cardController);
-                cardController.UpdateUI();
+            if (creatureCard == null) {
+                battlefieldSlot.OccupySlot(creatureCard);
+                creatureCard.UpdateUI();
             }
         }
     }
 
     private void UpdateSlotOccupancy() {
-        foreach (var slot in slots) {
+        foreach (var slot in BattlefieldSlotsList) {
             slot.ResetVisuals();
         }
     }
@@ -191,16 +185,11 @@ public class BattlefieldUI : CardContainer {
     private void OnCreatureDied(ICreature creature) {
         if (!IsInitialized) return;
 
-        if (creatureCards.TryGetValue(creature.TargetId, out CardController card)) {
-            var slot = slots.Find(s => s.OccupyingCard == card);
-            if (slot != null) {
+        foreach (BattlefieldSlot slot in Player.Battlefield) {
+            if (slot.OccupyingCreature.TargetId == creature.TargetId) {
                 slot.ClearSlot();
+                Destroy(slot.OccupyingCard.gameObject);
             }
-
-            if (card != null) {
-                Destroy(card.gameObject);
-            }
-            creatureCards.Remove(creature.TargetId);
         }
 
         UpdateUI(Player);
@@ -211,7 +200,7 @@ public class BattlefieldUI : CardContainer {
     protected override void OnCardBeginDrag(CardController card) {
         if (card == null) return;
 
-        var startSlot = slots.FirstOrDefault(s => s.OccupyingCard == card);
+        var startSlot = BattlefieldSlotsList.FirstOrDefault(s => s.OccupyingCard == card);
         if (startSlot != null) {
             arrowManager.ShowDragArrow(startSlot.transform.position);
         } else {
@@ -234,31 +223,24 @@ public class BattlefieldUI : CardContainer {
     #region Cleanup
     protected override void OnDestroy() {
         base.OnDestroy();
-        foreach (var slot in slots) {
+        foreach (var slot in BattlefieldSlotsList) {
             if (slot != null) {
+                var cardController = slot.OccupyingCard;
+
+                if (cardController != null) {
+                    Destroy(cardController.gameObject);
+                }
+
                 Destroy(slot.gameObject);
             }
         }
-        slots.Clear();
-
-        foreach (var card in creatureCards.Values) {
-            if (card != null) {
-                Destroy(card.gameObject);
-            }
-        }
-        creatureCards.Clear();
+        BattlefieldSlotsList.Clear();
 
         if (arrowManager != null) {
             arrowManager.Cleanup();
         }
     }
     #endregion
-
-    public CardController GetCardControllerByCreatureId(string creatureId) {
-        if (string.IsNullOrEmpty(creatureId)) return null;
-        creatureCards.TryGetValue(creatureId, out var cardController);
-        return cardController;
-    }
 
     protected override void OnCardHoverEnter(CardController card) { }
     protected override void OnCardHoverExit(CardController card) { }
