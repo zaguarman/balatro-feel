@@ -27,6 +27,7 @@ public class Player : Entity, IPlayer {
     public int Health { get; private set; } = 20;
     public IPlayer Opponent { get; set; }
     public List<ICard> Hand { get; private set; }
+
     public List<BattlefieldSlot> Battlefield { get; private set; }
     public PlayerDamagedUnityEvent OnDamaged { get; } = new PlayerDamagedUnityEvent();
 

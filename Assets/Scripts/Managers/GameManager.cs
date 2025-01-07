@@ -1,10 +1,12 @@
-using static DebugLogger;
-using UnityEngine;
-using System.Linq;
+using Sirenix.OdinInspector;
 using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+using static DebugLogger;
 
 public class GameManager : InitializableComponent {
     private static GameManager instance;
+
     public static GameManager Instance {
         get {
             if (instance == null) {
@@ -16,8 +18,38 @@ public class GameManager : InitializableComponent {
         }
     }
 
-    public IPlayer Player1 { get; private set; }
-    public IPlayer Player2 { get; private set; }
+    [ShowInInspector, ReadOnly, BoxGroup("Players")]
+    public Player Player1 { get; private set; }
+
+    [ShowInInspector, ReadOnly, BoxGroup("Players")]
+    public Player Player2 { get; private set; }
+
+    [ShowInInspector, BoxGroup("Battlefield"), PropertyOrder(1)]
+    [ListDrawerSettings(Expanded = true)]
+    public List<string> Player1Battlefield => Player1?.Battlefield
+        .Select((slot, index) =>
+            $"Slot {index + 1}: {(slot.IsOccupied() ? (slot.OccupyingCreature?.Name ?? "Unknown Creature") : "Empty Slot")}")
+        .ToList() ?? new List<string>();
+
+    [ShowInInspector, BoxGroup("Battlefield"), PropertyOrder(2)]
+    [ListDrawerSettings(Expanded = true)]
+    public List<string> Player2Battlefield => Player2?.Battlefield
+        .Select((slot, index) =>
+            $"Slot {index + 1}: {(slot.IsOccupied() ? (slot.OccupyingCreature?.Name ?? "Unknown Creature") : "Empty Slot")}")
+        .ToList() ?? new List<string>();
+
+    [ShowInInspector, BoxGroup("Hands"), PropertyOrder(3)]
+    [ListDrawerSettings(Expanded = true)]
+    public List<string> Player1Hand => Player1?.Hand
+        .Select((card, index) => $"Card {index + 1}: {card.Name}")
+        .ToList() ?? new List<string>();
+
+    [ShowInInspector, BoxGroup("Hands"), PropertyOrder(4)]
+    [ListDrawerSettings(Expanded = true)]
+    public List<string> Player2Hand => Player2?.Hand
+        .Select((card, index) => $"Card {index + 1}: {card.Name}")
+        .ToList() ?? new List<string>();
+
     public ActionsQueue ActionsQueue { get; private set; }
     public IWeatherSystem WeatherSystem { get; private set; }
     private BattlefieldCombatHandler combatHandler;
@@ -27,7 +59,6 @@ public class GameManager : InitializableComponent {
     private ICardDealingService cardDealingService;
     private System.Random random = new System.Random();
 
-    // Public accessor for the combat handler
     public BattlefieldCombatHandler CombatHandler => combatHandler;
 
     private bool weatherSystemInitialized = false;
@@ -55,7 +86,6 @@ public class GameManager : InitializableComponent {
         gameReferences = GameReferences.Instance;
         cardDealingService = new CardDealingService(gameMediator);
 
-        // Initialize systems in the correct order
         InitializeWeatherSystem();
         InitializeCombatSystem();
         InitializeActionsQueue();
@@ -63,7 +93,6 @@ public class GameManager : InitializableComponent {
 
         base.Initialize();
 
-        // After everything is initialized, set initial weather
         if (WeatherSystem != null) {
             WeatherSystem.SetWeather(WeatherType.Rainy);
         }
@@ -88,11 +117,9 @@ public class GameManager : InitializableComponent {
     }
 
     private void InitializeGameSystem() {
-        // Initialize core game components first
         InitializePlayers();
         InitializeCards();
 
-        // Setup initial game state
         if (GameUI.Instance.IsInitialized) {
             CompleteGameInitialization();
         } else {
@@ -104,8 +131,6 @@ public class GameManager : InitializableComponent {
         PlaceInitialCreatures();
         SetupInitialGameState();
         SetupResolveButton();
-
-        // Important: Notify game is initialized after all setup is complete
         gameMediator.NotifyGameInitialized();
     }
 
@@ -154,7 +179,6 @@ public class GameManager : InitializableComponent {
 
             if (creature == null) continue;
 
-            // Find first empty slot
             var emptySlot = player.Battlefield.FirstOrDefault(s => !s.IsOccupied());
             if (emptySlot == null) {
                 LogWarning($"No empty battlefield slots available for {(player.IsPlayer1() ? "Player 1" : "Player 2")}", LogTag.Creatures);
@@ -163,14 +187,12 @@ public class GameManager : InitializableComponent {
 
             creature.SetOwner(player);
             player.AddToBattlefield(creature, emptySlot);
-            Log($"Added {creature.Name} to {(player.IsPlayer1() ? "Player 1" : "Player 2")}'s battlefield with {creature.Effects.Count} effects",
-                LogTag.Creatures | LogTag.Initialization);
+            Log($"Added {creature.Name} to {(player.IsPlayer1() ? "Player 1" : "Player 2")}'s battlefield", LogTag.Creatures | LogTag.Initialization);
         }
     }
 
     private void SetupInitialGameState() {
         cardDealingService.DealInitialHands(Player1, Player2);
-        LogGameState("Game Initialized");
         gameMediator.NotifyGameInitialized();
     }
 
@@ -182,77 +204,6 @@ public class GameManager : InitializableComponent {
     }
 
     private void OnResolveButtonClicked() {
-        if (ActionsQueue != null) {
-            ActionsQueue.ResolveActions();
-        }
-    }
-
-    public void PlayCard(CardData cardData, IPlayer player) {
-        if (!IsInitialized) {
-            LogError("Cannot play card - GameManager not initialized", LogTag.Actions | LogTag.Initialization);
-            return;
-        }
-
-        ICard card = CardFactory.CreateCard(cardData);
-        card.Play(player, ActionsQueue);
-        gameMediator.NotifyGameStateChanged();
-    }
-
-    public void ResolveActions() {
-        if (!IsInitialized) {
-            LogError("Cannot resolve actions - GameManager not initialized", LogTag.Actions | LogTag.Initialization);
-            return;
-        }
-
-        ActionsQueue.ResolveActions();
-        LogGameState("Actions resolved");
-    }
-
-    private void LogGameState(string action = "") {
-        if (!IsInitialized) return;
-
-        var state = $"=== Game State {(string.IsNullOrEmpty(action) ? "" : $"- {action}")} ===\n";
-
-        if (Player1 != null) {
-            state += $"Player 1 - Health: {Player1.Health}, Hand: {Player1.Hand.Count}\n";
-        }
-
-        Log(state, LogTag.Players | LogTag.Creatures | LogTag.Actions);
-        Player1?.LogBattlefieldCreatures();
-
-        if (Player2 != null) {
-            state += $"Player 2 - Health: {Player2.Health}, Hand: {Player2.Hand.Count}\n";
-        }
-
-        Player2?.LogBattlefieldCreatures();
-
-        if (ActionsQueue != null) {
-            state += $"Pending Actions: {ActionsQueue.GetPendingActionsCount()}\n";
-        }
-
-        Log(state, LogTag.Players | LogTag.Creatures | LogTag.Actions);
-    }
-
-    protected override void OnDestroy() {
-        if (instance == this) {
-            var resolveButton = gameReferences?.GetResolveActionsButton();
-            if (resolveButton != null) {
-                resolveButton.onClick.RemoveListener(OnResolveButtonClicked);
-            }
-
-            if (Player1 != null) {
-                gameMediator?.UnregisterPlayer(Player1);
-            }
-
-            if (Player2 != null) {
-                gameMediator?.UnregisterPlayer(Player2);
-            }
-
-            if (ActionsQueue != null) {
-                ActionsQueue.Cleanup();
-            }
-
-            instance = null;
-        }
+        ActionsQueue?.ResolveActions();
     }
 }
