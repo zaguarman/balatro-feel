@@ -13,14 +13,10 @@ public interface IPlayer : IEntity, IDamageable {
     List<ICard> Hand { get; }
     List<BattlefieldSlot> Battlefield { get; }
     void AddToHand(ICard card);
-    void AddToBattlefield(ICreature creature, ITarget slotId = null);
-    void RemoveFromBattlefield(ICreature creature);
+    void AddToBattlefield(ICard creature, ITarget slotId = null);
+    void RemoveFromBattlefield(ICard creature);
     PlayerDamagedUnityEvent OnDamaged { get; }
-    bool HasEmptyBattlefieldSlot();
-    void InitializeBattlefield(List<BattlefieldSlot> slots);
-    void LogBattlefieldCreatures();
-    ICreature GetCreatureInSlot(ITarget slotId);
-    CardController GetCardByCreature(ICreature creature);
+    void InitializeBattlefield(List<BattlefieldSlot> battlefieldSlots);
 }
 
 public class Player : Entity, IPlayer {
@@ -42,7 +38,6 @@ public class Player : Entity, IPlayer {
         gameMediator = GameMediator.Instance;
     }
 
-    // Initialize battlefield with existing UI slots
     public void InitializeBattlefield(List<BattlefieldSlot> slots) {
         if (slots == null || slots.Count == 0) {
             LogError("Cannot initialize battlefield with null or empty slots", LogTag.Initialization);
@@ -51,14 +46,6 @@ public class Player : Entity, IPlayer {
         Battlefield.Clear();
         Battlefield.AddRange(slots);
         Log($"Initialized battlefield with {slots.Count} slots", LogTag.Initialization);
-    }
-
-    public void LogBattlefieldCreatures() {
-        foreach (var slot in Battlefield) {
-            if (slot.IsOccupied()) {
-                Log($"Slot {slot.TargetId} is occupied by {slot.OccupyingCreature.Name}", LogTag.Creatures);
-            }
-        }
     }
 
     public bool IsPlayer1() {
@@ -77,72 +64,34 @@ public class Player : Entity, IPlayer {
         gameMediator?.NotifyHandStateChanged(this);
     }
 
-    public void AddToBattlefield(ICreature creature, ITarget slot = null) {
-        if (creature == null) return;
+    public void AddToBattlefield(ICard card, ITarget slot = null) {
+        if (card == null) return;
 
-        // If no slot specified, find first empty slot
-        if (slot == null) {
-            slot = Battlefield.FirstOrDefault(s => !s.IsOccupied());
-            if (slot == null) {
-                LogWarning("No empty battlefield slots available", LogTag.Creatures);
-                return;
+        BattlefieldSlot targetSlot = null;
+        foreach (var battlefieldSlot in Battlefield) {
+            if (slot.TargetId == slot.TargetId) {
+                targetSlot = battlefieldSlot;
             }
         }
 
-        var targetSlot = Battlefield.FirstOrDefault(s => s.TargetId == slot.TargetId);
-        if (targetSlot == null) {
-            LogWarning($"Invalid slot {slot.TargetId}", LogTag.Creatures);
-            return;
-        }
-
-        if (targetSlot.IsOccupied()) {
-            Log($"Slot {slot.TargetId} is already occupied, replacing creature...", LogTag.Creatures);
-        }
-
-        targetSlot.AssignCreature(creature);
-
-        gameMediator?.NotifyCreatureSummoned(creature, this);
-        gameMediator?.NotifyBattlefieldStateChanged(this);
+        var cardController = CardFactory.CreateCardController(card, this, targetSlot.transform);
+        targetSlot.AssignCreature(cardController);
+        gameMediator?.NotifyBattlefieldStateChanged(this); 
     }
 
-    public void RemoveFromBattlefield(ICreature creature) {
-        if (creature == null) return;
+    public void RemoveFromBattlefield(ICard creature) {
+        //if (creature == null) return;
 
-        foreach (var slot in Battlefield) {
-            if (slot.IsOccupied() && slot.OccupyingCreature == creature) {
-                slot.ClearSlot();
-                Log($"Removed {creature.Name} from battlefield", LogTag.Creatures);
-                gameMediator?.NotifyBattlefieldStateChanged(this);
-                return;
-            }
-        }
+        //Battlefield.Remove(creature);
 
-        Log($"Removed creature {creature.Name} from battlefield", LogTag.Creatures);
-        gameMediator?.NotifyGameStateChanged();
-    }
-
-    public CardController GetCardByCreature(ICreature creature) {
-        foreach (BattlefieldSlot slot in Battlefield) {
-            if (slot.OccupyingCreature == creature) {
-                return slot.OccupyingCard;
-            }
-        }
-
-        return null;
-    }
-
-    public ICreature GetCreatureInSlot(ITarget slotId) {
-        if (string.IsNullOrEmpty(slotId?.TargetId)) return null;
-        return Battlefield.FirstOrDefault(s => s.TargetId == slotId.TargetId)?.OccupyingCreature;
-    }
-
-    public bool HasEmptyBattlefieldSlot() {
-        return Battlefield.Any(s => !s.IsOccupied());
+        //Log($"Removed creature {creature.Name} from battlefield", LogTag.Creatures);
+        //gameMediator?.NotifyBattlefieldStateChanged(this);
+        //gameMediator?.NotifyGameStateChanged();
     }
 
     public override bool IsValidTarget() => true;
 
     public override string ToString() {
-        return $"{Name} - Health: {Health}, Hand: {Hand.Count}, Battlefield: {Battlefield.Count(s => s.IsOccupied())}";
+        return $"{Name} - Health: {Health}, Hand: {Hand.Count}, Battlefield: {Battlefield.Count()}";
     }
 }

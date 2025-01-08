@@ -64,7 +64,7 @@ public class HandUI : CardContainer {
             controller.Setup(data, Player);
         }
 
-        SetupCardEventHandlers(controller);
+        CardFactory.SetupCardEventHandlers(controller, OnCardBeginDrag, OnCardEndDrag, OnCardDropped);
         return controller;
     }
 
