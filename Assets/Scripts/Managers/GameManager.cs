@@ -18,34 +18,32 @@ public class GameManager : InitializableComponent {
         }
     }
 
-    [ShowInInspector, ReadOnly, BoxGroup("Players")]
     public Player Player1 { get; private set; }
 
-    [ShowInInspector, ReadOnly, BoxGroup("Players")]
     public Player Player2 { get; private set; }
 
-    [ShowInInspector, BoxGroup("Battlefield"), PropertyOrder(1)]
-    [ListDrawerSettings(Expanded = true)]
+    [ShowInInspector, BoxGroup("Battlefields"), PropertyOrder(1)]
+    [ListDrawerSettings]
     public List<string> Player1Battlefield => Player1?.Battlefield
         .Select((slot, index) =>
             $"Slot {index + 1}: {(slot.IsOccupied() ? (slot.OccupyingCreature?.Name ?? "Unknown Creature") : "Empty Slot")}")
         .ToList() ?? new List<string>();
 
-    [ShowInInspector, BoxGroup("Battlefield"), PropertyOrder(2)]
-    [ListDrawerSettings(Expanded = true)]
+    [ShowInInspector, BoxGroup("Battlefields"), PropertyOrder(2)]
+    [ListDrawerSettings]
     public List<string> Player2Battlefield => Player2?.Battlefield
         .Select((slot, index) =>
             $"Slot {index + 1}: {(slot.IsOccupied() ? (slot.OccupyingCreature?.Name ?? "Unknown Creature") : "Empty Slot")}")
         .ToList() ?? new List<string>();
 
     [ShowInInspector, BoxGroup("Hands"), PropertyOrder(3)]
-    [ListDrawerSettings(Expanded = true)]
+    [ListDrawerSettings]
     public List<string> Player1Hand => Player1?.Hand
         .Select((card, index) => $"Card {index + 1}: {card.Name}")
         .ToList() ?? new List<string>();
 
     [ShowInInspector, BoxGroup("Hands"), PropertyOrder(4)]
-    [ListDrawerSettings(Expanded = true)]
+    [ListDrawerSettings]
     public List<string> Player2Hand => Player2?.Hand
         .Select((card, index) => $"Card {index + 1}: {card.Name}")
         .ToList() ?? new List<string>();
