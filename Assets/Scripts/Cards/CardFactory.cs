@@ -1,9 +1,9 @@
 using static DebugLogger;
 using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.Events;
-using System;
 using System.Linq;
+using System;
+using UnityEngine.Events;
+using UnityEngine;
 
 public static class CardFactory {
     private static Dictionary<string, CardData> cardDataCache = new Dictionary<string, CardData>();
@@ -18,7 +18,6 @@ public static class CardFactory {
             case CreatureData creatureData:
                 var creature = new Creature(creatureData.cardName, creatureData.attack, creatureData.health);
                 foreach (var effect in cardData.effects) {
-                    Log($"Adding effect - Trigger: {effect.trigger}, Actions: {effect.actions.Count}", LogTag.Cards | LogTag.Effects);
                     var newEffect = new CardEffect {
                         effectType = effect.effectType,
                         trigger = effect.trigger,
@@ -37,8 +36,10 @@ public static class CardFactory {
         return card;
     }
 
-    public static CardController CreateCardController(ICard cardData, IPlayer owner, Transform parent, GameReferences gameReferences) {
-        var cardPrefab = gameReferences.GetCardPrefab();
+    public static CardController CreateCardController(ICard card, IPlayer owner, Transform parent) {
+        if (card == null || parent == null) return null;
+
+        var cardPrefab = GameReferences.Instance.GetCardPrefab();
         if (cardPrefab == null) {
             LogError("Failed to get card prefab from game references", LogTag.Cards | LogTag.Initialization);
             return null;
@@ -47,35 +48,33 @@ public static class CardFactory {
         var cardObj = GameObject.Instantiate(cardPrefab, parent);
         var controller = cardObj.GetComponent<CardController>();
         if (controller != null) {
-            var data = CreateCardDataFromCard(cardData);
+            var data = CreateCardData(card);
             controller.Setup(data, owner);
-            Log($"Created card controller for {cardData.Name}", LogTag.Cards | LogTag.Initialization);
+            Log($"Created card controller for {card.Name}", LogTag.Cards | LogTag.Initialization);
         }
         return controller;
     }
 
-    private static CardData CreateCardDataFromCard(ICard card) {
-        var cardData = ScriptableObject.CreateInstance<CreatureData>();
-        cardData.cardName = card.Name;
+    public static CardData CreateCardData(ICard card) {
+        if (card == null) return null;
+
+        var creatureData = ScriptableObject.CreateInstance<CreatureData>();
+        creatureData.cardName = card.Name;
 
         if (card is ICreature creature) {
-            cardData.attack = creature.Attack;
-            cardData.health = creature.Health;
+            creatureData.attack = creature.Attack;
+            creatureData.health = creature.Health;
         }
 
-        return cardData;
+        return creatureData;
     }
 
-    public static CardData GetOrCreateCardData(string name, Action<CardData> setup) {
-        if (cardDataCache.TryGetValue(name, out var existingData)) {
-            Log($"Retrieved cached card data for {name}", LogTag.Cards);
-            return existingData;
-        }
-
-        var newData = ScriptableObject.CreateInstance<CreatureData>();
-        setup(newData);
-        cardDataCache[name] = newData;
-        return newData;
+    public static CardData CreateCardData(ICreature creature) {
+        var cardData = ScriptableObject.CreateInstance<CreatureData>();
+        cardData.cardName = creature.Name;
+        cardData.attack = creature.Attack;
+        cardData.health = creature.Health;
+        return cardData;
     }
 
     public static void SetupCardEventHandlers(
@@ -83,8 +82,8 @@ public static class CardFactory {
         UnityAction<CardController> onBeginDrag = null,
         UnityAction<CardController> onEndDrag = null,
         UnityAction<CardController> onDrop = null,
-        System.Action onPointerEnter = null,
-        System.Action onPointerExit = null) {
+        Action onPointerEnter = null,
+        Action onPointerExit = null) {
         if (controller == null) return;
 
         CleanupCardEventHandlers(controller);

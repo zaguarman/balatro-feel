@@ -58,41 +58,7 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
         base.Initialize(owner);
         cardData = data;
 
-        if (cardData is CreatureData) {
-            linkedCreature = FindLinkedCreature();
-        }
-
         UpdateUI();
-    }
-
-    private ICreature FindLinkedCreature() {
-        // Early return if we can't find a creature
-        if (cardData == null || Player == null || !(cardData is CreatureData)) {
-            return null;
-        }
-
-        // If we have a valid linked creature, return it
-        if (linkedCreature != null) {
-            return linkedCreature;
-        }
-
-        // Search in player's battlefield
-        foreach (var slot in Player.Battlefield) {
-            if (slot.OccupyingCreature != null && slot.OccupyingCreature.Name == cardData.cardName) {
-                return slot.OccupyingCreature;
-            }
-        }
-
-        // Search in opponent's battlefield
-        if (Player.Opponent != null) {
-            foreach (var slot in Player.Opponent.Battlefield) {
-                if (slot.OccupyingCreature != null && slot.OccupyingCreature.Name == cardData.cardName) {
-                    return slot.OccupyingCreature;
-                }
-            }
-        }
-
-        return null;
     }
 
     protected override void RegisterEvents() {
@@ -234,5 +200,4 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
         OnPointerEnterHandler = null;
         OnPointerExitHandler = null;
     }
-
 }

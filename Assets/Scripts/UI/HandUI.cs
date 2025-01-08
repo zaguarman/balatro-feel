@@ -49,18 +49,22 @@ public class HandUI : CardContainer {
         UpdateLayout();
     }
 
-    protected override CardController CreateCard(ICard cardData) {
+    protected CardController CreateCardController(ICard cardData) {
+        CardFactory.CreateCardController(cardData, Player, transform);
+
+
         var cardPrefab = gameReferences.GetCardPrefab();
         if (cardPrefab == null || cardData == null) return null;
 
         var cardObj = Instantiate(cardPrefab, transform);
         var controller = cardObj.GetComponent<CardController>();
         if (controller != null) {
-            var data = CreateCardData(cardData);
+            var data = CardFactory.CreateCardData(cardData);
             Log($"Creating card {cardData.Name} with {cardData.Effects.Count} effects", LogTag.UI | LogTag.Cards);
             controller.Setup(data, Player);
-            SetupCardEventHandlers(controller);
         }
+
+        SetupCardEventHandlers(controller);
         return controller;
     }
 
@@ -84,34 +88,6 @@ public class HandUI : CardContainer {
     protected override void OnCardDropped(CardController card) {
         Log($"Card dropped from hand: {card.GetCardData()?.cardName}", LogTag.UI | LogTag.Cards);
         UpdateLayout();
-    }
-
-    private CardData CreateCardData(ICard card) {
-        if (card is ICreature creature) {
-            var creatureData = ScriptableObject.CreateInstance<CreatureData>();
-            creatureData.cardName = creature.Name;
-            creatureData.attack = creature.Attack;
-            creatureData.health = creature.Health;
-
-            creatureData.effects = new List<CardEffect>();
-            foreach (var effect in creature.Effects) {
-                var newEffect = new CardEffect {
-                    effectType = effect.effectType,
-                    trigger = effect.trigger,
-                    actions = effect.actions.Select(a => new EffectAction {
-                        actionType = a.actionType,
-                        value = a.value,
-                        targetType = a.targetType
-                    }).ToList()
-                };
-                creatureData.effects.Add(newEffect);
-            }
-
-            Log($"Created CreatureData for {creature.Name} with {creatureData.effects.Count} effects",
-                LogTag.UI | LogTag.Cards | LogTag.Effects);
-            return creatureData;
-        }
-        return null;
     }
 
     protected override void OnCardHoverEnter(CardController card) { }

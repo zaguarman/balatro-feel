@@ -4,7 +4,7 @@ using UnityEngine.UI;
 public class BattlefieldSlot : MonoBehaviour, ITarget {
     private RectTransform rectTransform;
     private Image backgroundImage;
-    
+
     public string TargetId { get; private set; }
     public CardController OccupyingCard { get; private set; }
     public ICreature OccupyingCreature { get; private set; }
@@ -15,15 +15,8 @@ public class BattlefieldSlot : MonoBehaviour, ITarget {
     private Color hoverColor;
 
     private void Awake() {
-        rectTransform = GetComponent<RectTransform>();
-        if (rectTransform == null) {
-            rectTransform = gameObject.AddComponent<RectTransform>();
-        }
-
-        backgroundImage = GetComponent<Image>();
-        if (backgroundImage == null) {
-            backgroundImage = gameObject.AddComponent<Image>();
-        }
+        rectTransform = GetComponent<RectTransform>() ?? gameObject.AddComponent<RectTransform>();
+        backgroundImage = GetComponent<Image>() ?? gameObject.AddComponent<Image>();
 
         TargetId = System.Guid.NewGuid().ToString();
     }
@@ -33,9 +26,8 @@ public class BattlefieldSlot : MonoBehaviour, ITarget {
         this.validDropColor = validDropColor;
         this.invalidDropColor = invalidDropColor;
         this.hoverColor = hoverColor;
-        
+
         backgroundImage.color = defaultColor;
-        
         ClearSlot();
     }
 
@@ -45,21 +37,25 @@ public class BattlefieldSlot : MonoBehaviour, ITarget {
         }
     }
 
-    public void AssignCreature(ICreature creature) {
-        OccupyingCreature = creature;
-        // Occupy slot with creature card
+    public void AssignCreature(CardController card) {
+        ClearSlot(); 
+        if (card == null) return;
+
+        OccupyingCard = card;
+        OccupyingCreature = card.GetLinkedCreature(); 
+
+        card.transform.SetParent(transform, false);
+        card.transform.localPosition = Vector3.zero;
+        card.UpdateUI();
     }
 
     public void OccupySlot(CardController card) {
-        OccupyingCard = card;
-        if (card != null) {
-            card.transform.SetParent(transform);
-            card.transform.localPosition = Vector3.zero;
-        }
+        AssignCreature(card);
     }
 
     public void ClearSlot() {
         if (OccupyingCard != null) {
+            Destroy(OccupyingCard.gameObject);
             OccupyingCard = null;
         }
         OccupyingCreature = null;

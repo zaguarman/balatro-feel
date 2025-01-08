@@ -32,9 +32,10 @@ public class BattlefieldUI : CardContainer {
 
         InitializeManagers();
         CreateSlots();
-        Player.InitializeBattlefield(BattlefieldSlotsList);
-
         Log("BattlefieldUI initialized", LogTag.Initialization);
+
+        player.InitializeBattlefield(BattlefieldSlotsList);
+        Log("Player Battlefield initialized", LogTag.Initialization);
 
         UpdateUI(Player);
     }
@@ -137,21 +138,21 @@ public class BattlefieldUI : CardContainer {
     }
 
     private void UpdateCreatureCards() {
-        foreach (var slot in BattlefieldSlotsList) {
-            slot.ClearSlot();
-        }
+        //foreach (var slot in BattlefieldSlotsList) {
+        //    slot.ClearSlot();
+        //}
 
-        foreach (var battlefieldSlot in Player.Battlefield) {
-            var creature = battlefieldSlot.OccupyingCreature;
-            if (creature == null) continue;
+        //foreach (var battlefieldSlot in Player.Battlefield) {
+        //    var creature = battlefieldSlot.OccupyingCreature;
+        //    if (creature == null) continue;
 
-            var creatureCard = battlefieldSlot.OccupyingCard;
+        //    var creatureCard = battlefieldSlot.OccupyingCard;
 
-            if (creatureCard == null) {
-                battlefieldSlot.OccupySlot(creatureCard);
-                creatureCard.UpdateUI();
-            }
-        }
+        //    if (creatureCard == null) {
+        //        battlefieldSlot.OccupySlot(creatureCard);
+        //        creatureCard.UpdateUI();
+        //    }
+        //}
     }
 
     private void UpdateSlotOccupancy() {

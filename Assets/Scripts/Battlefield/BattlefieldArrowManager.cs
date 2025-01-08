@@ -105,7 +105,6 @@ public class BattlefieldArrowManager {
         return action switch {
             MarkCombatTargetAction markCombatAction => $"combat_{markCombatAction.GetAttacker()?.TargetId}",
             DamageCreatureAction damageAction => $"damage_{damageAction.GetAttacker()?.TargetId}",
-            DamagePlayerAction playerDamageAction => $"playerDamage_{FindSourceCreatureForPlayerDamage(playerDamageAction)?.TargetId}",
             MoveCreatureAction moveAction => $"move_{moveAction.GetCreature()?.TargetId}",
             _ => null
         };
@@ -118,9 +117,6 @@ public class BattlefieldArrowManager {
                 break;
             case DamageCreatureAction damageAction:
                 CreateArrowForDamageAction(damageAction, actionKey);
-                break;
-            case DamagePlayerAction playerDamageAction:
-                CreateArrowForPlayerDamageAction(playerDamageAction, actionKey);
                 break;
             case MoveCreatureAction moveAction:
                 CreateArrowForMoveAction(moveAction, actionKey);
@@ -186,44 +182,23 @@ public class BattlefieldArrowManager {
         Log($"Created move arrow for {creature.Name} to slot {moveAction.GetToSlot()}", LogTag.Actions | LogTag.UI);
     }
 
-    private void CreateArrowForPlayerDamageAction(DamagePlayerAction action, string actionKey) {
-        var sourceCreature = FindSourceCreatureForPlayerDamage(action);
-        var targetPlayer = action.GetTargetPlayer();
-
-        if (sourceCreature == null || targetPlayer == null) return;
-
-        var arrow = ArrowIndicator.Create(parentTransform);
-        Vector3 startPos = GetCreaturePosition(sourceCreature);
-        Vector3 endPos = GetPlayerTargetPosition(targetPlayer);
-
-        startPos.z = 0;
-        endPos.z = 0;
-
-        arrow.Show(startPos, endPos);
-        arrow.SetColor(Color.red);
-        activeArrows[actionKey] = arrow;
-
-        Log($"Created player damage arrow from {sourceCreature.Name} to Player {(targetPlayer.IsPlayer1() ? "1" : "2")}",
-            LogTag.Actions | LogTag.UI);
-    }
-
     private Vector3 GetCreaturePosition(ICreature creature) {
         if (creature == null) return Vector3.zero;
 
         var player1Battlefield = gameManager.Player1.Battlefield;
 
-        var cardController = gameManager.Player1.GetCardByCreature(creature);
+        //var cardController = gameManager.Player1.GetCardByCreature(creature);
 
-        if (cardController == null) {
-            var player2Battlefield = gameManager.Player2.Battlefield;
-            cardController = gameManager.Player2.GetCardByCreature(creature);
-        }
+        //if (cardController == null) {
+        //    var player2Battlefield = gameManager.Player2.Battlefield;
+        //    cardController = gameManager.Player2.GetCardByCreature(creature);
+        //}
 
-        if (cardController != null) {
-            var position = cardController.transform.position;
-            Log($"Found position for creature {creature.Name} with ID {creature.TargetId}: {position}", LogTag.Actions);
-            return position;
-        }
+        //if (cardController != null) {
+        //    var position = cardController.transform.position;
+        //    Log($"Found position for creature {creature.Name} with ID {creature.TargetId}: {position}", LogTag.Actions);
+        //    return position;
+        //}
 
         LogWarning($"Could not find CardController for creature {creature.Name} with ID {creature.TargetId}", LogTag.Actions);
         return Vector3.zero;
@@ -258,11 +233,6 @@ public class BattlefieldArrowManager {
         }
 
         return slotTransform != null ? slotTransform.position : Vector3.zero;
-    }
-
-    private ICreature FindSourceCreatureForPlayerDamage(DamagePlayerAction action) {
-        return gameManager.Player1.Battlefield.FirstOrDefault(c => gameManager.CombatHandler.HasCreatureAttacked(c.OccupyingCreature))?.OccupyingCreature ??
-               gameManager.Player2.Battlefield.FirstOrDefault(c => gameManager.CombatHandler.HasCreatureAttacked(c.OccupyingCreature))?.OccupyingCreature;
     }
 
     public void Cleanup() {

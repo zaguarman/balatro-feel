@@ -22,27 +22,13 @@ public class GameManager : InitializableComponent {
 
     public Player Player2 { get; private set; }
 
-    [ShowInInspector, BoxGroup("Battlefields"), PropertyOrder(1)]
-    [ListDrawerSettings]
-    public List<string> Player1Battlefield => Player1?.Battlefield
-        .Select((slot, index) =>
-            $"Slot {index + 1}: {(slot.IsOccupied() ? (slot.OccupyingCreature?.Name ?? "Unknown Creature") : "Empty Slot")}")
-        .ToList() ?? new List<string>();
-
-    [ShowInInspector, BoxGroup("Battlefields"), PropertyOrder(2)]
-    [ListDrawerSettings]
-    public List<string> Player2Battlefield => Player2?.Battlefield
-        .Select((slot, index) =>
-            $"Slot {index + 1}: {(slot.IsOccupied() ? (slot.OccupyingCreature?.Name ?? "Unknown Creature") : "Empty Slot")}")
-        .ToList() ?? new List<string>();
-
-    [ShowInInspector, BoxGroup("Hands"), PropertyOrder(3)]
+    [ShowInInspector, BoxGroup("Hands"), PropertyOrder]
     [ListDrawerSettings]
     public List<string> Player1Hand => Player1?.Hand
         .Select((card, index) => $"Card {index + 1}: {card.Name}")
         .ToList() ?? new List<string>();
 
-    [ShowInInspector, BoxGroup("Hands"), PropertyOrder(4)]
+    [ShowInInspector, BoxGroup("Hands"), PropertyOrder]
     [ListDrawerSettings]
     public List<string> Player2Hand => Player2?.Hand
         .Select((card, index) => $"Card {index + 1}: {card.Name}")
@@ -170,23 +156,23 @@ public class GameManager : InitializableComponent {
     }
 
     private void PlaceCreaturesForPlayer(IPlayer player, List<CreatureData> availableCreatures) {
-        for (int i = 0; i < 2; i++) {
-            int randomIndex = random.Next(availableCreatures.Count);
-            var creatureData = availableCreatures[randomIndex];
-            var creature = CardFactory.CreateCard(creatureData) as ICreature;
+        //for (int i = 0; i < 2; i++) {
+        //    int randomIndex = random.Next(availableCreatures.Count);
+        //    var creatureData = availableCreatures[randomIndex];
+        //    var creature = CardFactory.CreateCard(creatureData) as ICreature;
 
-            if (creature == null) continue;
+        //    if (creature == null) continue;
 
-            var emptySlot = player.Battlefield.FirstOrDefault(s => !s.IsOccupied());
-            if (emptySlot == null) {
-                LogWarning($"No empty battlefield slots available for {(player.IsPlayer1() ? "Player 1" : "Player 2")}", LogTag.Creatures);
-                continue;
-            }
+        //    var emptySlot = player.Battlefield.FirstOrDefault(s => !s.IsOccupied());
+        //    if (emptySlot == null) {
+        //        LogWarning($"No empty battlefield slots available for {(player.IsPlayer1() ? "Player 1" : "Player 2")}", LogTag.Creatures);
+        //        continue;
+        //    }
 
-            creature.SetOwner(player);
-            player.AddToBattlefield(creature, emptySlot);
-            Log($"Added {creature.Name} to {(player.IsPlayer1() ? "Player 1" : "Player 2")}'s battlefield", LogTag.Creatures | LogTag.Initialization);
-        }
+        //    creature.SetOwner(player);
+        //    player.AddToBattlefield(creature, emptySlot);
+        //    Log($"Added {creature.Name} to {(player.IsPlayer1() ? "Player 1" : "Player 2")}'s battlefield", LogTag.Creatures | LogTag.Initialization);
+        //}
     }
 
     private void SetupInitialGameState() {

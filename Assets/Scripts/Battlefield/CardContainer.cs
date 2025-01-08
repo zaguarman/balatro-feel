@@ -222,7 +222,7 @@ public abstract class CardContainer : UIComponent, IDropHandler, IPointerEnterHa
     }
 
     protected virtual CardController CreateCard(ICard cardData) {
-        return CardFactory.CreateCardController(cardData, Player, transform, gameReferences);
+        return CardFactory.CreateCardController(cardData, Player, transform);
     }
 
     protected CardController CreateCreatureCard(ICreature creature) {
@@ -232,18 +232,10 @@ public abstract class CardContainer : UIComponent, IDropHandler, IPointerEnterHa
         var cardObj = Instantiate(cardPrefab, transform);
         var controller = cardObj.GetComponent<CardController>();
         if (controller != null) {
-            var data = CreateCardData(creature);
+            var data = CardFactory.CreateCardData(creature);
             controller.Setup(data, Player, creature.TargetId);
         }
         return controller;
-    }
-
-    protected virtual CardData CreateCardData(ICreature creature) {
-        var cardData = ScriptableObject.CreateInstance<CreatureData>();
-        cardData.cardName = creature.Name;
-        cardData.attack = creature.Attack;
-        cardData.health = creature.Health;
-        return cardData;
     }
 
     public virtual void AddCard(CardController card) {

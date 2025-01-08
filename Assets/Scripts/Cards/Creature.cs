@@ -7,7 +7,6 @@ public interface ICreature : ICard {
     int Health { get; }
     void TakeDamage(int damage);
     IPlayer Owner { get; }
-    string Id { get; }
     void SetOwner(IPlayer owner);
 }
 
@@ -16,14 +15,12 @@ public class Creature : Card, ICreature {
     public int Health { get; private set; }
     private bool isDead = false;
     public IPlayer Owner { get; private set; }
-    public string Id { get; private set; }
 
     private ICreature lastAttacker;
 
     public Creature(string name, int attack, int health) : base(name) {
         Attack = attack;
         Health = health;
-        Id = TargetId;
     }
 
     public void SetOwner(IPlayer owner) {
