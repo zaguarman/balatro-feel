@@ -175,15 +175,12 @@ public class BattlefieldUI : CardContainer {
 
     private void OnCreatureDied(ICreature creature) {
         if (!IsInitialized) return;
+        var slot = GetSlot(creature);
 
-        foreach (BattlefieldSlot slot in Player.Battlefield) {
-            if (slot.OccupyingCreature.TargetId == creature.TargetId) {
-                slot.ClearSlot();
-                Destroy(slot.OccupyingCard.gameObject);
-            }
+        if (slot != null) {
+            slot.ClearSlot();
+            UpdateUI(Player);
         }
-
-        UpdateUI(Player);
     }
     #endregion
 
@@ -210,6 +207,36 @@ public class BattlefieldUI : CardContainer {
         UpdateUI(Player);
     }
     #endregion
+
+    public CardController GetCardController(ICreature creature) {
+        foreach (var slot in BattlefieldSlotsList) {
+            if (slot.OccupyingCreature == creature) {
+                return slot.OccupyingCard;
+            }
+        }
+
+        return null;
+    }
+
+    public BattlefieldSlot GetSlot(ICreature creature) {
+        var slot = BattlefieldSlotsList.FirstOrDefault(s => s.OccupyingCreature == creature) ?? 
+            GetOpponentBattlefield().BattlefieldSlotsList.FirstOrDefault(s => s.OccupyingCreature == creature);
+
+        return slot;
+    }
+
+    public BattlefieldSlot GetSlot(CardController card) {
+        return BattlefieldSlotsList.FirstOrDefault(s => s.OccupyingCard == card);
+    }
+
+    private BattlefieldUI GetOpponentBattlefield() {
+        var player1 = Player.IsPlayer1();
+        if (player1) {
+            return gameReferences.GetPlayer2BattlefieldUI();
+        } else {
+            return gameReferences.GetPlayer1BattlefieldUI();
+        }
+    }
 
     #region Cleanup
     protected override void OnDestroy() {

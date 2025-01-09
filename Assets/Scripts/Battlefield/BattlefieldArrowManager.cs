@@ -185,22 +185,21 @@ public class BattlefieldArrowManager {
     private Vector3 GetCreaturePosition(ICreature creature) {
         if (creature == null) return Vector3.zero;
 
-        var player1Battlefield = gameManager.Player1.Battlefield;
+        var Player1BattlefieldUI = gameReferences.GetPlayer1BattlefieldUI();
 
-        //var cardController = gameManager.Player1.GetCardByCreature(creature);
+        var cardController = Player1BattlefieldUI.GetCardController(creature);
 
-        //if (cardController == null) {
-        //    var player2Battlefield = gameManager.Player2.Battlefield;
-        //    cardController = gameManager.Player2.GetCardByCreature(creature);
-        //}
+        if (cardController == null) {
+            cardController = gameReferences.GetPlayer2BattlefieldUI().GetCardController(creature);
+        }
 
-        //if (cardController != null) {
-        //    var position = cardController.transform.position;
-        //    Log($"Found position for creature {creature.Name} with ID {creature.TargetId}: {position}", LogTag.Actions);
-        //    return position;
-        //}
+        if (cardController != null) {
+            var position = cardController.transform.position;
+            Log($"Found position for creature {creature.Name} with ID {creature.TargetId}: {position}", LogTag.UI);
+            return position;
+        }
 
-        LogWarning($"Could not find CardController for creature {creature.Name} with ID {creature.TargetId}", LogTag.Actions);
+        LogWarning($"Could not find CardController for creature {creature.Name} with ID {creature.TargetId}", LogTag.UI);
         return Vector3.zero;
     }
 

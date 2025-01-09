@@ -54,9 +54,10 @@ public class CardController : UIComponent, IPointerEnterHandler, IPointerExitHan
         cardImage = GetComponent<Image>();
     }
 
-    public void Setup(CardData data, IPlayer owner, string creatureTargetId = null) {
+    public void Setup(CardData data, IPlayer owner, ICreature creature = null) {
         base.Initialize(owner);
         cardData = data;
+        linkedCreature = creature;
 
         UpdateUI();
     }

@@ -49,7 +49,7 @@ public static class CardFactory {
         var controller = cardObj.GetComponent<CardController>();
         if (controller != null) {
             var data = CreateCardData(card);
-            controller.Setup(data, owner);
+            controller.Setup(data, owner, (ICreature)card);
             Log($"Created card controller for {card.Name}", LogTag.Cards | LogTag.Initialization);
         }
         return controller;
@@ -69,14 +69,7 @@ public static class CardFactory {
         return creatureData;
     }
 
-    public static CardData CreateCardData(ICreature creature) {
-        var cardData = ScriptableObject.CreateInstance<CreatureData>();
-        cardData.cardName = creature.Name;
-        cardData.attack = creature.Attack;
-        cardData.health = creature.Health;
-        return cardData;
-    }
-
+    // TODO
     public static void SetupCardEventHandlers(
         CardController controller,
         UnityAction<CardController> onBeginDrag = null,

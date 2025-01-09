@@ -225,19 +225,6 @@ public abstract class CardContainer : UIComponent, IDropHandler, IPointerEnterHa
         return CardFactory.CreateCardController(cardData, Player, transform);
     }
 
-    protected CardController CreateCreatureCard(ICreature creature) {
-        var cardPrefab = gameReferences.GetCardPrefab();
-        if (cardPrefab == null) return null;
-
-        var cardObj = Instantiate(cardPrefab, transform);
-        var controller = cardObj.GetComponent<CardController>();
-        if (controller != null) {
-            var data = CardFactory.CreateCardData(creature);
-            controller.Setup(data, Player, creature.TargetId);
-        }
-        return controller;
-    }
-
     public virtual void AddCard(CardController card) {
         if (card == null) return;
         cards.Add(card);
