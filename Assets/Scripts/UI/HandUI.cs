@@ -49,25 +49,6 @@ public class HandUI : CardContainer {
         UpdateLayout();
     }
 
-    protected CardController CreateCardController(ICard cardData) {
-        CardFactory.CreateCardController(cardData, Player, transform);
-
-
-        var cardPrefab = gameReferences.GetCardPrefab();
-        if (cardPrefab == null || cardData == null) return null;
-
-        var cardObj = Instantiate(cardPrefab, transform);
-        var controller = cardObj.GetComponent<CardController>();
-        if (controller != null) {
-            var data = CardFactory.CreateCardData(cardData);
-            Log($"Creating card {cardData.Name} with {cardData.Effects.Count} effects", LogTag.UI | LogTag.Cards);
-            controller.Setup(data, Player);
-        }
-
-        CardFactory.SetupCardEventHandlers(controller, OnCardBeginDrag, OnCardEndDrag, OnCardDropped);
-        return controller;
-    }
-
     protected override void SetupCardEventHandlers(CardController controller) {
         controller.OnBeginDragEvent.AddListener(OnCardBeginDrag);
         controller.OnEndDragEvent.AddListener(OnCardEndDrag);

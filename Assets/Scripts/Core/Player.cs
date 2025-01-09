@@ -69,7 +69,7 @@ public class Player : Entity, IPlayer {
 
         BattlefieldSlot targetSlot = null;
         foreach (var battlefieldSlot in Battlefield) {
-            if (slot.TargetId == slot.TargetId) {
+            if (slot.TargetId == battlefieldSlot.TargetId) {
                 targetSlot = battlefieldSlot;
             }
         }

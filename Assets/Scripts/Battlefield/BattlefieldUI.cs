@@ -134,30 +134,20 @@ public class BattlefieldUI : CardContainer {
         if (!IsInitialized || player != Player) return;
 
         UpdateCreatureCards();
-        UpdateSlotOccupancy();
     }
 
+    // Check if it is necessary
     private void UpdateCreatureCards() {
-        //foreach (var slot in BattlefieldSlotsList) {
-        //    slot.ClearSlot();
-        //}
+        foreach (var battlefieldSlot in Player.Battlefield) {
+            var creature = battlefieldSlot.OccupyingCreature;
+            if (creature == null) continue;
 
-        //foreach (var battlefieldSlot in Player.Battlefield) {
-        //    var creature = battlefieldSlot.OccupyingCreature;
-        //    if (creature == null) continue;
+            var creatureCard = battlefieldSlot.OccupyingCard;
 
-        //    var creatureCard = battlefieldSlot.OccupyingCard;
-
-        //    if (creatureCard == null) {
-        //        battlefieldSlot.OccupySlot(creatureCard);
-        //        creatureCard.UpdateUI();
-        //    }
-        //}
-    }
-
-    private void UpdateSlotOccupancy() {
-        foreach (var slot in BattlefieldSlotsList) {
-            slot.ResetVisuals();
+            if (creatureCard == null) {
+                battlefieldSlot.OccupySlot(creatureCard);
+                creatureCard.UpdateUI();
+            }
         }
     }
     #endregion
