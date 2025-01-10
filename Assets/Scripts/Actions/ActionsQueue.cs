@@ -1,9 +1,11 @@
+using Sirenix.OdinInspector;
 using System.Collections.Generic;
 using UnityEngine.Events;
 using static DebugLogger;
 using static Enums;
 
 public class ActionsQueue {
+
     private readonly List<IGameAction> actionsList = new List<IGameAction>();
     private readonly HashSet<(string, EffectTrigger)> processedEffects = new HashSet<(string, EffectTrigger)>();
     private readonly Dictionary<string, IGameAction> activeCreatureActions = new Dictionary<string, IGameAction>();
@@ -11,6 +13,22 @@ public class ActionsQueue {
     private readonly int maxIterationDepth = 3;
     private readonly GameMediator gameMediator;
     private readonly BattlefieldCombatHandler combatHandler;
+
+    public int GetPendingActionsCount() => actionsList.Count;
+
+    public IReadOnlyCollection<IGameAction> GetPendingActions() => actionsList.AsReadOnly();
+
+    [ShowInInspector, ReadOnly]
+    private List<string> Descriptions {
+        get {
+            var descriptions = new List<string>();
+            foreach (var action in actionsList) {
+                descriptions.Add(action.ToString());
+            }
+            return descriptions;
+        }
+    }
+
 
     public UnityEvent OnActionsQueued { get; } = new UnityEvent();
     public UnityEvent OnActionsResolved { get; } = new UnityEvent();
@@ -146,10 +164,6 @@ public class ActionsQueue {
         activeCreatureActions.TryGetValue(creatureId, out var action);
         return action;
     }
-
-    public int GetPendingActionsCount() => actionsList.Count;
-
-    public IReadOnlyCollection<IGameAction> GetPendingActions() => actionsList.AsReadOnly();
 
     public void Cleanup() {
         if (actionsList.Count > 0 || activeCreatureActions.Count > 0) {

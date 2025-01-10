@@ -34,6 +34,7 @@ public class GameManager : InitializableComponent {
         .Select((card, index) => $"Card {index + 1}: {card.Name}")
         .ToList() ?? new List<string>();
 
+    [ShowInInspector]
     public ActionsQueue ActionsQueue { get; private set; }
     public IWeatherSystem WeatherSystem { get; private set; }
     private BattlefieldCombatHandler combatHandler;

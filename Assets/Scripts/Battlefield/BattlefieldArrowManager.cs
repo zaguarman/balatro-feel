@@ -74,7 +74,7 @@ public class BattlefieldArrowManager {
         }
 
         var pendingActions = gameManager.ActionsQueue.GetPendingActions();
-        Log($"Number of pending actions: {pendingActions.Count}", LogTag.Actions);
+        Log($"Number of pending actions: {pendingActions.Count()}", LogTag.Actions);
 
         ProcessQueuedActions(pendingActions);
 

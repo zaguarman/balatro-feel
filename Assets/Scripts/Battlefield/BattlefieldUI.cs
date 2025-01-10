@@ -131,9 +131,26 @@ public class BattlefieldUI : CardContainer {
 
     #region UI Updates
     public override void UpdateUI(IPlayer player) {
-        if (!IsInitialized || player != Player) return;
+        if (!IsInitialized || Player == null) return;
 
-        UpdateCreatureCards();
+        if (player != Player) return;
+
+        foreach (var card in cards.ToList()) {
+            RemoveCard(card);
+            if (card != null) {
+                Destroy(card.gameObject);
+            }
+        }
+        cards.Clear();
+
+        foreach (var slot in player.Battlefield) {
+            var controller = CreateCard(slot.OccupyingCreature);
+            if (controller != null) {
+                AddCard(controller);
+            }
+        }
+
+        UpdateLayout();
     }
 
     // Check if it is necessary
@@ -168,6 +185,12 @@ public class BattlefieldUI : CardContainer {
         }
     }
 
+    protected override void SetupCardEventHandlers(CardController controller) {
+        controller.OnBeginDragEvent.AddListener(OnCardBeginDrag);
+        controller.OnEndDragEvent.AddListener(OnCardEndDrag);
+        controller.OnCardDropped.AddListener(OnCardDropped);
+    }
+
     private void OnCreatureSummoned(ICreature creature, IPlayer player) {
         if (!IsInitialized || player != Player) return;
         UpdateUI(Player);
@@ -179,7 +202,7 @@ public class BattlefieldUI : CardContainer {
 
         if (slot != null) {
             slot.ClearSlot();
-            UpdateUI(Player);
+            UpdateUI(creature.Owner);
         }
     }
     #endregion
@@ -236,6 +259,11 @@ public class BattlefieldUI : CardContainer {
         } else {
             return gameReferences.GetPlayer1BattlefieldUI();
         }
+    }
+
+    protected override void OnCardDropped(CardController card) {
+        Log($"Card dropped from Battlefield: {card.GetCardData()?.cardName}", LogTag.UI | LogTag.Cards);
+        UpdateLayout();
     }
 
     #region Cleanup

@@ -36,11 +36,17 @@ public class SummonCreatureAction : IGameAction {
 
         owner.AddToBattlefield(creature, target);
     }
+
+    public override string ToString() {
+        return $"SummonCreatureAction: Creature={creature?.Name}, Player={(owner.IsPlayer1() ? "1" : "2")}, Target={target?.TargetId}";
+    }
 }
 
 public class DamagePlayerAction : IGameAction {
     private IPlayer target;
     private int damage;
+    public IPlayer GetTargetPlayer() => target;
+    public int GetDamage() => damage;
 
     public DamagePlayerAction(IPlayer target, int damage) {
         this.target = target;
@@ -53,8 +59,9 @@ public class DamagePlayerAction : IGameAction {
         Log($"{damage} damage dealt to {target}", LogTag.Actions | LogTag.Players | LogTag.Combat);
     }
 
-    public IPlayer GetTargetPlayer() => target;
-    public int GetDamage() => damage;
+    public override string ToString() {
+        return $"DamagePlayerAction: Target Player={(target.IsPlayer1() ? "1" : "2")}, Damage={damage}";
+    }
 }
 
 public class DamageCreatureAction : IGameAction {
@@ -62,6 +69,9 @@ public class DamageCreatureAction : IGameAction {
     private readonly int damage;
     private readonly ICreature attacker;
     private readonly bool isDirectDamage;
+    public ICreature GetTarget() => target;
+    public ICreature GetAttacker() => attacker;
+    public int GetDamage() => damage;
 
     public DamageCreatureAction(ICreature target, int damage, ICreature attacker = null, bool isDirectDamage = false) {
         this.target = target;
@@ -96,15 +106,18 @@ public class DamageCreatureAction : IGameAction {
         }
     }
 
-    public ICreature GetTarget() => target;
-    public ICreature GetAttacker() => attacker;
-    public int GetDamage() => damage;
+    public override string ToString() {
+        return $"DamageCreatureAction: Target={target?.Name}, Damage={damage}, Attacker={attacker?.Name}, DirectDamage={isDirectDamage}";
+    }
 }
 
 public class DirectDamageAction : IGameAction {
     private readonly ICreature target;
     private readonly int damage;
     private readonly ICreature source;
+    public ICreature GetTarget() => target;
+    public ICreature GetSource() => source;
+    public int GetDamage() => damage;
 
     public DirectDamageAction(ICreature target, int damage, ICreature source = null) {
         this.target = target;
@@ -138,9 +151,9 @@ public class DirectDamageAction : IGameAction {
         }
     }
 
-    public ICreature GetTarget() => target;
-    public ICreature GetSource() => source;
-    public int GetDamage() => damage;
+    public override string ToString() {
+        return $"DirectDamageAction: Source={source?.Name}, Target={target?.Name}, Damage={damage}";
+    }
 }
 public class SwapCreaturesAction : IGameAction {
     private readonly ICreature fromCreature;
@@ -148,6 +161,10 @@ public class SwapCreaturesAction : IGameAction {
     private readonly ITarget fromSlot;
     private readonly ITarget toSlot;
     private readonly IPlayer owner;
+    // Added methods to help with arrow creation
+    public ICreature GetCreature1() => fromCreature;
+    public ICreature GetCreature2() => toCreature;
+
 
     public SwapCreaturesAction(ICreature fromCreature, ICreature toCreature, ITarget fromSlot, ITarget toSlot, IPlayer owner) {
         this.fromCreature = fromCreature;
@@ -174,9 +191,9 @@ public class SwapCreaturesAction : IGameAction {
         Log($"Executed swap between {fromCreature.Name} and {toCreature.Name}", LogTag.Actions | LogTag.Creatures);
     }
 
-    // Added methods to help with arrow creation
-    public ICreature GetCreature1() => fromCreature;
-    public ICreature GetCreature2() => toCreature;
+    public override string ToString() {
+        return $"SwapCreaturesAction: From={fromCreature?.Name} (Slot={fromSlot}), To={toCreature?.Name} (Slot={toSlot})";
+    }
 }
 
 public class PlayCardAction : IGameAction {
@@ -211,11 +228,17 @@ public class PlayCardAction : IGameAction {
 
         Log($"Executed PlayCardAction for {card.Name}", LogTag.Actions | LogTag.Cards);
     }
+
+    public override string ToString() {
+        return $"PlayCardAction: Card={card?.Name}, Owner={owner?.Name}, Target={target?.TargetId}";
+    }
 }
 
 public class MarkCombatTargetAction : IGameAction {
     private readonly ICreature attacker;
     private readonly BattlefieldSlot targetSlot;
+    public ICreature GetAttacker() => attacker;
+    public BattlefieldSlot GetTargetSlot() => targetSlot;
 
     public MarkCombatTargetAction(ICreature attacker, ITarget targetSlot) {
         this.attacker = attacker;
@@ -239,8 +262,9 @@ public class MarkCombatTargetAction : IGameAction {
         }
     }
 
-    public ICreature GetAttacker() => attacker;
-    public BattlefieldSlot GetTargetSlot() => targetSlot;
+    public override string ToString() {
+        return $"MarkCombatTargetAction: Attacker={attacker?.Name}, TargetSlot={targetSlot.name}";
+    }
 }
 
 public class MoveCreatureAction : IGameAction {
@@ -248,6 +272,10 @@ public class MoveCreatureAction : IGameAction {
     private readonly ITarget fromSlot;
     private readonly ITarget toSlot;
     private readonly IPlayer player;
+    // Getter methods for arrow visualization
+    public ICreature GetCreature() => creature;
+    public ITarget GetFromSlot() => fromSlot;
+    public ITarget GetToSlot() => toSlot;
 
     public MoveCreatureAction(ICreature creature, ITarget fromSlot, ITarget toSlot, IPlayer player) {
         this.creature = creature;
@@ -295,8 +323,7 @@ public class MoveCreatureAction : IGameAction {
         }
     }
 
-    // Getter methods for arrow visualization
-    public ICreature GetCreature() => creature;
-    public ITarget GetFromSlot() => fromSlot;
-    public ITarget GetToSlot() => toSlot;
+    public override string ToString() {
+        return $"MoveCreatureAction: Creature={creature?.Name}, FromSlot={fromSlot?.TargetId}, ToSlot={toSlot?.TargetId}";
+    }
 }
