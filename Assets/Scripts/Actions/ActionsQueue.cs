@@ -132,7 +132,7 @@ public class ActionsQueue {
 
         while (actionsList.Count > 0) {
             var action = actionsList[0];
-            actionsList.RemoveAt(0);
+            actionsList.Remove(action);
             queueChanged = true;
 
             string activeCreatureId = GetActiveCreatureId(action);
