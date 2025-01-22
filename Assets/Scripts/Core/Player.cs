@@ -76,17 +76,19 @@ public class Player : Entity, IPlayer {
 
         var cardController = CardFactory.CreateCardController(card, this, targetSlot.transform);
         targetSlot.AssignCreature(cardController);
-        gameMediator?.NotifyBattlefieldStateChanged(this); 
+        gameMediator?.NotifyBattlefieldStateChanged(this);
     }
 
     public void RemoveFromBattlefield(ICard creature) {
-        //if (creature == null) return;
+        if (creature == null) return;
 
-        //Battlefield.Remove(creature);
-
-        //Log($"Removed creature {creature.Name} from battlefield", LogTag.Creatures);
-        //gameMediator?.NotifyBattlefieldStateChanged(this);
-        //gameMediator?.NotifyGameStateChanged();
+        var slot = Battlefield.FirstOrDefault(s => s.OccupyingCreature == creature);
+        if (slot != null) {
+            slot.ClearSlot();
+            Log($"Removed creature {creature.Name} from battlefield", LogTag.Creatures);
+            gameMediator?.NotifyBattlefieldStateChanged(this);
+            gameMediator?.NotifyGameStateChanged();
+        }
     }
 
     public override bool IsValidTarget() => true;
