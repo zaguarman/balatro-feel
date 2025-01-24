@@ -37,16 +37,17 @@ public class BattlefieldSlot : MonoBehaviour, ITarget {
         }
     }
 
-    public void AssignCreature(CardController card) {
-        ClearSlot(); 
-        if (card == null) return;
+    public void AssignCreature(CardController controller) {
+        ClearSlot();
+        if (controller == null) return;
 
-        OccupyingCard = card;
-        OccupyingCreature = card.GetLinkedCreature(); 
+        // Parent and position the card
+        controller.transform.SetParent(transform, false);
+        controller.transform.localPosition = Vector3.zero;
+        controller.transform.localRotation = Quaternion.identity;
 
-        card.transform.SetParent(transform, false);
-        card.transform.localPosition = Vector3.zero;
-        card.UpdateUI();
+        OccupyingCard = controller;
+        OccupyingCreature = controller.GetLinkedCreature();
     }
 
     public void OccupySlot(CardController card) {

@@ -85,9 +85,8 @@ public abstract class CardContainer : UIComponent, IDropHandler, IPointerEnterHa
         UpdateUI(Player);
     }
 
-    protected void UpdateLayout() {
-        if (containerRect == null) return;
-
+    protected virtual void UpdateLayout() {
+        // Original layout code remains here
         Vector2[] positions = CalculateCardPositions();
         RepositionCards(positions);
 

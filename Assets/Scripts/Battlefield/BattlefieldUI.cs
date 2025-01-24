@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 using static DebugLogger;
 
 public class BattlefieldUI : CardContainer {
@@ -132,25 +133,35 @@ public class BattlefieldUI : CardContainer {
     #region UI Updates
     public override void UpdateUI(IPlayer player) {
         if (!IsInitialized || Player == null) return;
-
         if (player != Player) return;
 
+        // Clear orphaned cards
         foreach (var card in cards.ToList()) {
-            RemoveCard(card);
-            if (card != null) {
+            bool existsInSlot = player.Battlefield.Any(s => s.OccupyingCard == card);
+            if (!existsInSlot) {
+                RemoveCard(card);
                 Destroy(card.gameObject);
             }
         }
-        cards.Clear();
 
+        // Add and position cards from slots
         foreach (var slot in player.Battlefield) {
-            var controller = CreateCard(slot.OccupyingCreature);
-            if (controller != null) {
-                AddCard(controller);
+            if (slot.OccupyingCard != null && !cards.Contains(slot.OccupyingCard)) {
+                AddCard(slot.OccupyingCard);
+                PositionCardInSlot(slot.OccupyingCard, slot);
             }
         }
 
         UpdateLayout();
+    }
+
+    private void PositionCardInSlot(CardController card, BattlefieldSlot slot) {
+        if (card == null) return;
+
+        // Parent to slot and reset position
+        card.transform.SetParent(slot.transform, false);
+        card.transform.localPosition = Vector3.zero;
+        card.transform.localRotation = Quaternion.identity;
     }
 
     // Check if it is necessary
@@ -166,6 +177,11 @@ public class BattlefieldUI : CardContainer {
                 creatureCard.UpdateUI();
             }
         }
+    }
+
+    protected override void UpdateLayout() {
+        // Intentionally left empty to prevent CardContainer from repositioning cards
+        // Slots handle card positioning instead
     }
     #endregion
 

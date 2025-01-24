@@ -217,12 +217,6 @@ public class PlayCardAction : IGameAction {
         // Remove the card from hand first
         owner.Hand.Remove(card);
 
-        // Play the card with the specific slot target
-        if (card is ICreature creature) {
-            var summonAction = new SummonCreatureAction(creature, owner, target);
-            GameManager.Instance.ActionsQueue.AddAction(summonAction);
-        }
-
         // Process any immediate effects
         card.Play(owner, GameManager.Instance.ActionsQueue, target);
 

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using static DebugLogger;
 using System.Linq;
+using UnityEngine;
 
 [Serializable]
 public class PlayerDamagedUnityEvent : UnityEvent<int> { }
@@ -67,16 +68,21 @@ public class Player : Entity, IPlayer {
     public void AddToBattlefield(ICard card, ITarget slot = null) {
         if (card == null) return;
 
-        BattlefieldSlot targetSlot = null;
-        foreach (var battlefieldSlot in Battlefield) {
-            if (slot.TargetId == battlefieldSlot.TargetId) {
-                targetSlot = battlefieldSlot;
-            }
+        var targetSlot = Battlefield.FirstOrDefault(s => s.TargetId == slot.TargetId);
+        if (targetSlot == null) return;
+
+        // Clear existing card if needed
+        if (targetSlot.IsOccupied()) {
+            var oldCreature = targetSlot.OccupyingCreature;
+            RemoveFromBattlefield(oldCreature);
         }
 
+        // Create new card controller
         var cardController = CardFactory.CreateCardController(card, this, targetSlot.transform);
-        targetSlot.AssignCreature(cardController);
-        gameMediator?.NotifyBattlefieldStateChanged(this);
+        if (cardController != null) {
+            targetSlot.AssignCreature(cardController);
+            gameMediator?.NotifyBattlefieldStateChanged(this);
+        }
     }
 
     public void RemoveFromBattlefield(ICard creature) {
