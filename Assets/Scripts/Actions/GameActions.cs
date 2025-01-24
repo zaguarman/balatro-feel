@@ -17,24 +17,18 @@ public class SummonCreatureAction : IGameAction {
     }
 
     public void Execute() {
-        Log($"Executing SummonCreatureAction for {creature.Name}", LogTag.Actions | LogTag.Creatures);
+        // 1. Set owner first
+        creature.SetOwner(owner);
 
-        if (creature == null || owner == null) {
-            LogError("Creature or owner is null", LogTag.Actions | LogTag.Creatures);
-            return;
-        }
-
-        if (creature is Creature c) {
-            c.SetOwner(owner);
-        }
-
-        var actionsQueue = GameManager.Instance?.ActionsQueue;
-        if (creature is Creature c2 && actionsQueue != null) {
-            Log($"Processing OnPlay effects for {creature.Name} with {creature.Effects.Count} effects", LogTag.Actions | LogTag.Effects);
-            c2.HandleEffect(EffectTrigger.OnPlay, actionsQueue);
-        }
-
+        // 2. Add to battlefield before processing effects
         owner.AddToBattlefield(creature, target);
+
+        // 3. Process effects after battlefield placement
+        if (creature is Creature c) {
+            Log($"Processing OnPlay effects for {c.Name} with {c.Effects.Count} effects",
+                LogTag.Actions | LogTag.Effects);
+            c.HandleEffect(EffectTrigger.OnPlay, GameManager.Instance.ActionsQueue);
+        }
     }
 
     public override string ToString() {

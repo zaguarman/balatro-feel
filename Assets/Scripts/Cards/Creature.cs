@@ -65,6 +65,13 @@ public class Creature : Card, ICreature {
     }
 
     public void HandleEffect(EffectTrigger trigger, ActionsQueue actionsQueue) {
+        Log($"Checking effects for {Name} (ID: {TargetId})", LogTag.Effects);
+        Log($"Effects count: {Effects.Count}", LogTag.Effects);
+
+        foreach (var effect in Effects) {
+            Log($"Effect found: {effect.trigger}", LogTag.Effects);
+        }
+
         // Skip if this effect was already handled in current resolution chain
         if (actionsQueue.IsEffectProcessed(TargetId, trigger)) {
             Log($"Skipping already processed {trigger} effect for {Name}", LogTag.Effects);

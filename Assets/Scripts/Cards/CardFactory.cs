@@ -58,15 +58,28 @@ public static class CardFactory {
     public static CardData CreateCardData(ICard card) {
         if (card == null) return null;
 
-        var creatureData = ScriptableObject.CreateInstance<CreatureData>();
-        creatureData.cardName = card.Name;
-
+        // For creatures, copy ALL data including effects
         if (card is ICreature creature) {
+            var creatureData = ScriptableObject.CreateInstance<CreatureData>();
+            creatureData.cardName = creature.Name;
             creatureData.attack = creature.Attack;
             creatureData.health = creature.Health;
+
+            // Copy effects from the creature to the new data
+            creatureData.effects = creature.Effects.Select(e => new CardEffect {
+                effectType = e.effectType,
+                trigger = e.trigger,
+                actions = e.actions.Select(a => new EffectAction {
+                    actionType = a.actionType,
+                    value = a.value,
+                    targetType = a.targetType
+                }).ToList()
+            }).ToList();
+
+            return creatureData;
         }
 
-        return creatureData;
+        return null;
     }
 
     // TODO
