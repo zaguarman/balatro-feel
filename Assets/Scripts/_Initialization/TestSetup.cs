@@ -37,7 +37,6 @@ public class TestSetup : MonoBehaviour {
         Log($"Created Thorned card with {thornCreature.effects.Count} effects", LogTag.Cards | LogTag.Effects | LogTag.Initialization);
         cards.Add(thornCreature);
 
-        // Dragon - Modified to hit all enemy creatures
         var dragon = ScriptableObject.CreateInstance<CreatureData>();
         dragon.cardName = "Dragon";
         dragon.description = "Deals 2 damage to all enemy creatures when played";
@@ -59,7 +58,6 @@ public class TestSetup : MonoBehaviour {
         Log($"Created Dragon card with {dragon.effects.Count} effects", LogTag.Cards | LogTag.Effects | LogTag.Initialization);
         cards.Add(dragon);
 
-        // Rest of the cards remain unchanged
         var guardian = ScriptableObject.CreateInstance<CreatureData>();
         guardian.cardName = "Angel";
         guardian.description = "Heals friendly creatures at the start of your turn";

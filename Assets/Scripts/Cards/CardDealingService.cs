@@ -18,6 +18,11 @@ public class CardDealingService : ICardDealingService {
     }
 
     public void InitializeDecks(List<CardData> player1Cards, List<CardData> player2Cards) {
+        Log($"Initializing decks - Player1 cards: {player1Cards.Count}", LogTag.Cards);
+        foreach (var card in player1Cards) {
+            Log($"- {card.cardName} with {card.effects?.Count ?? 0} effects", LogTag.Cards);
+        }
+
         var gameManager = GameManager.Instance;
         if (gameManager == null) {
             LogError("GameManager not found when initializing decks", LogTag.Cards | LogTag.Initialization);
