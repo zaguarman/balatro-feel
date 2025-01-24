@@ -314,6 +314,7 @@ public class MoveCreatureAction : IGameAction {
         player.RemoveFromBattlefield(creature);
         if (player is Player p) {
             p.AddToBattlefield(creature, toSlot);
+            creature.Slot = (BattlefieldSlot)toSlot;
         }
     }
 

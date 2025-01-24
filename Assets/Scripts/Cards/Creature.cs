@@ -5,6 +5,7 @@ using System.Linq;
 public interface ICreature : ICard {
     int Attack { get; }
     int Health { get; }
+    BattlefieldSlot Slot { get; set; }  // Add this line
     void TakeDamage(int damage);
     IPlayer Owner { get; }
     void SetOwner(IPlayer owner);
@@ -15,6 +16,7 @@ public class Creature : Card, ICreature {
     public int Health { get; private set; }
     private bool isDead = false;
     public IPlayer Owner { get; private set; }
+    public BattlefieldSlot Slot { get; set; }
 
     private ICreature lastAttacker;
 

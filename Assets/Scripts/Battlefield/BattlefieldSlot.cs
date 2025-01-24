@@ -41,6 +41,12 @@ public class BattlefieldSlot : MonoBehaviour, ITarget {
         ClearSlot();
         if (controller == null) return;
 
+        // Set slot reference on the creature
+        var creature = controller.GetLinkedCreature();
+        if (creature != null) {
+            creature.Slot = this;
+        }
+
         // Parent and position the card
         controller.transform.SetParent(transform, false);
         controller.transform.localPosition = Vector3.zero;

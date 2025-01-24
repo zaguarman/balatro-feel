@@ -24,6 +24,7 @@ public class BattlefieldArrowManager {
 
     private void RegisterEvents() {
         gameMediator.AddActionsQueueChangedListener(OnActionsQueueChanged);
+        gameMediator.AddBattlefieldStateChangedListener(OnBattlefieldStateChanged); // Add this line
     }
 
     private void OnActionsQueueChanged() {
@@ -34,6 +35,10 @@ public class BattlefieldArrowManager {
             lastProcessedActionCount = currentActionCount;
             UpdateArrowsFromActionsQueue();
         }
+    }
+
+    private void OnBattlefieldStateChanged(IPlayer player) {
+        UpdateArrowsFromActionsQueue();
     }
 
     private void SetupDragArrow() {
@@ -185,21 +190,22 @@ public class BattlefieldArrowManager {
     private Vector3 GetCreaturePosition(ICreature creature) {
         if (creature == null) return Vector3.zero;
 
-        var Player1BattlefieldUI = gameReferences.GetPlayer1BattlefieldUI();
-
-        var cardController = Player1BattlefieldUI.GetCardController(creature);
-
-        if (cardController == null) {
-            cardController = gameReferences.GetPlayer2BattlefieldUI().GetCardController(creature);
+        // Get position from the creature's slot if available
+        if (creature.Slot != null) {
+            var slotPos = creature.Slot.transform.position;
+            Log($"Getting position from slot {creature.Slot.TargetId} for {creature.Name}", LogTag.UI);
+            return slotPos;
         }
+
+        // Fallback to card controller position
+        var cardController = gameReferences.GetPlayer1BattlefieldUI().GetCardController(creature) ??
+                            gameReferences.GetPlayer2BattlefieldUI().GetCardController(creature);
 
         if (cardController != null) {
-            var position = cardController.transform.position;
-            Log($"Found position for creature {creature.Name} with ID {creature.TargetId}: {position}", LogTag.UI);
-            return position;
+            return cardController.transform.position;
         }
 
-        LogWarning($"Could not find CardController for creature {creature.Name} with ID {creature.TargetId}", LogTag.UI);
+        LogWarning($"Could not find position for creature {creature.Name}", LogTag.UI);
         return Vector3.zero;
     }
 
