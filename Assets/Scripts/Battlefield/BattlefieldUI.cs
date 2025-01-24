@@ -146,8 +146,12 @@ public class BattlefieldUI : CardContainer {
 
         // Add and position cards from slots
         foreach (var slot in player.Battlefield) {
-            if (slot.OccupyingCard != null && !cards.Contains(slot.OccupyingCard)) {
-                AddCard(slot.OccupyingCard);
+            if (slot.OccupyingCard != null) {
+                // Add card to the list if not already present
+                if (!cards.Contains(slot.OccupyingCard)) {
+                    AddCard(slot.OccupyingCard);
+                }
+                // Reposition the card to the slot's position
                 PositionCardInSlot(slot.OccupyingCard, slot);
             }
         }
