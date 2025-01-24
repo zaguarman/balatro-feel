@@ -15,7 +15,7 @@ public interface IPlayer : IEntity, IDamageable {
     List<BattlefieldSlot> Battlefield { get; }
     void AddToHand(ICard card);
     void AddToBattlefield(ICard creature, ITarget slotId = null);
-    void RemoveFromBattlefield(ICard creature);
+    void RemoveFromBattlefield(ICard creature, bool destroyCard = true);
     PlayerDamagedUnityEvent OnDamaged { get; }
     void InitializeBattlefield(List<BattlefieldSlot> battlefieldSlots);
 }
@@ -85,12 +85,12 @@ public class Player : Entity, IPlayer {
         }
     }
 
-    public void RemoveFromBattlefield(ICard creature) {
+    public void RemoveFromBattlefield(ICard creature, bool destroyCard = true) {
         if (creature == null) return;
 
-        var slot = Battlefield.FirstOrDefault(s => s.OccupyingCreature == creature);
+        var slot = Battlefield.FirstOrDefault(s => s.OccupyingCreature == creature as ICreature);
         if (slot != null) {
-            slot.ClearSlot();
+            slot.ClearSlot(destroyCard);
             Log($"Removed creature {creature.Name} from battlefield", LogTag.Creatures);
             gameMediator?.NotifyBattlefieldStateChanged(this);
             gameMediator?.NotifyGameStateChanged();

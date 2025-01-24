@@ -284,38 +284,64 @@ public class MoveCreatureAction : IGameAction {
             return;
         }
 
-        // Check if target slot is occupied
-        var targetCreature = ((BattlefieldSlot)toSlot).OccupyingCreature;
+        var fromSlotComponent = (BattlefieldSlot)fromSlot;
+        var toSlotComponent = (BattlefieldSlot)toSlot;
+
+        // Get the current creature in the target slot
+        var targetCreature = toSlotComponent.OccupyingCreature;
+
         if (targetCreature != null) {
-            // Handle swap
-            HandleSwap(targetCreature);
+            HandleSwap(fromSlotComponent, toSlotComponent);
         } else {
-            // Handle simple move
-            HandleMove();
+            HandleMove(fromSlotComponent, toSlotComponent);
         }
 
         Log($"Executed move action for {creature.Name} from slot {fromSlot} to slot {toSlot}",
             LogTag.Actions | LogTag.Creatures);
     }
 
-    private void HandleSwap(ICreature targetCreature) {
-        // Temporarily remove both creatures from battlefield
-        player.RemoveFromBattlefield(creature);
-        player.RemoveFromBattlefield(targetCreature);
+    private void HandleSwap(BattlefieldSlot fromSlot, BattlefieldSlot toSlot) {
+        // Get the CardControllers from both slots
+        var fromController = fromSlot.OccupyingCard;
+        var toController = toSlot.OccupyingCard;
 
-        // Re-add them in swapped order
-        if (player is Player p) {
-            p.AddToBattlefield(creature, toSlot);
-            p.AddToBattlefield(targetCreature, fromSlot);
+        // Clear both slots without destroying the CardControllers
+        fromSlot.ClearSlot(false); // Pass false to avoid destroying the controller
+        toSlot.ClearSlot(false);
+
+        // Assign controllers to the opposite slots
+        fromSlot.AssignCreature(toController);
+        toSlot.AssignCreature(fromController);
+
+        // Update the Slot references on the creatures
+        if (fromController != null && fromController.GetLinkedCreature() != null) {
+            fromController.GetLinkedCreature().Slot = toSlot;
         }
+        if (toController != null && toController.GetLinkedCreature() != null) {
+            toController.GetLinkedCreature().Slot = fromSlot;
+        }
+
+        GameMediator.Instance?.NotifyBattlefieldStateChanged(player);
     }
 
-    private void HandleMove() {
-        player.RemoveFromBattlefield(creature);
-        if (player is Player p) {
-            p.AddToBattlefield(creature, toSlot);
-            creature.Slot = (BattlefieldSlot)toSlot;
+    private void HandleMove(BattlefieldSlot fromSlot, BattlefieldSlot toSlot) {
+        var fromController = fromSlot.OccupyingCard;
+
+        // Clear the target slot if occupied (optional, based on game rules)
+        if (toSlot.IsOccupied()) {
+            toSlot.ClearSlot(true); // Destroy existing if necessary
         }
+
+        // Move the controller to the new slot
+        fromSlot.ClearSlot(false); // Don't destroy
+        toSlot.AssignCreature(fromController);
+
+        // Update the creature's Slot reference
+        if (fromController != null && fromController.GetLinkedCreature() != null) {
+            fromController.GetLinkedCreature().Slot = toSlot;
+        }
+
+        GameMediator.Instance?.NotifyBattlefieldStateChanged(player);
     }
 
     public override string ToString() {

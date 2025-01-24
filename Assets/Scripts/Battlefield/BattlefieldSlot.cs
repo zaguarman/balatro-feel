@@ -60,11 +60,11 @@ public class BattlefieldSlot : MonoBehaviour, ITarget {
         AssignCreature(card);
     }
 
-    public void ClearSlot() {
-        if (OccupyingCard != null) {
+    public void ClearSlot(bool destroyCard = true) {
+        if (OccupyingCard != null && destroyCard) {
             Destroy(OccupyingCard.gameObject);
-            OccupyingCard = null;
         }
+        OccupyingCard = null;
         OccupyingCreature = null;
     }
 
