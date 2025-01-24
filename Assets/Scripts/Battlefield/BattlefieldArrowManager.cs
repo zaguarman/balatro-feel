@@ -227,14 +227,23 @@ public class BattlefieldArrowManager {
         var player2Battlefield = gameReferences.GetPlayer2BattlefieldUI();
 
         Transform slotTransform = null;
+
+        // Check player1's battlefield first
         if (player1Battlefield != null) {
             var slots = player1Battlefield.GetComponentsInChildren<BattlefieldSlot>();
-            slotTransform = slots.FirstOrDefault(s => s.TargetId == slotIndex.TargetId).transform;
+            var slot = slots.FirstOrDefault(s => s.TargetId == slotIndex.TargetId);
+            if (slot != null) {
+                slotTransform = slot.transform;
+            }
         }
 
+        // If not found, check player2's battlefield
         if (slotTransform == null && player2Battlefield != null) {
             var slots = player2Battlefield.GetComponentsInChildren<BattlefieldSlot>();
-            slotTransform = slots.FirstOrDefault(s => s.TargetId == slotIndex.TargetId).transform;
+            var slot = slots.FirstOrDefault(s => s.TargetId == slotIndex.TargetId);
+            if (slot != null) {
+                slotTransform = slot.transform;
+            }
         }
 
         return slotTransform != null ? slotTransform.position : Vector3.zero;
