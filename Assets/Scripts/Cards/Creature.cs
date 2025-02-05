@@ -121,10 +121,11 @@ public class Creature : Card, ICreature {
             LogTag.Creatures | LogTag.Actions);
 
         foreach (var target in targets) {
-            if (target is ICreature creature) {
-                Log($"Adding DirectDamageAction - Source: {Name}, Target: {creature.Name}, Damage: {action.value}",
+            if (target is BattlefieldSlot slot) {
+                if (!slot.IsOccupied()) continue;
+                Log($"Adding DirectDamageAction - Source: {Name}, Target: {slot.OccupyingCreature.Name}, Damage: {action.value}",
                     LogTag.Creatures | LogTag.Actions | LogTag.Combat);
-                actionsQueue.AddAction(new DirectDamageAction(creature, action.value, this));
+                actionsQueue.AddAction(new DirectDamageAction(slot.OccupyingCreature, action.value, this));
             } else if (target is IPlayer player) {
                 Log($"Adding DamagePlayerAction - Target: Player {(player.IsPlayer1() ? "1" : "2")}, Damage: {action.value}",
                     LogTag.Creatures | LogTag.Actions | LogTag.Players | LogTag.Combat);
